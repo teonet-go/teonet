@@ -37,33 +37,14 @@ func Log() *log.Logger {
 	return log.New(os.Stdout, "", log.Ltime|log.Lmicroseconds /* |log.Lshortfile */)
 }
 
-// reader is common teonet reader
+// reader is Main teonet reader
 func reader(teo *Teonet, c *Channel, p *Packet, err error) {
 
-	// Main teonet reader
-	// if err != nil {
-	// 	// Error processing
-	// 	teo.log.Printf("got error from channel %s, error: %s", c, err)
-	// } else {
-	// 	// Received message processing
-	// 	teo.log.Printf("teonet reader:  got from %s, \"%s\", len: %d, tt: %6.3fms\n",
-	// 		c, p.Data, len(p.Data), float64(c.Triptime().Microseconds())/1000.0,
-	// 	)
-	// }
-
-	// Error processing
+	// Check error and 'connect to peer connected' processing
 	if err != nil {
 		teo.channels.del(c)
-	}
-
-	// Set connected client address
-	if err == nil && c.ServerMode() {
-		// z6uer55DZsqvY5pqXHjTD3oDFfsKmkfFJ65
-		if p.ID() == 2 && c.Address() == "" && len(p.Data) == 35 {
-			teo.log.Println("set connected", c.c)
-			teo.Connected(c, string(p.Data))
-			return
-		}
+	} else if teo.connectToConnected(c, p) {
+		return
 	}
 
 	// Send to subscribers readers (to readers from teo.subscribe)
@@ -134,7 +115,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	teo.clientReader = param.reader
 	teo.trudp, err = trudp.Init(param.port, teo.config.trudpPrivateKey, teo.log, param.logLevel,
 
-		// Receive callback
+		// Receive data callback
 		func(c *trudp.Channel, p *trudp.Packet, err error) {
 			ch, ok := teo.channels.get(c)
 			if !ok {
@@ -158,22 +139,19 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 
 		// Connect to this server callback
 		func(c *trudp.Channel, err error) {
-			// Check connection requests
-			_, exists := teo.channels.get(c)
-			teo.log.Println("server connection done, from", c.String(), "error:", err,
-				"teonet channel exists:", exists)
-
-			// TODO: get address from connectToServer request
-			// channel := teo.channels.new(c)
-			// teo.Connected(channel, "QuQuRu")
-
 			// Wait this trudp channel connected to teonet channel and delete
 			// it if not connected during timeout
+			_, exists := teo.channels.get(c)
+			// teo.log.Println("server connection done, from", c.String(), "error:", err,
+			// 	"teonet channel exists:", exists)
+			if exists {
+				return
+			}
 			go func(c *trudp.Channel) {
-				time.Sleep(1 * time.Second)
+				time.Sleep(3 * time.Second)
 				_, exists := teo.channels.get(c)
-				teo.log.Println("teonet channel exists:", exists)
 				if !exists {
+					teo.log.Println("remove dummy trudp channel:", c)
 					c.ChannelDel(c)
 				}
 			}(c)
