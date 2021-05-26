@@ -29,10 +29,11 @@ type channels struct {
 func (c *channels) add(channel *Channel) {
 	// remove existing channel with same address
 	if ch, ok := c.get(channel.a); ok {
-		c.del(channel)
-		if ch.c.String() != channel.c.String() {
-			c.trudp.ChannelDel(ch.c)
-		}
+		c.del(ch)
+		// TODO: what is this??? :-)
+		// if ch.c.String() != channel.c.String() {
+		// 	c.trudp.ChannelDel(ch.c)
+		// }
 	}
 
 	// add new channel
@@ -43,12 +44,13 @@ func (c *channels) add(channel *Channel) {
 	c.teo.log.Println("client connected:", channel.a)
 }
 
-// del channel by address
+// del channel
 func (c *channels) del(channel *Channel) {
 	c.Lock()
 	defer c.Unlock()
 	delete(c.m_addr, channel.a)
 	delete(c.m_chan, channel.c)
+	c.trudp.ChannelDel(channel.c)
 	c.teo.log.Println("client disconnec:", channel.a)
 }
 
