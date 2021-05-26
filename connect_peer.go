@@ -10,6 +10,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"strings"
+
+	"github.com/kirill-scherba/trudp"
 )
 
 // ConnectTo connect to any teonet Peer(client or server) by address (client
@@ -24,7 +27,7 @@ func (teo Teonet) ConnectTo(addr string) (err error) {
 
 	// Connect data
 	conIn := ConnectToData{
-		ID:   teo.auth.c.RandomString(35),
+		ID:   trudp.RandomString(35),
 		Addr: addr,
 	}
 	data, _ := conIn.MarshalBinary()
@@ -163,8 +166,9 @@ func (teo Teonet) connectToAnswerProcess(data []byte) (err error) {
 // (peer processed)
 func (teo Teonet) connectToConnected(c *Channel, p *Packet) (ok bool) {
 	if c.ServerMode() {
-		// z6uer55DZsqvY5pqXHjTD3oDFfsKmkfFJ65
-		if p.ID() == 2 && c.Address() == "" /* && len(p.Data) == 35 */ {
+		// Teonet address example:    z6uer55DZsqvY5pqXHjTD3oDFfsKmkfFJ65
+		// Teonet new(not connected): new-r55DZsqvY5pqXHjTD3oDFfsKmkfFJ65
+		if p.ID() == 2 && strings.HasPrefix(c.Address(), newChannelPrefix) {
 
 			// Unmarshal data
 			var con ConnectToData
@@ -175,8 +179,7 @@ func (teo Teonet) connectToConnected(c *Channel, p *Packet) (ok bool) {
 			}
 
 			res, ok := teo.peerRequests.get(con.ID)
-			teo.log.Println("peer request, id:", res.ID, ok, res.Addr, res)
-
+			teo.log.Println("peer request, id:", res.ID, ok, "addr:", res.Addr, "from:", c)
 			if ok {
 				teo.log.Println("set client connected", res.Addr, "ID:", con.ID)
 				teo.Connected(c, res.Addr)

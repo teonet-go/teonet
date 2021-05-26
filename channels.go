@@ -7,6 +7,11 @@ import (
 	"github.com/kirill-scherba/trudp"
 )
 
+const (
+	newChannelPrefix = "new-"
+	addressLen       = 35
+)
+
 func (teo *Teonet) newChannels() {
 	teo.channels = new(channels)
 	teo.channels.teo = teo
@@ -70,7 +75,7 @@ func (c *channels) get(attr interface{}) (ch *Channel, exists bool) {
 
 // new create new teonet channel
 func (c *channels) new( /* address string,  */ channel *trudp.Channel) *Channel {
-	address := ""
+	address := newChannelPrefix + trudp.RandomString(addressLen-len(newChannelPrefix))
 	return &Channel{address, channel}
 }
 
