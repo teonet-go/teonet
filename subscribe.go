@@ -20,7 +20,7 @@ type subscribeData struct {
 }
 
 type Treceivecb func(teo *Teonet, c *Channel, p *Packet, err error) bool
-type Packet trudp.Packet
+type Packet struct{ *trudp.Packet }
 
 // newSubscribers create new subscribers (subscribersData)
 func (teo *Teonet) newSubscribers() {

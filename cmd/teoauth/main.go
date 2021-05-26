@@ -27,12 +27,22 @@ func reader(teo *teonet.Teonet, c *teonet.Channel, p *teonet.Packet, err error) 
 	// 	c, p.Data, len(p.Data), float64(c.Triptime().Microseconds())/1000.0,
 	// )
 
-	// Send answer in server mode
+	// Process teoauth commands in server mode
 	if c.ServerMode() {
-		err := teo.ConnectProcess(c, p.Data)
-		if err != nil {
-			teolog.Println("connect process error:", err)
-			return true
+		cmd := teo.Command(p.Data)
+		switch teonet.AuthCmd(cmd.Cmd) {
+		case teonet.CmdConnect:
+			err := teo.ConnectProcess(c, cmd.Data)
+			if err != nil {
+				teolog.Println("connect process error:", err)
+				return true
+			}
+		case teonet.CmdConnectTo:
+			err := teo.ConnectToProcess(c, cmd.Data)
+			if err != nil {
+				teolog.Println("connect to process error:", err)
+				return true
+			}
 		}
 	}
 	return true

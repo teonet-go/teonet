@@ -9,10 +9,34 @@ import (
 	"time"
 )
 
+// Teoauth commands
+const (
+	// CmdConnect send <cmd byte, data ConnectData> to teonet auth server to
+	// connect to teonet; receive <cmd byte, data ConnectData> from teonet auth
+	// server when connection established
+	CmdConnect AuthCmd = iota
+
+	// CmdConnectTo send <cmd byte, data ConnectToData> to teonet auth server to
+	// connect to peer
+	CmdConnectTo
+
+	// CmdConnectToPeer command send by teonet auth to server to receive
+	// connection from client
+	CmdConnectToPeer
+)
+
+type AuthCmd byte
+
+// Connet errors
 var ErrIncorrectServerKey = errors.New("incorrect server key received")
 var ErrIncorrectPublicKey = errors.New("incorrect public key received")
 
-// Connect to teonet (client send to teonet auth server)
+// Connect to errors
+
+// Connect to teonet (client send request to teonet auth server):
+// Client call Connect (and wait answer inside Connect function) -> Server call
+// ConnectProcess -> Client got answer (inside Connect function) and set teonet
+// Connected (create teonet channel)
 func (teo *Teonet) Connect(auth ...string) (err error) {
 
 	teo.log.Println("connect to teonet")
@@ -28,7 +52,7 @@ func (teo *Teonet) Connect(auth ...string) (err error) {
 
 	var subs *subscribeData
 	var chanW = make(chan []byte)
-	teo.auth = teo.channels.new("", ch)
+	teo.auth = teo.channels.new(ch)
 	subs = teo.subscribe(teo.auth, func(teo *Teonet, c *Channel, p *Packet, err error) bool {
 		// Error processing
 		if err != nil {
@@ -53,8 +77,19 @@ func (teo *Teonet) Connect(auth ...string) (err error) {
 		// 	c, p.Data, len(p.Data), float64(c.Triptime().Microseconds())/1000.0,
 		// )
 
-		// Unsubscribe
-		chanW <- p.Data
+		// Process commands from teonet server
+		cmd := teo.Command(p.Data)
+		switch AuthCmd(cmd.Cmd) {
+		case CmdConnect:
+			chanW <- cmd.Data
+		case CmdConnectTo:
+			go teo.connectToAnswerProcess(cmd.Data)
+		case CmdConnectToPeer:
+			teo.log.Println("got CmdConnectToPeer command, data len:", len(cmd.Data))
+		default:
+			teo.log.Println("not defined command", cmd.Cmd)
+		}
+
 		return true
 	})
 
@@ -66,7 +101,7 @@ func (teo *Teonet) Connect(auth ...string) (err error) {
 		ServerAddress: nil,
 	}
 
-	// Encode
+	// Marshal data
 	data, err := conIn.MarshalBinary()
 	if err != nil {
 		// teo.log.Println("encode error:", err)
@@ -75,17 +110,19 @@ func (teo *Teonet) Connect(auth ...string) (err error) {
 	// teo.log.Println("encoded ConnectData:", data, len(data))
 
 	// Send to teoauth
-	_, err = teo.trudp.Send(teo.auth.c, data)
+	// cmd := teo.Command(CmdConnect, data)
+	// _, err = teo.trudp.Send(teo.auth.c, cmd.Bytes())
+	_, err = teo.Command(CmdConnect, data).Send(teo.auth)
 	if err != nil {
 		return
 	}
 	// teo.log.Println("send ConnectData to teoauth, id", id)
 
-	// Receive connection answer
+	// Wait Connect answer data
 	data = <-chanW
 	// teo.log.Println("got ansver from teoauth")
 
-	// Decode
+	// Unmarshal data
 	var conOut ConnectData
 	conOut.UnmarshalBinary(data)
 	if err != nil {
@@ -115,15 +152,15 @@ func (teo *Teonet) Connect(auth ...string) (err error) {
 	teo.log.Println("connected to teonet")
 	teo.log.Printf("teonet address: %s\n", conOut.Address)
 
-	teo.Connected(teo.auth, addr)
+	teo.Connected(teo.auth, string(conOut.ServerAddress))
 
 	return
 }
 
-// ConnectProcess check connection to teonet (auth server receive connection
-// data from client) and send answer to client
+// ConnectProcess check connection to teonet and send answer to client (auth
+// server receive connection data from client)
 func (teo Teonet) ConnectProcess(c *Channel, data []byte) (err error) {
-	// Decode
+	// Unmarshal data
 	var con ConnectData
 	con.UnmarshalBinary(data)
 	if err != nil {
@@ -141,7 +178,9 @@ func (teo Teonet) ConnectProcess(c *Channel, data []byte) (err error) {
 		}
 
 		// Send snswer
-		_, err = c.c.SendAnswer(data)
+		// cmd := teo.Command(CmdConnect, data)
+		// _, err = c.c.SendAnswer(cmd.Bytes())
+		_, err = teo.Command(CmdConnect, data).SendAnswer(c)
 		if err != nil {
 			teo.log.Println("send answer error:", err)
 		}
@@ -178,7 +217,116 @@ func (teo Teonet) ConnectProcess(c *Channel, data []byte) (err error) {
 
 	// Add to clients map
 	teo.Connected(c, string(con.Address))
-	teo.log.Println("client connected:", string(con.Address))
+	// teo.log.Println("client connected:", string(con.Address))
+
+	return
+}
+
+// ConnectTo connect to any teonet Peer(client or server) by address (client
+// sent request to teonet auth server):
+// Client call ConnectTo wich send request to teonet auth server and wait
+// function connectToAnswerProcess called -> Server call ConnectToProcess send
+// infor to Peer and send answer to client (connectToAnswerProcess func called
+// on client side when answer received) -> Client connect to Peer and send
+// clients teonet address to it
+func (teo Teonet) ConnectTo(addr string) (err error) {
+	// TODO: check local connection exists
+
+	// Connect data
+	conIn := ConnectToData{
+		Addr: addr,
+	}
+	data, _ := conIn.MarshalBinary()
+	// Send command to teonet
+	teo.Command(CmdConnectTo, data).Send(teo.auth)
+	teo.log.Println("send CmdConnectTo", addr, "(send to teo.auth)")
+
+	return
+}
+
+// ConnectToProcess check connection to teonet peer and send answer to client
+// and request to Peer (auth server receive connection data from client)
+func (teo Teonet) ConnectToProcess(c *Channel, data []byte) (err error) {
+
+	// Unmarshal data
+	var con ConnectToData
+	con.UnmarshalBinary(data)
+	if err != nil {
+		teo.log.Println("decode error:", err)
+		return
+	}
+	teo.log.Println("got CmdConnectTo", con.Addr, "from", c)
+
+	// Get channel data and prepare answer data to Client
+	ch, ok := teo.Channel(con.Addr)
+	if ok {
+		// Server IPs and port
+		con.IP = ch.c.UDPAddr.IP.String()
+		con.Port = uint32(ch.c.UDPAddr.Port)
+	} else {
+		con.Err = []byte("address not connected")
+	}
+
+	// Prepare data and send request to Peer
+	if len(con.Err) == 0 {
+		var conSer ConnectToData
+		// Client address, IPs and port
+		conSer.Addr = c.a
+		conSer.IP = c.c.UDPAddr.IP.String()
+		conSer.Port = uint32(c.c.UDPAddr.Port)
+		// Send request to Peer
+		_, err = teo.Command(byte(2), data).SendAnswer(ch)
+		if err != nil {
+			return
+		}
+	}
+
+	// Send answer to Client
+	data, err = con.MarshalBinary()
+	if err != nil {
+		return
+	}
+	_, err = teo.Command(CmdConnectTo, data).SendAnswer(c)
+
+	return
+}
+
+// connectToAnswerProcess check ConnectTo answer from auth server, connect to
+// Peer and send clients teonet addres to it
+func (teo Teonet) connectToAnswerProcess(data []byte) (err error) {
+
+	const cantConnectToPeer = "can't connect to peer, error: "
+
+	// Unmarshal data
+	var con ConnectToData
+	con.UnmarshalBinary(data)
+	if err != nil {
+		teo.log.Println("unmarshal error:", err)
+		return
+	}
+	teo.log.Println("got CmdConnectTo answer:", con.Addr, con.IP, con.Port,
+		string(con.Err))
+
+	// Check server error
+	if len(con.Err) != 0 {
+		err = errors.New(string(con.Err))
+		teo.log.Println(cantConnectToPeer, err)
+		return
+	}
+
+	// Connect to peer
+	c, err := teo.trudp.Connect(con.IP, int(con.Port))
+	if err != nil {
+		teo.log.Println(cantConnectToPeer, err)
+		return
+	}
+
+	// Send client teonet address to peer
+	c.Send([]byte(teo.config.Address))
+
+	// Add teonet channel
+	channel := teo.channels.new(c)
+	teo.Connected(channel, con.Addr)
 
 	return
 }
@@ -191,6 +339,7 @@ func (teo Teonet) Connected(c *Channel, addr string) {
 
 // ConnectData teonet connect data
 type ConnectData struct {
+	byteSlice
 	PubliKey      []byte // Client public key (generated from private key)
 	Address       []byte // Client address (received after connect if empty)
 	ServerKey     []byte // Server public key (send if exists or received in connect if empty)
@@ -198,22 +347,38 @@ type ConnectData struct {
 	Err           []byte // Error of connect data processing
 }
 
+type byteSlice struct{}
+
+func (b byteSlice) writeSlice(buf *bytes.Buffer, data []byte) (err error) {
+	err = binary.Write(buf, binary.LittleEndian, uint16(len(data)))
+	if err != nil {
+		return
+	}
+	err = binary.Write(buf, binary.LittleEndian, data)
+	return
+}
+
+func (b byteSlice) readSlice(buf *bytes.Buffer) (data []byte, err error) {
+	var l uint16
+	err = binary.Read(buf, binary.LittleEndian, &l)
+	if err != nil {
+		return
+	}
+	data = make([]byte, l)
+	err = binary.Read(buf, binary.LittleEndian, data)
+	return
+}
+
 func (c ConnectData) MarshalBinary() (data []byte, err error) {
 	buf := new(bytes.Buffer)
 
-	writeSlice := func(data []byte) {
-		binary.Write(buf, binary.LittleEndian, uint16(len(data)))
-		binary.Write(buf, binary.LittleEndian, data)
-	}
-
-	writeSlice(c.PubliKey)
-	writeSlice(c.Address)
-	writeSlice(c.ServerKey)
-	writeSlice(c.ServerAddress)
-	writeSlice(c.Err)
+	c.writeSlice(buf, c.PubliKey)
+	c.writeSlice(buf, c.Address)
+	c.writeSlice(buf, c.ServerKey)
+	c.writeSlice(buf, c.ServerAddress)
+	c.writeSlice(buf, c.Err)
 
 	data = buf.Bytes()
-
 	return
 }
 
@@ -221,40 +386,23 @@ func (c *ConnectData) UnmarshalBinary(data []byte) (err error) {
 
 	buf := bytes.NewBuffer(data)
 
-	readSlice := func() (data []byte, err error) {
-		var l uint16
-		err = binary.Read(buf, binary.LittleEndian, &l)
-		if err != nil {
-			return
-		}
-		data = make([]byte, l)
-		binary.Read(buf, binary.LittleEndian, data)
-		if err != nil {
-			return
-		}
-		return
-	}
-
-	c.PubliKey, err = readSlice()
+	c.PubliKey, err = c.readSlice(buf)
 	if err != nil {
 		return
 	}
-	c.Address, err = readSlice()
+	c.Address, err = c.readSlice(buf)
 	if err != nil {
 		return
 	}
-	c.ServerKey, err = readSlice()
+	c.ServerKey, err = c.readSlice(buf)
 	if err != nil {
 		return
 	}
-	c.ServerAddress, err = readSlice()
+	c.ServerAddress, err = c.readSlice(buf)
 	if err != nil {
 		return
 	}
-	c.Err, err = readSlice()
-	if err != nil {
-		return
-	}
+	c.Err, err = c.readSlice(buf)
 
 	return
 }
@@ -268,4 +416,50 @@ func (c ConnectData) String() string {
 		c.ServerAddress,
 		c.Err,
 	)
+}
+
+// ConnectToData teonet connect data
+type ConnectToData struct {
+	byteSlice
+	Addr string // Peer address
+	IP   string // Peer ip address
+	Port uint32 // Peer port
+	Err  []byte // Error of connect data processing
+}
+
+func (c ConnectToData) MarshalBinary() (data []byte, err error) {
+	buf := new(bytes.Buffer)
+
+	c.writeSlice(buf, []byte(c.Addr))
+	c.writeSlice(buf, []byte(c.IP))
+	err = binary.Write(buf, binary.LittleEndian, c.Port)
+	c.writeSlice(buf, c.Err)
+
+	data = buf.Bytes()
+	return
+}
+
+func (c *ConnectToData) UnmarshalBinary(data []byte) (err error) {
+	buf := bytes.NewBuffer(data)
+
+	d, err := c.readSlice(buf)
+	if err != nil {
+		return
+	}
+	c.Addr = string(d)
+
+	d, err = c.readSlice(buf)
+	if err != nil {
+		return
+	}
+	c.IP = string(d)
+
+	err = binary.Read(buf, binary.LittleEndian, &c.Port)
+	if err != nil {
+		return
+	}
+
+	c.Err, err = c.readSlice(buf)
+
+	return
 }
