@@ -7,6 +7,7 @@
 package teonet
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 
 func (teo *Teonet) newPeerRequests() {
 	teo.peerRequests = new(peerRequests)
+	teo.peerRequests.m = make(map[string]*peerRequestsData)
 	go teo.peerRequests.process()
 }
 
@@ -32,20 +34,22 @@ type peerRequestsData struct {
 func (p *peerRequests) add(con *ConnectToData) {
 	p.Lock()
 	defer p.Unlock()
-	id := "1"
-	p.m[id] = &peerRequestsData{con, time.Now()}
+	p.m[con.ID] = &peerRequestsData{con, time.Now()}
+	fmt.Println("peer request add, id:", con.ID)
 }
 
 func (p *peerRequests) del(id string) {
 	p.Lock()
 	defer p.Unlock()
 	delete(p.m, id)
+	fmt.Println("peer request del, id:", id)
 }
 
 func (p *peerRequests) get(id string) (res *peerRequestsData, ok bool) {
 	p.RLock()
 	defer p.RUnlock()
 	res, ok = p.m[id]
+	fmt.Println("peer request get, id:", id, ok)
 	return
 }
 
@@ -55,6 +59,7 @@ func (p *peerRequests) removeDummy() {
 		if time.Since(rec.Time) > trudp.ClientConnectTimeout {
 			p.RUnlock()
 			p.del(id)
+			fmt.Println("peer request removed dummy, id:", id)
 			p.removeDummy()
 			return
 		}

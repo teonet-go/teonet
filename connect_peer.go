@@ -24,6 +24,7 @@ func (teo Teonet) ConnectTo(addr string) (err error) {
 
 	// Connect data
 	conIn := ConnectToData{
+		ID:   teo.auth.c.RandomString(35),
 		Addr: addr,
 	}
 	data, _ := conIn.MarshalBinary()
@@ -40,12 +41,12 @@ func (teo Teonet) ConnectToProcess(c *Channel, data []byte) (err error) {
 
 	// Unmarshal data
 	var con ConnectToData
-	con.UnmarshalBinary(data)
+	err = con.UnmarshalBinary(data)
 	if err != nil {
-		teo.log.Println("decode error:", err)
+		teo.log.Println("unmarshal error:", err)
 		return
 	}
-	teo.log.Println("got CmdConnectTo", con.Addr, "from", c)
+	teo.log.Println("got CmdConnectTo", con.Addr, "from", c, "ID:", con.ID)
 
 	// Get channel data and prepare answer data to Client
 	ch, ok := teo.Channel(con.Addr)
@@ -59,11 +60,16 @@ func (teo Teonet) ConnectToProcess(c *Channel, data []byte) (err error) {
 
 	// Prepare data and send request to Peer
 	if len(con.Err) == 0 {
-		var conSer ConnectToData
+		var conPeer ConnectToData
 		// Client address, IPs and port
-		conSer.Addr = c.a
-		conSer.IP = c.c.UDPAddr.IP.String()
-		conSer.Port = uint32(c.c.UDPAddr.Port)
+		conPeer.ID = con.ID
+		conPeer.Addr = c.a
+		conPeer.IP = c.c.UDPAddr.IP.String()
+		conPeer.Port = uint32(c.c.UDPAddr.Port)
+		data, err = conPeer.MarshalBinary()
+		if err != nil {
+			return
+		}
 		// Send request to Peer
 		_, err = teo.Command(byte(2), data).SendAnswer(ch)
 		if err != nil {
@@ -84,8 +90,17 @@ func (teo Teonet) ConnectToProcess(c *Channel, data []byte) (err error) {
 // connectToPeer peer got ConnectTo request from teonet auth (peer prepare to
 // connection from client and send answer to auth server)
 // TODO: send answer to auth server
-func (teo Teonet) connectToPeer(data []byte) {
-	teo.log.Println("got CmdConnectToPeer command, data len:", len(data))
+func (teo Teonet) connectToPeer(data []byte) (err error) {
+	// Unmarshal data
+	var con ConnectToData
+	err = con.UnmarshalBinary(data)
+	if err != nil {
+		teo.log.Println("connectToPeer unmarshal error:", err)
+		return
+	}
+	teo.log.Println("got CmdConnectToPeer command, data len:", len(data), "ID:", con.ID)
+	teo.peerRequests.add(&con)
+	return
 }
 
 // connectToAnswerProcess check ConnectTo answer from auth server, connect to
@@ -96,9 +111,9 @@ func (teo Teonet) connectToAnswerProcess(data []byte) (err error) {
 
 	// Unmarshal data
 	var con ConnectToData
-	con.UnmarshalBinary(data)
+	err = con.UnmarshalBinary(data)
 	if err != nil {
-		teo.log.Println("unmarshal error:", err)
+		teo.log.Println("connectToAnswerProcess unmarshal error:", err)
 		return
 	}
 	teo.log.Println("got CmdConnectTo answer:", con.Addr, con.IP, con.Port,
@@ -118,8 +133,24 @@ func (teo Teonet) connectToAnswerProcess(data []byte) (err error) {
 		return
 	}
 
-	// Send client teonet address to peer
-	c.Send([]byte(teo.config.Address))
+	// Marshal peer connect request
+	var conPeer ConnectToData
+	conPeer.ID = con.ID
+	// conPeer.Addr = teo.config.Address
+	data, err = conPeer.MarshalBinary()
+	if err != nil {
+		teo.log.Println(cantConnectToPeer, err)
+		return
+	}
+
+	// Send client peer connect request to peer
+	_, err = c.Send(data)
+	if err != nil {
+		teo.log.Println(cantConnectToPeer, err)
+		return
+	}
+	// TODO: Send wrong request for testing
+	// _, err = c.Send(data)
 
 	// Add teonet channel
 	channel := teo.channels.new(c)
@@ -133,10 +164,28 @@ func (teo Teonet) connectToAnswerProcess(data []byte) (err error) {
 func (teo Teonet) connectToConnected(c *Channel, p *Packet) (ok bool) {
 	if c.ServerMode() {
 		// z6uer55DZsqvY5pqXHjTD3oDFfsKmkfFJ65
-		if p.ID() == 2 && c.Address() == "" && len(p.Data) == 35 {
-			teo.log.Println("set client connected", c.c)
-			teo.Connected(c, string(p.Data))
-			return
+		if p.ID() == 2 && c.Address() == "" /* && len(p.Data) == 35 */ {
+
+			// Unmarshal data
+			var con ConnectToData
+			err := con.UnmarshalBinary(p.Data)
+			if err != nil {
+				teo.log.Println("connectToConnected unmarshal error:", err)
+				return
+			}
+
+			res, ok := teo.peerRequests.get(con.ID)
+			teo.log.Println("peer request, id:", res.ID, ok, res.Addr, res)
+
+			if ok {
+				teo.log.Println("set client connected", res.Addr, "ID:", con.ID)
+				teo.Connected(c, res.Addr)
+				teo.peerRequests.del(con.ID)
+			} else {
+				teo.channels.del(c)
+				teo.log.Println("wrong request ID:", con.ID)
+			}
+			return true
 		}
 	}
 	return
@@ -145,6 +194,7 @@ func (teo Teonet) connectToConnected(c *Channel, p *Packet) (ok bool) {
 // ConnectToData teonet connect data
 type ConnectToData struct {
 	byteSlice
+	ID   string // Request id
 	Addr string // Peer address
 	IP   string // Peer ip address
 	Port uint32 // Peer port
@@ -154,6 +204,7 @@ type ConnectToData struct {
 func (c ConnectToData) MarshalBinary() (data []byte, err error) {
 	buf := new(bytes.Buffer)
 
+	c.writeSlice(buf, []byte(c.ID))
 	c.writeSlice(buf, []byte(c.Addr))
 	c.writeSlice(buf, []byte(c.IP))
 	err = binary.Write(buf, binary.LittleEndian, c.Port)
@@ -167,6 +218,12 @@ func (c *ConnectToData) UnmarshalBinary(data []byte) (err error) {
 	buf := bytes.NewBuffer(data)
 
 	d, err := c.readSlice(buf)
+	if err != nil {
+		return
+	}
+	c.ID = string(d)
+
+	d, err = c.readSlice(buf)
 	if err != nil {
 		return
 	}
