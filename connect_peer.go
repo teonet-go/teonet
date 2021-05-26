@@ -25,15 +25,22 @@ import (
 func (teo Teonet) ConnectTo(addr string) (err error) {
 	// TODO: check local connection exists
 
+	// Local IDs and port
+	ips, _ := teo.getIPs()
+	port := teo.trudp.Port()
+
 	// Connect data
 	conIn := ConnectToData{
-		ID:   trudp.RandomString(35),
-		Addr: addr,
+		ID:        trudp.RandomString(35),
+		Addr:      addr,
+		LocalIPs:  ips,
+		LocalPort: uint32(port),
 	}
 	data, _ := conIn.MarshalBinary()
+
 	// Send command to teonet
 	teo.Command(CmdConnectTo, data).Send(teo.auth)
-	teo.log.Println("send CmdConnectTo", addr, "(send to teo.auth)")
+	teo.log.Println("send CmdConnectTo", addr, "(send to teo.auth)", ips, port)
 
 	return
 }
@@ -197,11 +204,13 @@ func (teo Teonet) connectToConnected(c *Channel, p *Packet) (ok bool) {
 // ConnectToData teonet connect data
 type ConnectToData struct {
 	byteSlice
-	ID   string // Request id
-	Addr string // Peer address
-	IP   string // Peer ip address
-	Port uint32 // Peer port
-	Err  []byte // Error of connect data processing
+	ID        string   // Request id
+	Addr      string   // Peer address
+	IP        string   // Peer external ip address (sets by teonet auth)
+	Port      uint32   // Peer external port (sets by teonet auth)
+	LocalIPs  []string // List of local IPs (set by client or peer)
+	LocalPort uint32   // Local port (set by client or peer)
+	Err       []byte   // Error of connect data processing
 }
 
 func (c ConnectToData) MarshalBinary() (data []byte, err error) {
@@ -210,7 +219,9 @@ func (c ConnectToData) MarshalBinary() (data []byte, err error) {
 	c.writeSlice(buf, []byte(c.ID))
 	c.writeSlice(buf, []byte(c.Addr))
 	c.writeSlice(buf, []byte(c.IP))
-	err = binary.Write(buf, binary.LittleEndian, c.Port)
+	binary.Write(buf, binary.LittleEndian, c.Port)
+	c.writeStringSlice(buf, c.LocalIPs)
+	binary.Write(buf, binary.LittleEndian, c.LocalPort)
 	c.writeSlice(buf, c.Err)
 
 	data = buf.Bytes()
@@ -218,28 +229,29 @@ func (c ConnectToData) MarshalBinary() (data []byte, err error) {
 }
 
 func (c *ConnectToData) UnmarshalBinary(data []byte) (err error) {
-	buf := bytes.NewBuffer(data)
+	var buf = bytes.NewBuffer(data)
 
-	d, err := c.readSlice(buf)
-	if err != nil {
+	if c.ID, err = c.readString(buf); err != nil {
 		return
 	}
-	c.ID = string(d)
 
-	d, err = c.readSlice(buf)
-	if err != nil {
+	if c.Addr, err = c.readString(buf); err != nil {
 		return
 	}
-	c.Addr = string(d)
 
-	d, err = c.readSlice(buf)
-	if err != nil {
+	if c.IP, err = c.readString(buf); err != nil {
 		return
 	}
-	c.IP = string(d)
 
-	err = binary.Read(buf, binary.LittleEndian, &c.Port)
-	if err != nil {
+	if err = binary.Read(buf, binary.LittleEndian, &c.Port); err != nil {
+		return
+	}
+
+	if c.LocalIPs, err = c.readStringSlice(buf); err != nil {
+		return
+	}
+
+	if err = binary.Read(buf, binary.LittleEndian, &c.LocalPort); err != nil {
 		return
 	}
 

@@ -311,8 +311,7 @@ func (c ConnectData) String() string {
 type byteSlice struct{}
 
 func (b byteSlice) writeSlice(buf *bytes.Buffer, data []byte) (err error) {
-	err = binary.Write(buf, binary.LittleEndian, uint16(len(data)))
-	if err != nil {
+	if err = binary.Write(buf, binary.LittleEndian, uint16(len(data))); err != nil {
 		return
 	}
 	err = binary.Write(buf, binary.LittleEndian, data)
@@ -321,11 +320,47 @@ func (b byteSlice) writeSlice(buf *bytes.Buffer, data []byte) (err error) {
 
 func (b byteSlice) readSlice(buf *bytes.Buffer) (data []byte, err error) {
 	var l uint16
-	err = binary.Read(buf, binary.LittleEndian, &l)
-	if err != nil {
+	if err = binary.Read(buf, binary.LittleEndian, &l); err != nil {
 		return
 	}
 	data = make([]byte, l)
 	err = binary.Read(buf, binary.LittleEndian, data)
+	return
+}
+
+func (b byteSlice) readString(buf *bytes.Buffer) (data string, err error) {
+	d, err := b.readSlice(buf)
+	if err != nil {
+		return
+	}
+	data = string(d)
+	return
+}
+
+func (b byteSlice) writeStringSlice(buf *bytes.Buffer, data []string) (err error) {
+	if err = binary.Write(buf, binary.LittleEndian, uint16(len(data))); err != nil {
+		return
+	}
+	for i := range data {
+		if err = b.writeSlice(buf, []byte(data[i])); err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+func (b byteSlice) readStringSlice(buf *bytes.Buffer) (data []string, err error) {
+	var l uint16
+	if err = binary.Read(buf, binary.LittleEndian, &l); err != nil {
+		return
+	}
+	for i := 0; i < int(l); i++ {
+		var d []byte
+		if d, err = b.readSlice(buf); err != nil {
+			return
+		}
+		data = append(data, string(d))
+	}
 	return
 }
