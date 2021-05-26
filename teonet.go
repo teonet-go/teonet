@@ -103,6 +103,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	// Create new teonet holder
 	teo = new(Teonet)
 	teo.newSubscribers()
+	teo.newPeerRequests()
 	teo.log = log
 
 	// Create config holder and read config
@@ -179,6 +180,7 @@ type Teonet struct {
 	subscribers  *subscribersData
 	channels     *channels
 	auth         *Channel
+	peerRequests *peerRequests
 }
 
 // ShowTrudp show/stop trudp statistic

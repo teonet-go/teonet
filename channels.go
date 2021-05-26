@@ -18,6 +18,7 @@ func (teo *Teonet) newChannels() {
 	teo.channels.m_chan = make(map[*trudp.Channel]*Channel)
 }
 
+// channels holder
 type channels struct {
 	m_addr map[string]*Channel
 	m_chan map[*trudp.Channel]*Channel
