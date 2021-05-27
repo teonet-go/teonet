@@ -43,7 +43,7 @@ func reader(teo *Teonet, c *Channel, p *Packet, err error) {
 	// Check error and 'connect to peer connected' processing
 	if err != nil {
 		teo.channels.del(c)
-	} else if teo.connectToConnected(c, p) {
+	} else if teo.connectToConnectedPeer(c, p) || teo.connectToConnectedClient(c, p) {
 		return
 	}
 
@@ -150,11 +150,14 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 				return
 			}
 			go func(c *trudp.Channel) {
-				time.Sleep(3 * time.Second)
-				_, exists := teo.channels.get(c)
-				if !exists {
+				time.Sleep(trudp.ClientConnectTimeout)
+				ch, exists := teo.channels.get(c)
+				if !exists || ch.IsNew() {
 					teo.log.Println("remove dummy trudp channel:", c)
 					c.ChannelDel(c)
+				} else if ch.IsNew() {
+					teo.log.Println("remove dummy teonet channel:", c)
+					teo.channels.del(ch)
 				}
 			}(c)
 		},
@@ -164,6 +167,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 		return
 	}
 	teo.newChannels()
+	teo.newPuncher()
 	teo.log.Println("start listen at port", teo.trudp.Port())
 
 	if param.showTrudp {
@@ -183,6 +187,7 @@ type Teonet struct {
 	auth         *Channel
 	peerRequests *connectRequests
 	connRequests *connectRequests
+	puncher      *puncher
 }
 
 // ShowTrudp show/stop trudp statistic

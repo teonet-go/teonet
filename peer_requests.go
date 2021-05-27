@@ -7,7 +7,6 @@
 package teonet
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -51,21 +50,21 @@ func (p *connectRequests) add(con *ConnectToData, waits ...*chanWait) {
 	p.Lock()
 	defer p.Unlock()
 	p.m[con.ID] = &connectRequestsData{con, wait, time.Now()}
-	fmt.Println("connect request add, id:", con.ID)
+	// fmt.Println("connect request add, id:", con.ID)
 }
 
 func (p *connectRequests) del(id string) {
 	p.Lock()
 	defer p.Unlock()
 	delete(p.m, id)
-	fmt.Println("connect request del, id:", id)
+	// fmt.Println("connect request del, id:", id)
 }
 
 func (p *connectRequests) get(id string) (res *connectRequestsData, ok bool) {
 	p.RLock()
 	defer p.RUnlock()
 	res, ok = p.m[id]
-	fmt.Println("connect request get, id:", id, ok)
+	// fmt.Println("connect request get, id:", id, ok)
 	return
 }
 
@@ -75,7 +74,7 @@ func (p *connectRequests) removeDummy() {
 		if time.Since(rec.Time) > trudp.ClientConnectTimeout {
 			p.RUnlock()
 			p.del(id)
-			fmt.Println("connect request removed dummy, id:", id)
+			// fmt.Println("connect request removed dummy, id:", id)
 			p.removeDummy()
 			return
 		}

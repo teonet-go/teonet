@@ -1,6 +1,7 @@
 package teonet
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -35,29 +36,36 @@ type channels struct {
 func (c *channels) add(channel *Channel) {
 	// remove existing channel with same address
 	if ch, ok := c.get(channel.a); ok {
-		c.del(ch)
-		// TODO: what is this??? :-)
-		// if ch.c.String() != channel.c.String() {
-		// 	c.trudp.ChannelDel(ch.c)
-		// }
+		// If new channel used the same trudp channel as existing than does not
+		// delete trudp channel. The c.del function delete trudp channel by
+		// default
+		var delTrudp bool
+		if ch.c.String() != channel.c.String() {
+			delTrudp = true
+		}
+		c.del(ch, delTrudp)
 	}
-
-	// add new channel
 	c.Lock()
 	defer c.Unlock()
 	c.m_addr[channel.a] = channel
 	c.m_chan[channel.c] = channel
-	c.teo.log.Println("client connected:", channel.a)
+	c.teo.log.Println("connected:", channel.a)
 }
 
 // del channel
-func (c *channels) del(channel *Channel) {
+func (c *channels) del(channel *Channel, delTrudps ...bool) {
+	var delTrudp = true
+	if len(delTrudps) > 0 {
+		delTrudp = delTrudps[0]
+	}
 	c.Lock()
 	defer c.Unlock()
 	delete(c.m_addr, channel.a)
 	delete(c.m_chan, channel.c)
-	c.trudp.ChannelDel(channel.c)
-	c.teo.log.Println("client disconnec:", channel.a)
+	if delTrudp {
+		c.trudp.ChannelDel(channel.c)
+	}
+	c.teo.log.Println("disconnec:", channel.a)
 }
 
 // get channel by address or by trudp channel
@@ -93,6 +101,10 @@ func (c Channel) ServerMode() bool {
 	return c.c.ServerMode()
 }
 
+func (c Channel) ClientMode() bool {
+	return !c.c.ServerMode()
+}
+
 func (c Channel) Triptime() time.Duration {
 	return c.c.Triptime()
 }
@@ -114,4 +126,8 @@ func (c Channel) String() string {
 
 func (c Channel) Address() string {
 	return c.a
+}
+
+func (c Channel) IsNew() bool {
+	return strings.HasPrefix(c.Address(), newChannelPrefix)
 }

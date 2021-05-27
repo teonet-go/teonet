@@ -10,7 +10,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"strings"
+	"net"
 	"time"
 
 	"github.com/kirill-scherba/trudp"
@@ -45,16 +45,24 @@ func (teo Teonet) ConnectTo(addr string) (err error) {
 
 	chanW := make(chanWait)
 	teo.connRequests.add(&con, &chanW)
+	defer teo.connRequests.del(con.ID)
 
 	// Wait Connect answer data
 	select {
-	case <-chanW:
+	case d := <-chanW:
+		if len(d) > 0 {
+			err = errors.New(string(d))
+			return
+		}
 	case <-time.After(trudp.ClientConnectTimeout):
 		err = ErrTimeout
 		return
 	}
+	// if err != nil {
+	// 	return
+	// }
 
-	teo.log.Println("connected ID:", con.ID)
+	// teo.log.Println("connected ID:", con.ID, "Addr:", con.Addr)
 
 	return
 }
@@ -133,7 +141,13 @@ func (teo Teonet) connectToPeer(data []byte) (err error) {
 	// Send command to teonet
 	teo.Command(CmdConnectToPeer, data).Send(teo.auth)
 
-	// TODO: Send udp ping to received IPs
+	// Punch firewall
+	teo.puncher.punch(con.ID, IPs{
+		LocalIPs:  con.LocalIPs,
+		LocalPort: con.LocalPort,
+		IP:        con.ID,
+		Port:      con.Port,
+	}, func() bool { _, ok := teo.peerRequests.get(con.ID); return !ok })
 
 	return
 }
@@ -188,10 +202,16 @@ func (teo Teonet) connectToAnswerProcess(data []byte) (err error) {
 	}
 	teo.log.Println("got CmdConnectTo answer:", con.Addr, con)
 
-	// Check server error
+	// Check connRequests
+	req, ok := teo.connRequests.get(con.ID)
+	if !ok {
+		teo.log.Println("got CmdConnectTo connection time out")
+		return
+	}
+
+	// Check server error and send it to wait channel
 	if len(con.Err) != 0 {
-		err = errors.New(string(con.Err))
-		teo.log.Println(cantConnectToPeer, err)
+		*req.chanWait <- con.Err
 		return
 	}
 
@@ -204,39 +224,59 @@ func (teo Teonet) connectToAnswerProcess(data []byte) (err error) {
 		return
 	}
 
-	// TDOD: use all adress to Connect to peer
-	c, err := teo.trudp.Connect(con.IP, int(con.Port))
-	if err != nil {
-		teo.log.Println(cantConnectToPeer, err)
+	// connect to peer
+	connect := func(IP string, port uint32) (ok bool, err error) {
+
+		_, ok = teo.connRequests.get(con.ID)
+		// teo.log.Println(">>> connect to", IP, port, "skip:", !ok)
+		if !ok {
+			// err = errors.New("skip(already connected)")
+			return
+		}
+
+		// Connect to peer
+		c, err := teo.trudp.Connect(con.IP, int(con.Port))
+		if err != nil {
+			teo.log.Println(cantConnectToPeer, err)
+			return
+		}
+
+		// Send client peer connect request to peer
+		_, err = c.Send(data)
+		if err != nil {
+			teo.log.Println(cantConnectToPeer, err)
+			return
+		}
+
 		return
 	}
 
-	// Send client peer connect request to peer
-	_, err = c.Send(data)
-	if err != nil {
-		teo.log.Println(cantConnectToPeer, err)
-		return
-	}
+	// Punch firewall
+	teo.puncher.punch(con.ID, IPs{
+		LocalIPs:  []string{}, // con.LocalIPs, // empty list of local address
+		LocalPort: con.LocalPort,
+		IP:        con.ID,
+		Port:      con.Port,
+	}, func() bool { _, ok := teo.connRequests.get(con.ID); return !ok })
 
-	// Add teonet channel
-	channel := teo.channels.new(c)
-	teo.Connected(channel, con.Addr)
+	waitCh := make(chan *net.UDPAddr)
+	teo.puncher.subscribe(con.ID, &PuncherData{&waitCh})
 
-	// Send to wait channel
-	if req, ok := teo.connRequests.get(con.ID); ok {
-		*req.chanWait <- nil
-	}
+	// TODO: add timeout here
+	addr := <-waitCh
+
+	connect(addr.IP.String(), uint32(addr.Port))
 
 	return
 }
 
-// connectToConnected check received message and set connected client address
-// (peer processed)
-func (teo Teonet) connectToConnected(c *Channel, p *Packet) (ok bool) {
+// connectToConnectedPeer check received message from client, set connected client
+// address and send answer (peer processed)
+func (teo Teonet) connectToConnectedPeer(c *Channel, p *Packet) (ok bool) {
 	if c.ServerMode() {
 		// Teonet address example:    z6uer55DZsqvY5pqXHjTD3oDFfsKmkfFJ65
 		// Teonet new(not connected): new-r55DZsqvY5pqXHjTD3oDFfsKmkfFJ65
-		if p.ID() == 2 && strings.HasPrefix(c.Address(), newChannelPrefix) {
+		if p.ID() == 2 && c.IsNew() {
 
 			// Unmarshal data
 			var con ConnectToData
@@ -247,15 +287,50 @@ func (teo Teonet) connectToConnected(c *Channel, p *Packet) (ok bool) {
 			}
 
 			res, ok := teo.peerRequests.get(con.ID)
-			teo.log.Println("peer request, id:", res.ID, ok, "addr:", res.Addr, "from:", c)
 			if ok {
+				teo.log.Println("peer request, id:", res.ID, ok, "addr:", res.Addr, "from:", c)
+
 				teo.log.Println("set client connected", res.Addr, "ID:", con.ID)
 				teo.Connected(c, res.Addr)
 				teo.peerRequests.del(con.ID)
+				c.SendAnswer(p.Data)
 			} else {
 				teo.channels.del(c)
 				teo.log.Println("wrong request ID:", con.ID)
 			}
+			return true
+		}
+	}
+	return
+}
+
+// connectToConnectedClient check received message and set connected peer
+// address (client processed)
+func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
+	if c.ClientMode() {
+		// Teonet address example:    z6uer55DZsqvY5pqXHjTD3oDFfsKmkfFJ65
+		// Teonet new(not connected): new-r55DZsqvY5pqXHjTD3oDFfsKmkfFJ65
+		if p.ID() == 1 && c.IsNew() {
+
+			// Unmarshal data
+			var con ConnectToData
+			err := con.UnmarshalBinary(p.Data)
+			if err != nil {
+				teo.log.Println("connectToConnectedClient unmarshal error:", err)
+				return
+			}
+
+			req, ok := teo.connRequests.get(con.ID)
+			if ok {
+				teo.log.Println("got connectToConnectedClient, id:", req.ID, ok, "addr:", req.Addr, "from:", c)
+				// teo.log.Println("set server connected", req.Addr, "ID:", con.ID)
+				teo.Connected(c, req.Addr)
+				*req.chanWait <- nil
+			} else {
+				teo.channels.del(c)
+				teo.log.Println("wrong request ID:", con.ID)
+			}
+
 			return true
 		}
 	}
