@@ -11,6 +11,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/kirill-scherba/trudp"
 )
@@ -41,6 +42,19 @@ func (teo Teonet) ConnectTo(addr string) (err error) {
 	// Send command to teonet
 	teo.Command(CmdConnectTo, data).Send(teo.auth)
 	teo.log.Println("send CmdConnectTo", con.Addr, "ID:", con.ID)
+
+	chanW := make(chanWait)
+	teo.connRequests.add(&con, &chanW)
+
+	// Wait Connect answer data
+	select {
+	case <-chanW:
+	case <-time.After(trudp.ClientConnectTimeout):
+		err = ErrTimeout
+		return
+	}
+
+	teo.log.Println("connected ID:", con.ID)
 
 	return
 }
@@ -207,6 +221,11 @@ func (teo Teonet) connectToAnswerProcess(data []byte) (err error) {
 	// Add teonet channel
 	channel := teo.channels.new(c)
 	teo.Connected(channel, con.Addr)
+
+	// Send to wait channel
+	if req, ok := teo.connRequests.get(con.ID); ok {
+		*req.chanWait <- nil
+	}
 
 	return
 }

@@ -22,7 +22,7 @@ const Version = "0.0.1"
 func Logo(title, ver string) {
 	fmt.Println("" +
 		" _____                     _   \n" +
-		"|_   _|__  ___  _ __   ___| |_ \n" +
+		"|_   _|__  ___  _ __   ___| |_  v4\n" +
 		"  | |/ _ \\/ _ \\| '_ \\ / _ \\ __|\n" +
 		"  | |  __/ (_) | | | |  __/ |_ \n" +
 		"  |_|\\___|\\___/|_| |_|\\___|\\__|\n" +
@@ -104,6 +104,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	teo = new(Teonet)
 	teo.newSubscribers()
 	teo.newPeerRequests()
+	teo.newConnRequests()
 	teo.log = log
 
 	// Create config holder and read config
@@ -180,7 +181,8 @@ type Teonet struct {
 	subscribers  *subscribersData
 	channels     *channels
 	auth         *Channel
-	peerRequests *peerRequests
+	peerRequests *connectRequests
+	connRequests *connectRequests
 }
 
 // ShowTrudp show/stop trudp statistic

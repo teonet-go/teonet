@@ -77,7 +77,11 @@ func main() {
 
 	// Connect to Peer (selected in send-to application flag)
 	if params.sendTo != "" {
-		teo.ConnectTo(params.sendTo)
+		err := teo.ConnectTo(params.sendTo)
+		if err != nil {
+			teolog.Println("can't connect to Peer, error:", err)
+			select {}
+		}
 	}
 
 	// Send to Peer

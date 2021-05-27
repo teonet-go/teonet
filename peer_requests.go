@@ -15,51 +15,67 @@ import (
 )
 
 func (teo *Teonet) newPeerRequests() {
-	teo.peerRequests = new(peerRequests)
-	teo.peerRequests.m = make(map[string]*peerRequestsData)
-	go teo.peerRequests.process()
+	teo.peerRequests = teo.newConnectRequests()
 }
 
-// peerRequests holder
-type peerRequests struct {
-	m map[string]*peerRequestsData
+func (teo *Teonet) newConnRequests() {
+	teo.connRequests = teo.newConnectRequests()
+}
+
+func (teo Teonet) newConnectRequests() *connectRequests {
+	c := new(connectRequests)
+	c.m = make(map[string]*connectRequestsData)
+	go c.process()
+	return c
+}
+
+// connectRequests holder
+type connectRequests struct {
+	m map[string]*connectRequestsData
 	sync.RWMutex
 }
 
-type peerRequestsData struct {
+type connectRequestsData struct {
 	*ConnectToData
+	*chanWait
 	time.Time
 }
 
-func (p *peerRequests) add(con *ConnectToData) {
+type chanWait chan []byte
+
+func (p *connectRequests) add(con *ConnectToData, waits ...*chanWait) {
+	var wait *chanWait
+	if len(waits) > 0 {
+		wait = waits[0]
+	}
 	p.Lock()
 	defer p.Unlock()
-	p.m[con.ID] = &peerRequestsData{con, time.Now()}
-	fmt.Println("peer request add, id:", con.ID)
+	p.m[con.ID] = &connectRequestsData{con, wait, time.Now()}
+	fmt.Println("connect request add, id:", con.ID)
 }
 
-func (p *peerRequests) del(id string) {
+func (p *connectRequests) del(id string) {
 	p.Lock()
 	defer p.Unlock()
 	delete(p.m, id)
-	fmt.Println("peer request del, id:", id)
+	fmt.Println("connect request del, id:", id)
 }
 
-func (p *peerRequests) get(id string) (res *peerRequestsData, ok bool) {
+func (p *connectRequests) get(id string) (res *connectRequestsData, ok bool) {
 	p.RLock()
 	defer p.RUnlock()
 	res, ok = p.m[id]
-	fmt.Println("peer request get, id:", id, ok)
+	fmt.Println("connect request get, id:", id, ok)
 	return
 }
 
-func (p *peerRequests) removeDummy() {
+func (p *connectRequests) removeDummy() {
 	p.RLock()
 	for id, rec := range p.m {
 		if time.Since(rec.Time) > trudp.ClientConnectTimeout {
 			p.RUnlock()
 			p.del(id)
-			fmt.Println("peer request removed dummy, id:", id)
+			fmt.Println("connect request removed dummy, id:", id)
 			p.removeDummy()
 			return
 		}
@@ -67,7 +83,7 @@ func (p *peerRequests) removeDummy() {
 	p.RUnlock()
 }
 
-func (p *peerRequests) process() {
+func (p *connectRequests) process() {
 	for {
 		time.Sleep(trudp.ClientConnectTimeout)
 		p.removeDummy()
