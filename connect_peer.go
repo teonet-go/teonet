@@ -30,17 +30,17 @@ func (teo Teonet) ConnectTo(addr string) (err error) {
 	port := teo.trudp.Port()
 
 	// Connect data
-	conIn := ConnectToData{
+	con := ConnectToData{
 		ID:        trudp.RandomString(35),
 		Addr:      addr,
 		LocalIPs:  ips,
 		LocalPort: uint32(port),
 	}
-	data, _ := conIn.MarshalBinary()
+	data, _ := con.MarshalBinary()
 
 	// Send command to teonet
 	teo.Command(CmdConnectTo, data).Send(teo.auth)
-	teo.log.Println("send CmdConnectTo", addr, "(send to teo.auth)", ips, port)
+	teo.log.Println("send CmdConnectTo", con.Addr, "ID:", con.ID)
 
 	return
 }
@@ -56,51 +56,43 @@ func (teo Teonet) ConnectToProcess(c *Channel, data []byte) (err error) {
 		teo.log.Println("unmarshal error:", err)
 		return
 	}
-	teo.log.Println("got CmdConnectTo", con.Addr, "from", c, "ID:", con.ID)
+	teo.log.Println("got CmdConnectTo", con.Addr, "ID:", con.ID, "from", c)
 
 	// Get channel data and prepare answer data to Client
 	ch, ok := teo.Channel(con.Addr)
-	if ok {
-		// Server IPs and port
-		con.IP = ch.c.UDPAddr.IP.String()
-		con.Port = uint32(ch.c.UDPAddr.Port)
-	} else {
+	if !ok {
 		con.Err = []byte("address not connected")
+		data, err = con.MarshalBinary()
+		if err != nil {
+			return
+		}
+		_, err = teo.Command(CmdConnectTo, data).SendAnswer(c)
+		return
 	}
 
 	// Prepare data and send request to Peer
-	if len(con.Err) == 0 {
-		var conPeer ConnectToData
-		// Client address, IPs and port
-		conPeer.ID = con.ID
-		conPeer.Addr = c.a
-		conPeer.IP = c.c.UDPAddr.IP.String()
-		conPeer.Port = uint32(c.c.UDPAddr.Port)
-		data, err = conPeer.MarshalBinary()
-		if err != nil {
-			return
-		}
-		// Send request to Peer
-		_, err = teo.Command(byte(2), data).SendAnswer(ch)
-		if err != nil {
-			return
-		}
-	}
-
-	// Send answer to Client
-	data, err = con.MarshalBinary()
+	// Client address, external IP and port, local IPs and port
+	var conPeer ConnectToData
+	conPeer.ID = con.ID
+	conPeer.Addr = c.a
+	conPeer.IP = c.c.UDPAddr.IP.String()
+	conPeer.Port = uint32(c.c.UDPAddr.Port)
+	conPeer.LocalIPs = con.LocalIPs
+	conPeer.LocalPort = con.LocalPort
+	data, err = conPeer.MarshalBinary()
 	if err != nil {
 		return
 	}
-	_, err = teo.Command(CmdConnectTo, data).SendAnswer(c)
+	// Send request to Peer
+	_, err = teo.Command(CmdConnectToPeer, data).SendAnswer(ch)
 
 	return
 }
 
 // connectToPeer peer got ConnectTo request from teonet auth (peer prepare to
-// connection from client and send answer to auth server)
-// TODO: send answer to auth server
+// connect from client and send answer with it IPs to auth server)
 func (teo Teonet) connectToPeer(data []byte) (err error) {
+
 	// Unmarshal data
 	var con ConnectToData
 	err = con.UnmarshalBinary(data)
@@ -108,8 +100,62 @@ func (teo Teonet) connectToPeer(data []byte) (err error) {
 		teo.log.Println("connectToPeer unmarshal error:", err)
 		return
 	}
-	teo.log.Println("got CmdConnectToPeer command, data len:", len(data), "ID:", con.ID)
+	teo.log.Println("got CmdConnectToPeer command", con.Addr, "ID:", con.ID, con)
 	teo.peerRequests.add(&con)
+
+	// Local IDs and port
+	ips, _ := teo.getIPs()
+	port := teo.trudp.Port()
+
+	// Prepare answer
+	conPeer := ConnectToData{
+		ID:        con.ID,
+		Addr:      con.Addr,
+		LocalIPs:  ips,
+		LocalPort: uint32(port),
+	}
+	data, _ = conPeer.MarshalBinary()
+
+	// Send command to teonet
+	teo.Command(CmdConnectToPeer, data).Send(teo.auth)
+
+	// TODO: Send udp ping to received IPs
+
+	return
+}
+
+// ConnectToPeerAnswer got connection data from peer and resend it to client
+// (auth server receive connection data from client)
+func (teo Teonet) ConnectToPeerAnswer(c *Channel, data []byte) (err error) {
+
+	// Unmarshal data
+	var con ConnectToData
+	err = con.UnmarshalBinary(data)
+	if err != nil {
+		teo.log.Println("unmarshal error:", err)
+		return
+	}
+	teo.log.Println("got CmdConnectToPeer answer", con.Addr, "from", c, "ID:", con.ID)
+
+	// Get channel to send answer data to Client
+	ch, ok := teo.Channel(con.Addr)
+	if !ok {
+		err = errors.New("address not connected")
+		return
+	}
+
+	// Set client Address and peers External IP and Port
+	con.Addr = c.a
+	con.IP = c.c.UDPAddr.IP.String()
+	con.Port = uint32(c.c.UDPAddr.Port)
+	data, err = con.MarshalBinary()
+	if err != nil {
+		return
+	}
+
+	// Send answer(err) to Client
+	_, err = teo.Command(CmdConnectTo, data).SendAnswer(ch)
+
 	return
 }
 
@@ -126,8 +172,7 @@ func (teo Teonet) connectToAnswerProcess(data []byte) (err error) {
 		teo.log.Println("connectToAnswerProcess unmarshal error:", err)
 		return
 	}
-	teo.log.Println("got CmdConnectTo answer:", con.Addr, con.IP, con.Port,
-		string(con.Err))
+	teo.log.Println("got CmdConnectTo answer:", con.Addr, con)
 
 	// Check server error
 	if len(con.Err) != 0 {
@@ -136,18 +181,17 @@ func (teo Teonet) connectToAnswerProcess(data []byte) (err error) {
 		return
 	}
 
-	// Connect to peer
-	c, err := teo.trudp.Connect(con.IP, int(con.Port))
+	// Marshal peer connect request
+	var conPeer ConnectToData
+	conPeer.ID = con.ID
+	data, err = conPeer.MarshalBinary()
 	if err != nil {
 		teo.log.Println(cantConnectToPeer, err)
 		return
 	}
 
-	// Marshal peer connect request
-	var conPeer ConnectToData
-	conPeer.ID = con.ID
-	// conPeer.Addr = teo.config.Address
-	data, err = conPeer.MarshalBinary()
+	// TDOD: use all adress to Connect to peer
+	c, err := teo.trudp.Connect(con.IP, int(con.Port))
 	if err != nil {
 		teo.log.Println(cantConnectToPeer, err)
 		return
@@ -159,8 +203,6 @@ func (teo Teonet) connectToAnswerProcess(data []byte) (err error) {
 		teo.log.Println(cantConnectToPeer, err)
 		return
 	}
-	// TODO: Send wrong request for testing
-	// _, err = c.Send(data)
 
 	// Add teonet channel
 	channel := teo.channels.new(c)

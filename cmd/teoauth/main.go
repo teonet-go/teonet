@@ -32,14 +32,17 @@ func reader(teo *teonet.Teonet, c *teonet.Channel, p *teonet.Packet, err error) 
 		cmd := teo.Command(p.Data)
 		switch teonet.AuthCmd(cmd.Cmd) {
 		case teonet.CmdConnect:
-			err := teo.ConnectProcess(c, cmd.Data)
-			if err != nil {
+			if err := teo.ConnectProcess(c, cmd.Data); err != nil {
 				teolog.Println("connect process error:", err)
 				return true
 			}
 		case teonet.CmdConnectTo:
-			err := teo.ConnectToProcess(c, cmd.Data)
-			if err != nil {
+			if err := teo.ConnectToProcess(c, cmd.Data); err != nil {
+				teolog.Println("connect to process error:", err)
+				return true
+			}
+		case teonet.CmdConnectToPeer:
+			if err := teo.ConnectToPeerAnswer(c, cmd.Data); err != nil {
 				teolog.Println("connect to process error:", err)
 				return true
 			}
