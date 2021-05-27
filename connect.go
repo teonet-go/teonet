@@ -54,7 +54,7 @@ func (teo *Teonet) Connect(auth ...string) (err error) {
 	//
 
 	// Connect to trudp auth node
-	ch, err := teo.trudp.Connect("localhost", 8000)
+	ch, err := teo.trudp.Connect("192.168.101.168", 8000)
 	if err != nil {
 		return
 	}
@@ -212,9 +212,11 @@ func (teo Teonet) ConnectProcess(c *Channel, data []byte) (err error) {
 	if len(con.ServerKey) == 0 {
 		con.ServerKey = teo.GetPublicKey()
 	} else if !reflect.DeepEqual(con.ServerKey, teo.GetPublicKey()) {
-		con.Err = []byte(ErrIncorrectServerKey.Error())
-		err = sendAnswer()
-		return
+		// TODO: if server key requerid
+		// con.Err = []byte(ErrIncorrectServerKey.Error())
+		// err = sendAnswer()
+		// return
+		con.ServerKey = teo.GetPublicKey()
 	}
 
 	// Set server Address
