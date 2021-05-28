@@ -147,7 +147,9 @@ func (teo Teonet) connectToPeer(data []byte) (err error) {
 		LocalPort: con.LocalPort,
 		IP:        con.ID,
 		Port:      con.Port,
-	}, func() bool { _, ok := teo.peerRequests.get(con.ID); return !ok })
+	}, func() bool { _, ok := teo.peerRequests.get(con.ID); return !ok },
+	/* 100*time.Millisecond, */
+	)
 
 	return
 }
@@ -226,17 +228,17 @@ func (teo Teonet) connectToAnswerProcess(data []byte) (err error) {
 	data = append([]byte(newConnectionPrefix), data...)
 
 	// connect to peer
-	connect := func(IP string, port uint32) (ok bool, err error) {
+	connect := func(ip string, port uint32) (ok bool, err error) {
 
 		_, ok = teo.connRequests.get(con.ID)
-		// teo.log.Println(">>> connect to", IP, port, "skip:", !ok)
+		// teo.log.Println(">>> connect to", ip, port, "skip:", !ok)
 		if !ok {
 			// err = errors.New("skip(already connected)")
 			return
 		}
 
 		// Connect to peer
-		c, err := teo.trudp.Connect(con.IP, int(con.Port))
+		c, err := teo.trudp.Connect(ip, int(port))
 		if err != nil {
 			teo.log.Println(cantConnectToPeer, err)
 			return

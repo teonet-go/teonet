@@ -131,8 +131,11 @@ func (p *puncher) send(key string, ips IPs) (err error) {
 }
 
 // Punch client ip:ports (send udp packets to received IPs)
-func (p *puncher) punch(key string, ips IPs, stop func() bool) {
+func (p *puncher) punch(key string, ips IPs, stop func() bool, delays ...time.Duration) {
 	go func() {
+		if len(delays) > 0 {
+			time.Sleep(delays[0])
+		}
 		for i := 0; i < 5; i++ {
 			if stop() {
 				break

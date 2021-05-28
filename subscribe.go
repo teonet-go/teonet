@@ -1,17 +1,30 @@
 package teonet
 
 import (
+	"errors"
+
 	"github.com/kirill-scherba/trudp"
 )
 
-// unsubscribe from channel data
-func (teo Teonet) unsubscribe(s *subscribeData) {
-	teo.subscribers.del(s)
+// Subscribe to receive packets from address
+func (teo Teonet) Subscribe(address string, reader Treceivecb) (res *subscribeData, err error) {
+	c, ok := teo.channels.get(address)
+	if !ok {
+		err = errors.New("address does not connected")
+		return
+	}
+	teo.subscribe(c, reader)
+	return
 }
 
 // subscribe to channel data
 func (teo Teonet) subscribe(c *Channel, reader Treceivecb) *subscribeData {
 	return teo.subscribers.add(c, reader)
+}
+
+// unsubscribe from channel data
+func (teo Teonet) unsubscribe(s *subscribeData) {
+	teo.subscribers.del(s)
 }
 
 type subscribeData struct {

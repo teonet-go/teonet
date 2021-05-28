@@ -48,15 +48,17 @@ func main() {
 		showTrudp   bool
 		showPrivate bool
 		sendTo      string
+		logLevel    string
 	}
 	flag.StringVar(&params.appShort, "app-short", appShort, "application short name")
 	flag.BoolVar(&params.showTrudp, "u", false, "show trudp statistic")
 	flag.BoolVar(&params.showPrivate, "show-private", false, "show private key")
 	flag.StringVar(&params.sendTo, "send-to", "", "send messages to address")
+	flag.StringVar(&params.logLevel, "log-level", "NONE", "log level")
 	flag.Parse()
 
 	// Start teonet client
-	teo, err := teonet.New(params.appShort, 0, reader, teolog, "NONE", params.showTrudp)
+	teo, err := teonet.New(params.appShort, 0, reader, teolog, "NONE", params.showTrudp, params.logLevel)
 	if err != nil {
 		teolog.Println("can't init Teonet, error:", err)
 		return
@@ -82,6 +84,12 @@ func main() {
 			teolog.Println("can't connect to Peer, error:", err)
 		}
 	}
+
+	// Subscribe
+	// TODO: unsubscribe if disconnected
+	// teo.Subscribe(params.sendTo, func(teo *teonet.Teonet, c *teonet.Channel, p *teonet.Packet, err error) bool {
+	// 	return true
+	// })
 
 	// Send to Peer
 	if params.sendTo != "" {
