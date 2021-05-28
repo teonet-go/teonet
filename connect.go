@@ -33,6 +33,7 @@ const (
 	CmdConnectToPeer
 )
 
+// AuthCmd auth command type
 type AuthCmd byte
 
 // Connet errors
@@ -174,73 +175,6 @@ func (teo *Teonet) Connect(auth ...string) (err error) {
 	teo.log.Printf("teonet address: %s\n", conOut.Address)
 
 	teo.Connected(teo.auth, string(conOut.ServerAddress))
-
-	return
-}
-
-// ConnectProcess check connection to teonet and send answer to client (auth
-// server receive connection data from client)
-func (teo Teonet) ConnectProcess(c *Channel, data []byte) (err error) {
-	// Unmarshal data
-	var con ConnectData
-	con.UnmarshalBinary(data)
-	if err != nil {
-		teo.log.Println("decode error:", err)
-		return
-	}
-	// teo.log.Printf("decoded ConnectData: %s\n", con)
-
-	sendAnswer := func() (err error) {
-		// Encode
-		data, err = con.MarshalBinary()
-		if err != nil {
-			teo.log.Println("marshal error:", err)
-			return
-		}
-
-		// Send snswer
-		// cmd := teo.Command(CmdConnect, data)
-		// _, err = c.c.SendAnswer(cmd.Bytes())
-		_, err = teo.Command(CmdConnect, data).SendAnswer(c)
-		if err != nil {
-			teo.log.Println("send answer error:", err)
-		}
-		return
-	}
-
-	// Check server key and set it if empty
-	if len(con.ServerKey) == 0 {
-		con.ServerKey = teo.GetPublicKey()
-	} else if !reflect.DeepEqual(con.ServerKey, teo.GetPublicKey()) {
-		// TODO: if server key requerid
-		// con.Err = []byte(ErrIncorrectServerKey.Error())
-		// err = sendAnswer()
-		// return
-		con.ServerKey = teo.GetPublicKey()
-	}
-
-	// Set server Address
-	con.ServerAddress = []byte(teo.GetAddress())
-
-	// TODO: check client Address
-	if len(con.Address) == 0 {
-		var addr string
-		addr, err = teo.MakeAddress(con.PubliKey)
-		if err != nil {
-			teo.log.Println("make client address error:", err)
-			return
-		}
-		con.Address = []byte(addr)
-	}
-
-	err = sendAnswer()
-	if err != nil {
-		return
-	}
-
-	// Add to clients map
-	teo.Connected(c, string(con.Address))
-	// teo.log.Println("client connected:", string(con.Address))
 
 	return
 }

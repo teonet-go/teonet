@@ -84,7 +84,7 @@ func (c *channels) get(attr interface{}) (ch *Channel, exists bool) {
 }
 
 // new create new teonet channel
-func (c *channels) new( /* address string,  */ channel *trudp.Channel) *Channel {
+func (c *channels) new(channel *trudp.Channel) *Channel {
 	address := newChannelPrefix + trudp.RandomString(addressLen-len(newChannelPrefix))
 	return &Channel{address, channel}
 }
@@ -128,6 +128,10 @@ func (c Channel) String() string {
 
 func (c Channel) Address() string {
 	return c.a
+}
+
+func (c Channel) Channel() *trudp.Channel {
+	return c.c
 }
 
 func (c Channel) IsNew() bool {

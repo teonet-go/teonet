@@ -87,6 +87,10 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 		// case Treceivecb:
 		case func(teo *Teonet, c *Channel, p *Packet, err error) bool:
 			param.reader = d
+		case func(c *Channel, p *Packet, err error) bool:
+			param.reader = func(t *Teonet, c *Channel, p *Packet, err error) bool {
+				return d(c, p, err)
+			}
 		default:
 			err = fmt.Errorf("wrong attribute type %T", d)
 			return
@@ -203,4 +207,9 @@ func (teo Teonet) SendTo(addr string, data []byte) (id uint32, err error) {
 		return
 	}
 	return c.Send(data)
+}
+
+// Log get teonet log
+func (teo Teonet) Log() *log.Logger {
+	return teo.log
 }

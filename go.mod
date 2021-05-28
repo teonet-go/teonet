@@ -1,6 +1,6 @@
 module github.com/kirill-scherba/teonet
 
-replace github.com/kirill-scherba/trudp => /home/kirill/go/src/github.com/kirill-scherba/trudp
+replace github.com/kirill-scherba/trudp => ../trudp
 
 go 1.16
 
