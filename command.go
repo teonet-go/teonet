@@ -13,20 +13,19 @@ import (
 var ErrCommandTooShort = errors.New("command packet too short")
 
 func (teo *Teonet) Command(attr ...interface{}) (cmd *Command) {
+
+	cmd = &Command{teo: teo}
 	switch len(attr) {
 	case 1:
-		cmd = new(Command)
 		cmd.UnmarshalBinary(attr[0].([]byte))
 	case 2:
-		cmd = new(Command)
-		// comand
+		// command
 		switch c := attr[0].(type) {
 		case AuthCmd:
 			cmd.Cmd = byte(c)
 		default:
 			cmd.Cmd = c.(byte)
 		}
-		// cmd.Cmd = byte(attr[0].(AuthCmd))
 		// data
 		switch d := attr[1].(type) {
 		case []byte:
@@ -37,14 +36,13 @@ func (teo *Teonet) Command(attr ...interface{}) (cmd *Command) {
 			panic("wrong data attribute")
 		}
 	}
-	// cmd.teo = teo
 	return
 }
 
 type Command struct {
 	Cmd  byte
 	Data []byte
-	// teo  *Teonet
+	teo  *Teonet
 }
 
 func (c Command) Bytes() (data []byte) {
@@ -53,13 +51,15 @@ func (c Command) Bytes() (data []byte) {
 }
 
 func (c Command) Send(channel *Channel) (id uint32, err error) {
-	// return c.teo.trudp.Send(channel.c, c.Bytes())
 	return channel.Send(c.Bytes())
 }
 
 func (c Command) SendAnswer(channel *Channel) (id uint32, err error) {
-	// return c.teo.trudp.SendAnswer(channel.c, c.Bytes())
 	return channel.SendAnswer(c.Bytes())
+}
+
+func (c Command) SendTo(addr string) (id uint32, err error) {
+	return c.teo.SendTo(addr, c.Bytes())
 }
 
 func (c Command) MarshalBinary() (data []byte, err error) {

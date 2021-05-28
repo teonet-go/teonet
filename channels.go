@@ -1,6 +1,7 @@
 package teonet
 
 import (
+	"bytes"
 	"strings"
 	"sync"
 	"time"
@@ -9,8 +10,9 @@ import (
 )
 
 const (
-	newChannelPrefix = "new-"
-	addressLen       = 35
+	newChannelPrefix    = "new-"
+	newConnectionPrefix = "conn-"
+	addressLen          = 35
 )
 
 func (teo *Teonet) newChannels() {
@@ -130,4 +132,8 @@ func (c Channel) Address() string {
 
 func (c Channel) IsNew() bool {
 	return strings.HasPrefix(c.Address(), newChannelPrefix)
+}
+
+func (c Channel) IsConn(data []byte) bool {
+	return bytes.HasPrefix(data, []byte(newConnectionPrefix))
 }

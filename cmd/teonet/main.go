@@ -80,7 +80,6 @@ func main() {
 		err := teo.ConnectTo(params.sendTo)
 		if err != nil {
 			teolog.Println("can't connect to Peer, error:", err)
-			select {}
 		}
 	}
 
@@ -91,6 +90,10 @@ func main() {
 			_, err = teo.SendTo(params.sendTo, []byte("Hello world!"))
 			if err != nil {
 				teolog.Println(err)
+				teo.ConnectTo(params.sendTo)
+				if err != nil {
+					teolog.Println("can't connect to Peer, error:", err)
+				}
 				continue
 			}
 			teolog.Println("send message to", params.sendTo)

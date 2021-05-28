@@ -182,7 +182,7 @@ type Teonet struct {
 	trudp        *trudp.Trudp
 	log          *log.Logger
 	clientReader Treceivecb
-	subscribers  *subscribersData
+	subscribers  *subscribers
 	channels     *channels
 	auth         *Channel
 	peerRequests *connectRequests

@@ -24,18 +24,18 @@ type Packet struct{ *trudp.Packet }
 
 // newSubscribers create new subscribers (subscribersData)
 func (teo *Teonet) newSubscribers() {
-	teo.subscribers = new(subscribersData)
+	teo.subscribers = new(subscribers)
 }
 
-type subscribersData []*subscribeData
+type subscribers []*subscribeData
 
-func (s *subscribersData) add(channel *Channel, reader Treceivecb) (res *subscribeData) {
+func (s *subscribers) add(channel *Channel, reader Treceivecb) (res *subscribeData) {
 	res = &subscribeData{channel, reader}
 	*s = append(*s, res)
 	return
 }
 
-func (s subscribersData) del(subs *subscribeData) {
+func (s subscribers) del(subs *subscribeData) {
 	for i := range s {
 		if s[i] == subs {
 			s[i] = nil
@@ -44,7 +44,7 @@ func (s subscribersData) del(subs *subscribeData) {
 }
 
 // send teonet packet to subscribers and return true if message processed
-func (s subscribersData) send(teo *Teonet, c *Channel, p *Packet, err error) bool {
+func (s subscribers) send(teo *Teonet, c *Channel, p *Packet, err error) bool {
 	for i := range s {
 		if s[i] == nil {
 			continue

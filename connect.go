@@ -54,7 +54,7 @@ func (teo *Teonet) Connect(auth ...string) (err error) {
 	//
 
 	// Connect to trudp auth node
-	ch, err := teo.trudp.Connect("192.168.101.168", 8000)
+	ch, err := teo.trudp.Connect("localhost", 8000)
 	if err != nil {
 		return
 	}
