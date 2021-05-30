@@ -127,7 +127,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 
 	// Init trudp and start listen port to get messages
 	teo.addClientReader(param.reader)
-	teo.SetApiReader(param.api)
+	teo.setApiReader(param.api)
 	teo.trudp, err = trudp.Init(param.port, teo.config.trudpPrivateKey, teo.log, param.logLevel,
 
 		// Receive data callback
@@ -202,6 +202,8 @@ type Teonet struct {
 	connRequests  *connectRequests
 	puncher       *puncher
 }
+
+type Treceivecb func(teo *Teonet, c *Channel, p *Packet, err error) bool
 
 // addReader add teonet client reader
 func (teo *Teonet) addClientReader(reader Treceivecb) {

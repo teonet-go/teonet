@@ -67,6 +67,7 @@ func (c *channels) del(channel *Channel, delTrudps ...bool) {
 	if delTrudp {
 		c.trudp.ChannelDel(channel.c)
 	}
+	c.teo.subscribers.del(c)
 	c.teo.log.Println("disconnec:", channel.a)
 }
 

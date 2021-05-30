@@ -2,8 +2,6 @@ package teonet
 
 import (
 	"errors"
-
-	"github.com/kirill-scherba/trudp"
 )
 
 // Subscribe to receive packets from address
@@ -32,42 +30,6 @@ type subscribeData struct {
 	reader  Treceivecb
 }
 
-type Treceivecb func(teo *Teonet, c *Channel, p *Packet, err error) bool
-
-// Packet is teonet Packet
-type Packet struct {
-	*trudp.Packet
-	from        string
-	commandMode bool
-}
-
-func (p Packet) From() string {
-	return p.from
-}
-
-func (p Packet) Cmd() byte {
-	if p.commandMode {
-		return p.Packet.Data[0]
-	}
-	return 0
-}
-
-func (p Packet) Data() []byte {
-	if p.commandMode {
-		return p.Packet.Data[1:]
-	}
-	return p.Packet.Data
-}
-
-func (p Packet) RemoveTrailingZero(data []byte) []byte {
-	return data
-}
-
-func (p *Packet) SetCommandMode() *Packet {
-	p.commandMode = true
-	return p
-}
-
 // newSubscribers create new subscribers (subscribersData)
 func (teo *Teonet) newSubscribers() {
 	teo.subscribers = new(subscribers)
@@ -81,10 +43,23 @@ func (s *subscribers) add(channel *Channel, reader Treceivecb) (res *subscribeDa
 	return
 }
 
-func (s subscribers) del(subs *subscribeData) {
-	for i := range s {
-		if s[i] == subs {
-			s[i] = nil
+// delete from subscribers by subscribeData or by channel (by channel remove
+// all subscibers to channel)
+func (s subscribers) del(subs interface{}) {
+
+	switch v := subs.(type) {
+	case *subscribeData:
+		for i := range s {
+			if s[i] == v {
+				s[i] = nil
+			}
+		}
+
+	case *Channel:
+		for i := range s {
+			if s[i].channel == v {
+				s[i] = nil
+			}
 		}
 	}
 }

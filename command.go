@@ -123,15 +123,15 @@ type ApiInterface interface {
 	ProcessPacket(p interface{})
 }
 
-// SetApiReader sets teonet reader. This reader process received API commands
-func (teo *Teonet) SetApiReader(api ApiInterface) {
+// setApiReader sets teonet reader. This reader process received API commands
+func (teo *Teonet) setApiReader(api ApiInterface) {
 	if api == nil {
 		return
 	}
 	teo.addClientReader(func(teo *Teonet, c *Channel, p *Packet, err error) (ret bool) {
 		// Process API commands
 		if err == nil {
-			api.ProcessPacket(p.SetCommandMode())
+			api.ProcessPacket(p.setCommandMode())
 		}
 		return
 	})
