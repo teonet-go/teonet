@@ -92,6 +92,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 		// case Treceivecb:
 		case func(teo *Teonet, c *Channel, p *Packet, err error) bool:
 			param.reader = d
+		// case TreceivecbShort:
 		case func(c *Channel, p *Packet, err error) bool:
 			param.reader = func(t *Teonet, c *Channel, p *Packet, err error) bool {
 				return d(c, p, err)
@@ -204,6 +205,7 @@ type Teonet struct {
 }
 
 type Treceivecb func(teo *Teonet, c *Channel, p *Packet, err error) bool
+type TreceivecbShort func(c *Channel, p *Packet, err error) bool
 
 // addReader add teonet client reader
 func (teo *Teonet) addClientReader(reader Treceivecb) {

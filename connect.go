@@ -17,6 +17,10 @@ import (
 	"github.com/kirill-scherba/trudp"
 )
 
+const (
+	teonetReconnectAfter = 1 * time.Second
+)
+
 // Teoauth commands
 const (
 	// CmdConnect send <cmd byte, data ConnectData> to teonet auth server to
@@ -80,7 +84,7 @@ func (teo *Teonet) Connect(auth ...string) (err error) {
 					if err == nil {
 						break
 					}
-					time.Sleep(1 * time.Second)
+					time.Sleep(teonetReconnectAfter)
 				}
 			}()
 			return true

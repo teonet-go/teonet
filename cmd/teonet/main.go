@@ -14,9 +14,7 @@ const (
 	appVersion = "0.0.1"
 )
 
-var teolog = teonet.Log()
-
-// reader receive and process messages
+// reader main application reade receive and process messages
 func reader(teo *teonet.Teonet, c *teonet.Channel, p *teonet.Packet, err error) bool {
 	// Check errors
 	if err != nil {
@@ -25,8 +23,9 @@ func reader(teo *teonet.Teonet, c *teonet.Channel, p *teonet.Packet, err error) 
 	}
 
 	// Print received message
-	teolog.Printf("got from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n",
-		c, p.Data(), len(p.Data()), p.ID(), float64(c.Triptime().Microseconds())/1000.0,
+	teo.Log().Printf("got from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n",
+		c, p.Data(), len(p.Data()), p.ID(),
+		float64(c.Triptime().Microseconds())/1000.0,
 	)
 
 	// Send answer in server mode
@@ -34,6 +33,7 @@ func reader(teo *teonet.Teonet, c *teonet.Channel, p *teonet.Packet, err error) 
 		answer := []byte("Teonet answer to " + string(p.Data()))
 		c.SendAnswer(answer)
 	}
+
 	return true
 }
 
@@ -58,38 +58,48 @@ func main() {
 	flag.Parse()
 
 	// Start teonet client
-	teo, err := teonet.New(params.appShort, 0, reader, teolog, "NONE", params.showTrudp, params.logLevel)
+	teo, err := teonet.New(params.appShort, 0, reader, teonet.Log(), "NONE", params.showTrudp, params.logLevel)
 	if err != nil {
-		teolog.Println("can't init Teonet, error:", err)
+		teo.Log().Println("can't init Teonet, error:", err)
 		return
 	}
 
 	// Show this application private key
 	if params.showPrivate {
-		teolog.Printf("%x\n", teo.GetPrivateKey())
+		teo.Log().Printf("%x\n", teo.GetPrivateKey())
 		os.Exit(0)
 	}
 
 	// Connect to teonet
 	err = teo.Connect()
 	if err != nil {
-		teolog.Println("can't connect to Teonet, error:", err)
+		teo.Log().Println("can't connect to Teonet, error:", err)
 		return
 	}
 
-	// Connect to Peer (selected in send-to application flag)
+	// Connect to Peer (selected in send-to application flag) and receive
+	// packets in own reader
 	if params.sendTo != "" {
-		err := teo.ConnectTo(params.sendTo)
+		err := teo.ConnectTo(params.sendTo,
+			// Receive and process packets from this channel(address). Return
+			// true if packet processed. If return false package will processed
+			// by other readers include main application reader (just comment
+			// 'processed = true' line and you'll see two 'got from ...' message)
+			func(c *teonet.Channel, p *teonet.Packet, err error) (processed bool) {
+				if err == nil {
+					// Print received message
+					teo.Log().Printf("got(r) from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n",
+						c, p.Data(), len(p.Data()), p.ID(), float64(c.Triptime().Microseconds())/1000.0,
+					)
+					processed = true
+				}
+				return
+			},
+		)
 		if err != nil {
-			teolog.Println("can't connect to Peer, error:", err)
+			teo.Log().Println("can't connect to Peer, error:", err)
 		}
 	}
-
-	// Subscribe
-	// TODO: unsubscribe if disconnected
-	// teo.Subscribe(params.sendTo, func(teo *teonet.Teonet, c *teonet.Channel, p *teonet.Packet, err error) bool {
-	// 	return true
-	// })
 
 	// Send to Peer
 	if params.sendTo != "" {
@@ -97,16 +107,12 @@ func main() {
 			time.Sleep(5 * time.Second)
 			_, err = teo.SendTo(params.sendTo, []byte("Hello world!"))
 			if err != nil {
-				teolog.Println(err)
-				teo.ConnectTo(params.sendTo)
-				if err != nil {
-					teolog.Println("can't connect to Peer, error:", err)
-				}
+				teo.Log().Println(err)
 				continue
 			}
-			teolog.Println("send message to", params.sendTo)
+			teo.Log().Println("send message to", params.sendTo)
 		}
 	}
 
-	select {} // sleep forever in server mode
+	select {} // sleep forever
 }

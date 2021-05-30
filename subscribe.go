@@ -4,8 +4,9 @@ import (
 	"errors"
 )
 
-// Subscribe to receive packets from address
-func (teo Teonet) Subscribe(address string, reader Treceivecb) (res *subscribeData, err error) {
+// Subscribe to receive packets from address. The reader attribute may be
+// teonet.Treceivecb or teonet.TreceivecbShort type
+func (teo Teonet) Subscribe(address string, reader interface{}) (res *subscribeData, err error) {
 	c, ok := teo.channels.get(address)
 	if !ok {
 		err = errors.New("address does not connected")
@@ -16,7 +17,20 @@ func (teo Teonet) Subscribe(address string, reader Treceivecb) (res *subscribeDa
 }
 
 // subscribe to channel data
-func (teo Teonet) subscribe(c *Channel, reader Treceivecb) *subscribeData {
+func (teo Teonet) subscribe(c *Channel, readerI interface{}) *subscribeData {
+	var reader Treceivecb
+	switch v := readerI.(type) {
+	// case Treceivecb:
+	case func(teo *Teonet, c *Channel, p *Packet, err error) bool:
+		reader = v
+	// case TreceivecbShort:
+	case func(c *Channel, p *Packet, err error) bool:
+		reader = func(teo *Teonet, c *Channel, p *Packet, err error) bool {
+			return v(c, p, err)
+		}
+	default:
+		teo.Log().Panicf("wrong attribute type %T", v)
+	}
 	return teo.subscribers.add(c, reader)
 }
 

@@ -16,6 +16,10 @@ import (
 	"github.com/kirill-scherba/trudp"
 )
 
+const (
+	peerReconnectAfter = 1 * time.Second
+)
+
 // ConnectTo connect to any teonet Peer(client or server) by address (client
 // sent request to teonet auth server):
 // Client call ConnectTo wich send request to teonet auth server and wait
@@ -23,7 +27,7 @@ import (
 // infor to Peer and send answer to client (connectToAnswerProcess func called
 // on client side when answer received) -> Client connect to Peer and send
 // clients teonet address to it, Peer check it in connectToConnected func
-func (teo Teonet) ConnectTo(addr string) (err error) {
+func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	// TODO: check local connection exists
 
 	// Local IDs and port
@@ -58,11 +62,28 @@ func (teo Teonet) ConnectTo(addr string) (err error) {
 		err = ErrTimeout
 		return
 	}
-	// if err != nil {
-	// 	return
-	// }
 
-	// teo.log.Println("connected ID:", con.ID, "Addr:", con.Addr)
+	// Connected, make auto reconnect
+	teo.Subscribe(addr, func(teo *Teonet, c *Channel, p *Packet, err error) (ret bool) {
+		if err != nil {
+			go func() {
+				teo.Log().Println("reconnect:", c.Address())
+				for {
+					err := teo.ConnectTo(addr, readers...)
+					if err == nil {
+						break
+					}
+					time.Sleep(peerReconnectAfter)
+				}
+			}()
+		}
+		return
+	})
+
+	// Subscribe to channel
+	for i := range readers {
+		teo.Subscribe(addr, readers[i])
+	}
 
 	return
 }
