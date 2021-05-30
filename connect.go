@@ -87,7 +87,7 @@ func (teo *Teonet) Connect(auth ...string) (err error) {
 		}
 
 		// Commands from teonet server processing
-		cmd := teo.Command(p.Data)
+		cmd := teo.Command(p.Data())
 		switch AuthCmd(cmd.Cmd) {
 
 		// Client got answer to cmdConnect(connect to teonet server)

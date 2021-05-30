@@ -33,7 +33,40 @@ type subscribeData struct {
 }
 
 type Treceivecb func(teo *Teonet, c *Channel, p *Packet, err error) bool
-type Packet struct{ *trudp.Packet }
+
+// Packet is teonet Packet
+type Packet struct {
+	*trudp.Packet
+	from        string
+	commandMode bool
+}
+
+func (p Packet) From() string {
+	return p.from
+}
+
+func (p Packet) Cmd() byte {
+	if p.commandMode {
+		return p.Packet.Data[0]
+	}
+	return 0
+}
+
+func (p Packet) Data() []byte {
+	if p.commandMode {
+		return p.Packet.Data[1:]
+	}
+	return p.Packet.Data
+}
+
+func (p Packet) RemoveTrailingZero(data []byte) []byte {
+	return data
+}
+
+func (p *Packet) SetCommandMode() *Packet {
+	p.commandMode = true
+	return p
+}
 
 // newSubscribers create new subscribers (subscribersData)
 func (teo *Teonet) newSubscribers() {

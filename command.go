@@ -75,3 +75,75 @@ func (c *Command) UnmarshalBinary(data []byte) (err error) {
 	c.Data = data[1:]
 	return
 }
+
+// NewCommandInterface create teonet client with command interfeice commected
+func NewCommandInterface(appName string, attr ...interface{}) (teo *TeonetCommand, err error) {
+	t, err := New(appName, attr...)
+	if err != nil {
+		return
+	}
+	teo = commandInterface(t)
+	return
+}
+
+// CommandInterface get teonet command interface
+// func (t *Teonet) CommandInterface() (teo *TeonetCommand) {
+// 	teo = commandInterface(t)
+// 	return
+// }
+
+// commandInterface get teonet command interface
+func commandInterface(t *Teonet) (teo *TeonetCommand) {
+	teo = &TeonetCommand{t, t.newWaitFrom()}
+	teo.addClientReader(func(t *Teonet, c *Channel, p *Packet, err error) (ret bool) {
+		return teo.readerCommand(c, p, err)
+	})
+	return
+}
+
+// TeonetCommand is teonet command interface
+type TeonetCommand struct {
+	*Teonet
+	wcom *waitCommand
+}
+
+// readerCommand is Main teonet reader running in teonet command interface mode.
+// This reader process received waitFrom commands
+func (teo *TeonetCommand) readerCommand(c *Channel, p *Packet, err error) (ret bool) {
+	// Process waitFrom packets
+	if err == nil {
+		if teo.wcom.check(p) > 0 {
+			return true
+		}
+	}
+	return
+}
+
+type ApiInterface interface {
+	ProcessPacket(p interface{})
+}
+
+// SetApiReader sets teonet reader. This reader process received API commands
+func (teo *Teonet) SetApiReader(api ApiInterface) {
+	if api == nil {
+		return
+	}
+	teo.addClientReader(func(teo *Teonet, c *Channel, p *Packet, err error) (ret bool) {
+		// Process API commands
+		if err == nil {
+			api.ProcessPacket(p.SetCommandMode())
+		}
+		return
+	})
+}
+
+func (teo TeonetCommand) SendAnswer(i interface{}, cmd byte, data []byte) (n int, err error) {
+	pac := i.(*Packet)
+	return teo.SendTo(pac.From(), cmd, data)
+}
+
+func (teo TeonetCommand) SendTo(addr string, cmd byte, data []byte) (n int, err error) {
+	id, err := teo.Command(cmd, data).SendTo(addr)
+	n = int(id)
+	return
+}

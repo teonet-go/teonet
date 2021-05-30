@@ -26,12 +26,12 @@ func reader(teo *teonet.Teonet, c *teonet.Channel, p *teonet.Packet, err error) 
 
 	// Print received message
 	teolog.Printf("got from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n",
-		c, p.Data, len(p.Data), p.ID(), float64(c.Triptime().Microseconds())/1000.0,
+		c, p.Data(), len(p.Data()), p.ID(), float64(c.Triptime().Microseconds())/1000.0,
 	)
 
 	// Send answer in server mode
 	if c.ServerMode() {
-		answer := []byte("Teonet answer to " + string(p.Data))
+		answer := []byte("Teonet answer to " + string(p.Data()))
 		c.SendAnswer(answer)
 	}
 	return true

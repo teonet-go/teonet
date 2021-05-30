@@ -52,9 +52,13 @@ func reader(teo *Teonet, c *Channel, p *Packet, err error) {
 		return
 	}
 
-	// Send to client reader (to reader from teonet.Init)
-	if teo.clientReader != nil {
-		teo.clientReader(teo, c, p, err)
+	// Send to client readers (to reader from teonet.Init)
+	for i := range teo.clientReaders {
+		if teo.clientReaders[i] != nil {
+			if teo.clientReaders[i](teo, c, p, err) {
+				break
+			}
+		}
 	}
 }
 
@@ -73,6 +77,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 		logLevel  string
 		log       *log.Logger
 		reader    Treceivecb
+		api       ApiInterface
 	}
 	for i := range attr {
 		switch d := attr[i].(type) {
@@ -91,6 +96,9 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 			param.reader = func(t *Teonet, c *Channel, p *Packet, err error) bool {
 				return d(c, p, err)
 			}
+		case ApiInterface:
+			fmt.Println("set api")
+			param.api = d
 		default:
 			err = fmt.Errorf("wrong attribute type %T", d)
 			return
@@ -118,7 +126,8 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	}
 
 	// Init trudp and start listen port to get messages
-	teo.clientReader = param.reader
+	teo.addClientReader(param.reader)
+	teo.SetApiReader(param.api)
 	teo.trudp, err = trudp.Init(param.port, teo.config.trudpPrivateKey, teo.log, param.logLevel,
 
 		// Receive data callback
@@ -138,7 +147,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 			// }
 			var pac *Packet
 			if p != nil {
-				pac = &Packet{p} // &Packet{p.Header, p.Data}
+				pac = &Packet{p, ch.a, false}
 			}
 			reader(teo, ch, pac, err)
 		},
@@ -182,16 +191,21 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 }
 
 type Teonet struct {
-	config       *config
-	trudp        *trudp.Trudp
-	log          *log.Logger
-	clientReader Treceivecb
-	subscribers  *subscribers
-	channels     *channels
-	auth         *Channel
-	peerRequests *connectRequests
-	connRequests *connectRequests
-	puncher      *puncher
+	config        *config
+	trudp         *trudp.Trudp
+	log           *log.Logger
+	clientReaders []Treceivecb
+	subscribers   *subscribers
+	channels      *channels
+	auth          *Channel
+	peerRequests  *connectRequests
+	connRequests  *connectRequests
+	puncher       *puncher
+}
+
+// addReader add teonet client reader
+func (teo *Teonet) addClientReader(reader Treceivecb) {
+	teo.clientReaders = append(teo.clientReaders, reader)
 }
 
 // ShowTrudp show/stop trudp statistic
