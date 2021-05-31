@@ -16,7 +16,7 @@ import (
 	"github.com/kirill-scherba/trudp"
 )
 
-const Version = "0.0.1"
+const Version = "0.0.3"
 
 // Logo print teonet logo
 func Logo(title, ver string) {

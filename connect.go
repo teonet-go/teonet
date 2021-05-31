@@ -191,7 +191,7 @@ func (teo Teonet) Connected(c *Channel, addr string) {
 
 // ConnectData teonet connect data
 type ConnectData struct {
-	byteSlice
+	ByteSlice
 	PubliKey      []byte // Client public key (generated from private key)
 	Address       []byte // Client address (received after connect if empty)
 	ServerKey     []byte // Server public key (send if exists or received in connect if empty)
@@ -202,11 +202,11 @@ type ConnectData struct {
 func (c ConnectData) MarshalBinary() (data []byte, err error) {
 	buf := new(bytes.Buffer)
 
-	c.writeSlice(buf, c.PubliKey)
-	c.writeSlice(buf, c.Address)
-	c.writeSlice(buf, c.ServerKey)
-	c.writeSlice(buf, c.ServerAddress)
-	c.writeSlice(buf, c.Err)
+	c.WriteSlice(buf, c.PubliKey)
+	c.WriteSlice(buf, c.Address)
+	c.WriteSlice(buf, c.ServerKey)
+	c.WriteSlice(buf, c.ServerAddress)
+	c.WriteSlice(buf, c.Err)
 
 	data = buf.Bytes()
 	return
@@ -216,23 +216,23 @@ func (c *ConnectData) UnmarshalBinary(data []byte) (err error) {
 
 	buf := bytes.NewBuffer(data)
 
-	c.PubliKey, err = c.readSlice(buf)
+	c.PubliKey, err = c.ReadSlice(buf)
 	if err != nil {
 		return
 	}
-	c.Address, err = c.readSlice(buf)
+	c.Address, err = c.ReadSlice(buf)
 	if err != nil {
 		return
 	}
-	c.ServerKey, err = c.readSlice(buf)
+	c.ServerKey, err = c.ReadSlice(buf)
 	if err != nil {
 		return
 	}
-	c.ServerAddress, err = c.readSlice(buf)
+	c.ServerAddress, err = c.ReadSlice(buf)
 	if err != nil {
 		return
 	}
-	c.Err, err = c.readSlice(buf)
+	c.Err, err = c.ReadSlice(buf)
 
 	return
 }
@@ -248,9 +248,9 @@ func (c ConnectData) String() string {
 	)
 }
 
-type byteSlice struct{}
+type ByteSlice struct{}
 
-func (b byteSlice) writeSlice(buf *bytes.Buffer, data []byte) (err error) {
+func (b ByteSlice) WriteSlice(buf *bytes.Buffer, data []byte) (err error) {
 	if err = binary.Write(buf, binary.LittleEndian, uint16(len(data))); err != nil {
 		return
 	}
@@ -258,7 +258,7 @@ func (b byteSlice) writeSlice(buf *bytes.Buffer, data []byte) (err error) {
 	return
 }
 
-func (b byteSlice) readSlice(buf *bytes.Buffer) (data []byte, err error) {
+func (b ByteSlice) ReadSlice(buf *bytes.Buffer) (data []byte, err error) {
 	var l uint16
 	if err = binary.Read(buf, binary.LittleEndian, &l); err != nil {
 		return
@@ -268,8 +268,8 @@ func (b byteSlice) readSlice(buf *bytes.Buffer) (data []byte, err error) {
 	return
 }
 
-func (b byteSlice) readString(buf *bytes.Buffer) (data string, err error) {
-	d, err := b.readSlice(buf)
+func (b ByteSlice) ReadString(buf *bytes.Buffer) (data string, err error) {
+	d, err := b.ReadSlice(buf)
 	if err != nil {
 		return
 	}
@@ -277,12 +277,12 @@ func (b byteSlice) readString(buf *bytes.Buffer) (data string, err error) {
 	return
 }
 
-func (b byteSlice) writeStringSlice(buf *bytes.Buffer, data []string) (err error) {
+func (b ByteSlice) WriteStringSlice(buf *bytes.Buffer, data []string) (err error) {
 	if err = binary.Write(buf, binary.LittleEndian, uint16(len(data))); err != nil {
 		return
 	}
 	for i := range data {
-		if err = b.writeSlice(buf, []byte(data[i])); err != nil {
+		if err = b.WriteSlice(buf, []byte(data[i])); err != nil {
 			return
 		}
 	}
@@ -290,14 +290,14 @@ func (b byteSlice) writeStringSlice(buf *bytes.Buffer, data []string) (err error
 	return
 }
 
-func (b byteSlice) readStringSlice(buf *bytes.Buffer) (data []string, err error) {
+func (b ByteSlice) ReadStringSlice(buf *bytes.Buffer) (data []string, err error) {
 	var l uint16
 	if err = binary.Read(buf, binary.LittleEndian, &l); err != nil {
 		return
 	}
 	for i := 0; i < int(l); i++ {
 		var d []byte
-		if d, err = b.readSlice(buf); err != nil {
+		if d, err = b.ReadSlice(buf); err != nil {
 			return
 		}
 		data = append(data, string(d))
