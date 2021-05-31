@@ -122,7 +122,7 @@ func (teo Teonet) connectToPeer(data []byte) (err error) {
 	teo.puncher.punch(con.ID, IPs{
 		LocalIPs:  con.LocalIPs,
 		LocalPort: con.LocalPort,
-		IP:        con.ID,
+		IP:        con.IP,
 		Port:      con.Port,
 	}, func() bool { _, ok := teo.peerRequests.get(con.ID); return !ok },
 	/* 100*time.Millisecond, */
@@ -200,7 +200,7 @@ func (teo Teonet) connectToAnswerProcess(data []byte) (err error) {
 	teo.puncher.punch(con.ID, IPs{
 		LocalIPs:  []string{}, // con.LocalIPs, // empty list of local address
 		LocalPort: con.LocalPort,
-		IP:        con.ID,
+		IP:        con.IP,
 		Port:      con.Port,
 	}, func() bool { _, ok := teo.connRequests.get(con.ID); return !ok })
 
@@ -283,7 +283,7 @@ func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
 
 // ConnectToData teonet connect data
 type ConnectToData struct {
-	byteSlice
+	ByteSlice
 	ID        string   // Request id
 	Addr      string   // Peer address
 	IP        string   // Peer external ip address (sets by teonet auth)
@@ -296,13 +296,13 @@ type ConnectToData struct {
 func (c ConnectToData) MarshalBinary() (data []byte, err error) {
 	buf := new(bytes.Buffer)
 
-	c.writeSlice(buf, []byte(c.ID))
-	c.writeSlice(buf, []byte(c.Addr))
-	c.writeSlice(buf, []byte(c.IP))
+	c.WriteSlice(buf, []byte(c.ID))
+	c.WriteSlice(buf, []byte(c.Addr))
+	c.WriteSlice(buf, []byte(c.IP))
 	binary.Write(buf, binary.LittleEndian, c.Port)
-	c.writeStringSlice(buf, c.LocalIPs)
+	c.WriteStringSlice(buf, c.LocalIPs)
 	binary.Write(buf, binary.LittleEndian, c.LocalPort)
-	c.writeSlice(buf, c.Err)
+	c.WriteSlice(buf, c.Err)
 
 	data = buf.Bytes()
 	return
@@ -311,15 +311,15 @@ func (c ConnectToData) MarshalBinary() (data []byte, err error) {
 func (c *ConnectToData) UnmarshalBinary(data []byte) (err error) {
 	var buf = bytes.NewBuffer(data)
 
-	if c.ID, err = c.readString(buf); err != nil {
+	if c.ID, err = c.ReadString(buf); err != nil {
 		return
 	}
 
-	if c.Addr, err = c.readString(buf); err != nil {
+	if c.Addr, err = c.ReadString(buf); err != nil {
 		return
 	}
 
-	if c.IP, err = c.readString(buf); err != nil {
+	if c.IP, err = c.ReadString(buf); err != nil {
 		return
 	}
 
@@ -327,7 +327,7 @@ func (c *ConnectToData) UnmarshalBinary(data []byte) (err error) {
 		return
 	}
 
-	if c.LocalIPs, err = c.readStringSlice(buf); err != nil {
+	if c.LocalIPs, err = c.ReadStringSlice(buf); err != nil {
 		return
 	}
 
@@ -335,7 +335,7 @@ func (c *ConnectToData) UnmarshalBinary(data []byte) (err error) {
 		return
 	}
 
-	c.Err, err = c.readSlice(buf)
+	c.Err, err = c.ReadSlice(buf)
 
 	return
 }
