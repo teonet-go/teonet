@@ -11,7 +11,7 @@ import (
 const (
 	appName    = "Teonet sample application"
 	appShort   = "teonet"
-	appVersion = "0.0.6"
+	appVersion = "0.0.7"
 )
 
 // reader main application reade receive and process messages
@@ -23,7 +23,7 @@ func reader(teo *teonet.Teonet, c *teonet.Channel, p *teonet.Packet, err error) 
 	}
 
 	// Print received message
-	teo.Log().Printf("got from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n",
+	teo.Log().Printf("got from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n\n",
 		c, p.Data(), len(p.Data()), p.ID(),
 		float64(c.Triptime().Microseconds())/1000.0,
 	)
