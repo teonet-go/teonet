@@ -48,6 +48,7 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	// teo.log.Println("send CmdConnectTo", con.Addr, "ID:", con.ID)
 
 	chanW := make(chanWait)
+	defer close(chanW)
 	teo.connRequests.add(&con, &chanW)
 	defer teo.connRequests.del(con.ID)
 
@@ -157,7 +158,16 @@ func (teo Teonet) connectToAnswerProcess(data []byte) (err error) {
 
 	// Check server error and send it to wait channel
 	if len(con.Err) != 0 {
-		*req.chanWait <- con.Err
+		// Check wait channel
+		ok := true
+		select {
+		case _, ok = <-*req.chanWait:
+		default:
+		}
+		// Send to wait channel
+		if ok {
+			*req.chanWait <- con.Err
+		}
 		return
 	}
 
@@ -271,7 +281,16 @@ func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
 				// teo.log.Println("got connectToConnectedClient, id:", req.ID, ok, "addr:", req.Addr, "from:", c)
 				// teo.log.Println("set server connected", req.Addr, "ID:", con.ID)
 				teo.Connected(c, req.Addr)
-				*req.chanWait <- nil
+				// Check wait channel
+				ok := true
+				select {
+				case _, ok = <-*req.chanWait:
+				default:
+				}
+				// Send to wait channel
+				if ok {
+					*req.chanWait <- nil
+				}
 			} else {
 				teo.channels.del(c)
 				teo.log.Println("wrong request ID:", con.ID)
