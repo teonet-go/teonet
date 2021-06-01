@@ -8,7 +8,6 @@ package teonet
 
 import (
 	"bytes"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"reflect"
@@ -45,21 +44,62 @@ var ErrIncorrectServerKey = errors.New("incorrect server key received")
 var ErrIncorrectPublicKey = errors.New("incorrect public key received")
 var ErrTimeout = errors.New("timeout")
 
+type ConnectIpPort struct {
+	IP   string
+	Port int
+}
+
+func (c *ConnectIpPort) getAddrFromHTTP(url string) (err error) {
+	n, err := Nodes(url)
+	if err != nil {
+		// log.Fatalf("can't get nodes from %s, error: %s\n", url, err)
+		return
+	}
+	if len(n.address) == 0 {
+		err = errors.New("empty list of nodes returned")
+		return
+	}
+	fmt.Println(n)
+	// TODO: get i from random
+	i := 0
+	c.IP = n.address[i].IP
+	c.Port = int(n.address[i].Port)
+	return
+}
+
 // Connect to errors
 
 // Connect to teonet (client send request to teonet auth server):
 // Client call Connect (and wait answer inside Connect function) -> Server call
 // ConnectProcess -> Client got answer (inside Connect function) and set teonet
 // Connected (create teonet channel)
-func (teo *Teonet) Connect(auth ...string) (err error) {
+func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 	teo.log.Println("connect to teonet")
+
+	// Set default address if attr ommited
+	if len(attr) == 0 {
+		attr = append(attr, "http://teonet.kekalan.cloud:10000/auth")
+	}
+
+	var con = ConnectIpPort{"95.217.18.68", 8000}
+	for i := range attr {
+		switch v := attr[i].(type) {
+		case ConnectIpPort:
+			con = v
+		case string:
+			err = con.getAddrFromHTTP(v)
+			if err != nil {
+				return
+			}
+		}
+	}
 
 	// TODO: Connect to auth https server and get auth ip:port to connect to
 	//
 
 	// Connect to trudp auth node
-	ch, err := teo.trudp.Connect( /* "localhost" */ "95.217.18.68", 8000)
+	ch, err := teo.trudp.Connect(con.IP, con.Port)
 	if err != nil {
 		return
 	}
@@ -80,7 +120,7 @@ func (teo *Teonet) Connect(auth ...string) (err error) {
 			// Reconnect
 			go func() {
 				for {
-					err := teo.Connect(auth...)
+					err := teo.Connect(attr...)
 					if err == nil {
 						break
 					}
@@ -191,7 +231,7 @@ func (teo Teonet) Connected(c *Channel, addr string) {
 
 // ConnectData teonet connect data
 type ConnectData struct {
-	ByteSlice
+	byteSlice
 	PubliKey      []byte // Client public key (generated from private key)
 	Address       []byte // Client address (received after connect if empty)
 	ServerKey     []byte // Server public key (send if exists or received in connect if empty)
@@ -246,61 +286,4 @@ func (c ConnectData) String() string {
 		c.ServerAddress,
 		c.Err,
 	)
-}
-
-type ByteSlice struct{}
-
-func (b ByteSlice) WriteSlice(buf *bytes.Buffer, data []byte) (err error) {
-	if err = binary.Write(buf, binary.LittleEndian, uint16(len(data))); err != nil {
-		return
-	}
-	err = binary.Write(buf, binary.LittleEndian, data)
-	return
-}
-
-func (b ByteSlice) ReadSlice(buf *bytes.Buffer) (data []byte, err error) {
-	var l uint16
-	if err = binary.Read(buf, binary.LittleEndian, &l); err != nil {
-		return
-	}
-	data = make([]byte, l)
-	err = binary.Read(buf, binary.LittleEndian, data)
-	return
-}
-
-func (b ByteSlice) ReadString(buf *bytes.Buffer) (data string, err error) {
-	d, err := b.ReadSlice(buf)
-	if err != nil {
-		return
-	}
-	data = string(d)
-	return
-}
-
-func (b ByteSlice) WriteStringSlice(buf *bytes.Buffer, data []string) (err error) {
-	if err = binary.Write(buf, binary.LittleEndian, uint16(len(data))); err != nil {
-		return
-	}
-	for i := range data {
-		if err = b.WriteSlice(buf, []byte(data[i])); err != nil {
-			return
-		}
-	}
-
-	return
-}
-
-func (b ByteSlice) ReadStringSlice(buf *bytes.Buffer) (data []string, err error) {
-	var l uint16
-	if err = binary.Read(buf, binary.LittleEndian, &l); err != nil {
-		return
-	}
-	for i := 0; i < int(l); i++ {
-		var d []byte
-		if d, err = b.ReadSlice(buf); err != nil {
-			return
-		}
-		data = append(data, string(d))
-	}
-	return
 }

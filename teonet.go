@@ -27,7 +27,7 @@ func Logo(title, ver string) {
 		"  | |  __/ (_) | | | |  __/ |_ \n" +
 		"  |_|\\___|\\___/|_| |_|\\___|\\__|\n" +
 		"\n" +
-		title + " ver " + ver + ", based on teonet ver " + Version +
+		title + " ver " + ver + ", based on Teonet v4 ver " + Version +
 		"\n",
 	)
 }
@@ -182,7 +182,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	}
 	teo.newChannels()
 	teo.newPuncher()
-	teo.log.Println("start listen at port", teo.trudp.Port())
+	teo.log.Println("start listen teonet at port", teo.trudp.Port())
 
 	if param.showTrudp {
 		teo.ShowTrudp(true)

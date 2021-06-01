@@ -6,13 +6,13 @@
 #
 # Build:
 #
-#  docker build -t teoauth .
+#  docker build -t teonet .
 #
 # Publish to github:
 #
 #  docker login docker.pkg.github.com -u USERNAME -p TOKEN
-#  docker tag teoauth docker.pkg.github.com/kirill-scherba/teoauth/teoauth:0.0.1
-#  docker push docker.pkg.github.com/kirill-scherba/teoauth/teoauth:0.0.1
+#  docker tag teonet docker.pkg.github.com/kirill-scherba/teonet/teonet:0.0.4
+#  docker push docker.pkg.github.com/kirill-scherba/teonet/teonet:0.0.4
 #
 # Publish to local repository:
 #
@@ -21,7 +21,7 @@
 #
 # Run docker container:
 #
-#  docker run --rm -it teoauth
+#  docker run --rm -it teonet
 #
 # Run in swarm claster:
 #
@@ -38,15 +38,15 @@
 #
 # temporary wail this repos is private use next command to build image:
 #
-#   docker build -t teoauth -f ./Dockerfile ../.
+#   docker build -t teonet -f ./Dockerfile ../.
 #
-# it recomendet use host network when run teoauth  
+# it recomendet use host network when run teonet  
 #
-#   docker tag teonet docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.2
-#   docker push docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.2
-#   docker run --restart always -it --name teonet --network host docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.1 teonet -u
+#   docker tag teonet docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.4
+#   docker push docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.4
+#   docker run --restart always -it --name teonet --network host docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.4 teonet -u
 #
-#   docker run --rm -it --name teonet-v4 -v $HOME/.config/teonet:/root/.config/teonet docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.1 teonet -u -app-short teonet-v4-1 -send-to dBTgSEHoZ3XXsOqjSkOTINMARqGxHaXIDxl
+#   docker run --rm -it --name teonet-v4 -v $HOME/.config/teonet:/root/.config/teonet docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.4 teonet -u -app-short teonet-v4-1 -send-to dBTgSEHoZ3XXsOqjSkOTINMARqGxHaXIDxl
 #
 #
 

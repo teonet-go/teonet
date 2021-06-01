@@ -84,6 +84,33 @@ func (c *channels) get(attr interface{}) (ch *Channel, exists bool) {
 	return
 }
 
+// list get list of channels IPs in nodes struct
+func (c *channels) list() (n *nodes) {
+	c.RLock()
+	defer c.RUnlock()
+
+	n = new(nodes)
+	for _, v := range c.m_addr {
+		n.address = append(n.address, NodeAddr{
+			v.Channel().UDPAddr.IP.String(),
+			uint32(v.Channel().UDPAddr.Port),
+		})
+	}
+	return
+}
+
+// Nodes get list of channels IPs in nodes struct
+func (teo Teonet) Nodes(attr ...NodeAddr) (n *nodes) {
+	if len(attr) == 0 {
+		return teo.channels.list()
+	}
+	n = new(nodes)
+	for i := range attr {
+		n.address = append(n.address, attr[i])
+	}
+	return
+}
+
 // new create new teonet channel
 func (c *channels) new(channel *trudp.Channel) *Channel {
 	address := newChannelPrefix + trudp.RandomString(addressLen-len(newChannelPrefix))

@@ -283,7 +283,7 @@ func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
 
 // ConnectToData teonet connect data
 type ConnectToData struct {
-	ByteSlice
+	byteSlice
 	ID        string   // Request id
 	Addr      string   // Peer address
 	IP        string   // Peer external ip address (sets by teonet auth)

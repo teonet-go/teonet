@@ -17,14 +17,21 @@ func (teo *Teonet) Command(attr ...interface{}) (cmd *Command) {
 	cmd = &Command{teo: teo}
 	switch len(attr) {
 	case 1:
-		cmd.UnmarshalBinary(attr[0].([]byte))
+		switch c := attr[0].(type) {
+		case []byte:
+			cmd.UnmarshalBinary(c)
+		default:
+			panic("wrong data attribute")
+		}
 	case 2:
 		// command
 		switch c := attr[0].(type) {
 		case AuthCmd:
 			cmd.Cmd = byte(c)
+		case byte:
+			cmd.Cmd = c
+			panic("wrong cmd attribute")
 		default:
-			cmd.Cmd = c.(byte)
 		}
 		// data
 		switch d := attr[1].(type) {

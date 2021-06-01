@@ -13,8 +13,6 @@ github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5a
 github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed/go.mod h1:tMWxXQ9wFIaZeTI9F+hmhFiGpFmhOHzyShyFUhRm0H4=
 github.com/kirill-scherba/teonet-go v0.0.0-20210310112151-0983adff39db h1:HEcinInM51JPp+vVsSmlQQN9N7t4sOq/0Wwc7dyRzNc=
 github.com/kirill-scherba/teonet-go v0.0.0-20210310112151-0983adff39db/go.mod h1:yFKpFDQN6JDCfcvTHUHcljNJgKlAZJ0BZorf1vEeOV8=
-github.com/kirill-scherba/trudp v0.0.0-20210521003759-9894fc9851c8 h1:dZPvaEAdiei6+8A22DPVuCSPqg0w8O5dhRpQdNaORw4=
-github.com/kirill-scherba/trudp v0.0.0-20210521003759-9894fc9851c8/go.mod h1:JwbvcQ8Wnd3/WR4XkX2wXT79diM6oAfxxWDC2+GS+hg=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=

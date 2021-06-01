@@ -11,7 +11,7 @@ import (
 const (
 	appName    = "Teonet sample application"
 	appShort   = "teonet"
-	appVersion = "0.0.3"
+	appVersion = "0.0.4"
 )
 
 // reader main application reade receive and process messages
@@ -19,7 +19,7 @@ func reader(teo *teonet.Teonet, c *teonet.Channel, p *teonet.Packet, err error) 
 	// Check errors
 	if err != nil {
 		// teolog.Println("channel", c, "read error:", err)
-		return true
+		return false
 	}
 
 	// Print received message
