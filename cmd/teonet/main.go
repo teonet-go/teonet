@@ -88,7 +88,7 @@ func main() {
 			func(c *teonet.Channel, p *teonet.Packet, err error) (processed bool) {
 				if err == nil {
 					// Print received message
-					teo.Log().Printf("got(r) from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n",
+					teo.Log().Printf("got(r) from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n\n",
 						c, p.Data(), len(p.Data()), p.ID(), float64(c.Triptime().Microseconds())/1000.0,
 					)
 					processed = true
