@@ -59,6 +59,7 @@ func (s *subscribers) add(channel *Channel, reader Treceivecb) (res *subscribeDa
 
 // delete from subscribers by subscribeData or by channel (by channel remove
 // all subscibers to channel)
+// TODO: remove nil slice member aniware or add mutex and don't use nil as delete
 func (s subscribers) del(subs interface{}) {
 
 	switch v := subs.(type) {

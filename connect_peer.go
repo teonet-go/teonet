@@ -119,6 +119,8 @@ func (teo Teonet) connectToPeer(data []byte) (err error) {
 	teo.Command(CmdConnectToPeer, data).Send(teo.auth)
 
 	// Punch firewall
+	// TODO: calculat punch start delay here: 1) triptime from client to auth +
+	// 2) triptime of this packet (from auth to this peer)
 	teo.puncher.punch(con.ID, IPs{
 		LocalIPs:  con.LocalIPs,
 		LocalPort: con.LocalPort,

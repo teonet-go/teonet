@@ -144,7 +144,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 		// Peer got CmdConnectToPeer command
 		case CmdConnectToPeer:
-			teo.connectToPeer(cmd.Data)
+			go teo.connectToPeer(cmd.Data)
 
 		// Not defined commands
 		default:
@@ -185,6 +185,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	case data = <-chanW:
 	case <-time.After(trudp.ClientConnectTimeout):
 		err = ErrTimeout
+		teo.unsubscribe(subs)
 		return
 	}
 
