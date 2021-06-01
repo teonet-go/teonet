@@ -11,7 +11,7 @@ import (
 const (
 	appName    = "Teonet sample application"
 	appShort   = "teonet"
-	appVersion = "0.0.4"
+	appVersion = "0.0.5"
 )
 
 // reader main application reade receive and process messages

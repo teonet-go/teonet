@@ -11,8 +11,8 @@
 # Publish to github:
 #
 #  docker login docker.pkg.github.com -u USERNAME -p TOKEN
-#  docker tag teonet docker.pkg.github.com/kirill-scherba/teonet/teonet:0.0.4
-#  docker push docker.pkg.github.com/kirill-scherba/teonet/teonet:0.0.4
+#  docker tag teonet docker.pkg.github.com/kirill-scherba/teonet/teonet:0.0.5
+#  docker push docker.pkg.github.com/kirill-scherba/teonet/teonet:0.0.5
 #
 # Publish to local repository:
 #
@@ -42,11 +42,11 @@
 #
 # it recomendet use host network when run teonet  
 #
-#   docker tag teonet docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.4
-#   docker push docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.4
-#   docker run --restart always -it --name teonet --network host docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.4 teonet -u
+#   docker tag teonet docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.5
+#   docker push docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.5
+#   docker run --restart always -it --name teonet --network host docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.5 teonet -u
 #
-#   docker run --rm -it --name teonet-v4 -v $HOME/.config/teonet:/root/.config/teonet docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.4 teonet -u -app-short teonet-v4-1 -send-to dBTgSEHoZ3XXsOqjSkOTINMARqGxHaXIDxl
+#   docker run --rm -it --name teonet-v4 -v $HOME/.config/teonet:/root/.config/teonet docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.5 teonet -u -app-short teonet-v4-1 -send-to dBTgSEHoZ3XXsOqjSkOTINMARqGxHaXIDxl
 #
 #
 

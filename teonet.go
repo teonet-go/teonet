@@ -16,7 +16,7 @@ import (
 	"github.com/kirill-scherba/trudp"
 )
 
-const Version = "0.0.3"
+const Version = "0.0.6"
 
 // Logo print teonet logo
 func Logo(title, ver string) {
@@ -230,4 +230,9 @@ func (teo Teonet) SendTo(addr string, data []byte) (id uint32, err error) {
 // Log get teonet log
 func (teo Teonet) Log() *log.Logger {
 	return teo.log
+}
+
+// Port get teonet local port
+func (teo Teonet) Port() uint32 {
+	return uint32(teo.trudp.Port())
 }
