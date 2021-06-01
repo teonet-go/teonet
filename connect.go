@@ -106,6 +106,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 	var subs *subscribeData
 	var chanW = make(chan []byte)
+	defer close(chanW)
 	teo.auth = teo.channels.new(ch)
 	// Subscribe to teo.auth channel to get and process messages from teonet
 	// server. Subscribers reader shound return true if packet processed by this
@@ -136,7 +137,16 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 		// Client got answer to cmdConnect(connect to teonet server)
 		case CmdConnect:
-			chanW <- cmd.Data
+			// Check if chanW chanal is open
+			ok := true
+			select {
+			case _, ok = <-chanW:
+			default:
+			}
+			// Send to channel
+			if ok {
+				chanW <- cmd.Data
+			}
 
 		// Client got answer to cmdConnectTo(connect to peer)
 		case CmdConnectTo:
