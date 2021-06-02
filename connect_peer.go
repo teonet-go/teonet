@@ -20,6 +20,8 @@ const (
 	peerReconnectAfter = 1 * time.Second
 )
 
+var ErrDoesNotConnectedToTeonet = errors.New("does not connected to teonet")
+
 // ConnectTo connect to any teonet Peer(client or server) by address (client
 // sent request to teonet auth server):
 // Client call ConnectTo wich send request to teonet auth server and wait
@@ -30,6 +32,13 @@ const (
 func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	// TODO: check local connection exists
 	teo.log.Println("connect to peer", addr)
+
+	// Check teonet connected
+	// TODO: move this code to function
+	if teo.auth == nil || !func() bool { _, ok := teo.channels.get(teo.auth); return ok }() || teo.auth.IsNew() {
+		err = ErrDoesNotConnectedToTeonet
+		return
+	}
 
 	// Local IDs and port
 	ips, _ := teo.getIPs()

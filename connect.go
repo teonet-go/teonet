@@ -105,6 +105,11 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	}
 
 	var subs *subscribeData
+	defer func() {
+		if err != nil {
+			teo.unsubscribe(subs)
+		}
+	}()
 	var chanW = make(chan []byte)
 	defer close(chanW)
 	teo.auth = teo.channels.new(ch)
@@ -117,6 +122,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 		if err != nil {
 			teo.log.Printf("connect reader: got error from channel %s, error: %s", c, err)
 			teo.unsubscribe(subs)
+			teo.auth = nil
 			teo.log.Println("disconnected from teonet")
 			// Reconnect
 			go func() {
@@ -196,7 +202,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	case data = <-chanW:
 	case <-time.After(trudp.ClientConnectTimeout):
 		err = ErrTimeout
-		teo.unsubscribe(subs)
+		// teo.unsubscribe(subs) // unsubscribe already added to defer
 		return
 	}
 
