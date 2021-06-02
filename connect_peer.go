@@ -29,6 +29,7 @@ const (
 // clients teonet address to it, Peer check it in connectToConnected func
 func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	// TODO: check local connection exists
+	teo.log.Println("connect to peer", addr)
 
 	// Local IDs and port
 	ips, _ := teo.getIPs()

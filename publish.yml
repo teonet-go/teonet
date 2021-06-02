@@ -1,0 +1,36 @@
+# Playbook: Build and publish docker image to registry
+# usage: ansible-playbook publish.yml -e version=0.0.0
+#
+---
+- hosts: 127.0.0.1
+  # vars_files:
+  #   - version.yml
+  # vars:
+  #   version: "{{ ver_teonet }}"
+
+  tasks:
+
+  - name: simple-ansibleplaybook 
+    debug:
+      msg: Your are running 'build and publish teonet docker' example
+
+  # - name: docker ps    
+  #   command: docker ps
+  #   register: out
+  # - debug: var=out.stdout_lines
+
+  - name: build and publish docker image to registry
+    shell: |
+           echo Build docker image
+           docker build -t teonet -f ./Dockerfile ../. 
+           echo ""
+           echo Publish version
+           docker tag teonet docker.pkg.github.com/kirill-scherba/teonet-go/teonet:{{ version }}
+           docker push docker.pkg.github.com/kirill-scherba/teonet-go/teonet:{{ version }}
+           echo ""
+           echo Publish latest
+           docker tag teonet docker.pkg.github.com/kirill-scherba/teonet-go/teonet:latest
+           docker push docker.pkg.github.com/kirill-scherba/teonet-go/teonet:latest
+    register: out
+  - debug: var=out.stdout_lines
+  #- debug: msg="{{ out.stdout }}"

@@ -144,9 +144,10 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 			default:
 			}
 			// Send to channel
-			if ok {
-				chanW <- cmd.Data
+			if !ok {
+				return false
 			}
+			chanW <- cmd.Data
 
 		// Client got answer to cmdConnectTo(connect to peer)
 		case CmdConnectTo:
