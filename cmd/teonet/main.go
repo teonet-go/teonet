@@ -23,7 +23,7 @@ func reader(teo *teonet.Teonet, c *teonet.Channel, p *teonet.Packet, err error) 
 	}
 
 	// Print received message
-	teo.Log().Printf("got from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n\n",
+	teo.Log().Printf("got from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n",
 		c, p.Data(), len(p.Data()), p.ID(),
 		float64(c.Triptime().Microseconds())/1000.0,
 	)
