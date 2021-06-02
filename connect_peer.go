@@ -35,7 +35,7 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 
 	// Check teonet connected
 	// TODO: move this code to function
-	if teo.auth == nil || !func() bool { _, ok := teo.channels.get(teo.auth); return ok }() || teo.auth.IsNew() {
+	if teo.auth == nil || /* !func() bool { _, ok := teo.channels.get(teo.auth); return ok }() || */ teo.auth.IsNew() {
 		err = ErrDoesNotConnectedToTeonet
 		return
 	}
