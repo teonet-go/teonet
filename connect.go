@@ -114,8 +114,8 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 			teo.unsubscribe(subs)
 		}
 	}()
-	var chanW = make(chan []byte)
-	defer close(chanW)
+	var chanWait = make(chanWait)
+	defer close(chanWait)
 	teo.auth = teo.channels.new(ch)
 	// Subscribe to teo.auth channel to get and process messages from teonet
 	// server. Subscribers reader shound return true if packet processed by this
@@ -148,16 +148,17 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 		// Client got answer to cmdConnect(connect to teonet server)
 		case CmdConnect:
 			// Check if chanW chanal is open
-			ok := true
-			select {
-			case _, ok = <-chanW:
-			default:
-			}
+			// ok := true
+			// select {
+			// case _, ok = <-chanWait:
+			// default:
+			// }
+			ok := chanWait.IsOpen()
 			// Send to channel
 			if !ok {
 				return false
 			}
-			chanW <- cmd.Data
+			chanWait <- cmd.Data
 
 		// Client got answer to cmdConnectTo(connect to peer)
 		case CmdConnectTo:
@@ -203,7 +204,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 	// Wait Connect answer data
 	select {
-	case data = <-chanW:
+	case data = <-chanWait:
 	case <-time.After(trudp.ClientConnectTimeout):
 		err = ErrTimeout
 		// teo.unsubscribe(subs) // unsubscribe already added to defer

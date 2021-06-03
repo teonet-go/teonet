@@ -42,6 +42,16 @@ type connectRequestsData struct {
 
 type chanWait chan []byte
 
+// Check if channel is open (is not closed)
+func (c chanWait) IsOpen() (ok bool) {
+	ok = true
+	select {
+	case _, ok = <-c:
+	default:
+	}
+	return
+}
+
 func (p *connectRequests) add(con *ConnectToData, waits ...*chanWait) {
 	var wait *chanWait
 	if len(waits) > 0 {

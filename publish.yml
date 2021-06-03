@@ -10,9 +10,9 @@
 
   tasks:
 
-  - name: simple-ansibleplaybook 
-    debug:
-      msg: Your are running 'build and publish teonet docker' example
+  # - name: simple-ansibleplaybook 
+  #   debug:
+  #     msg: Your are running 'build and publish teonet docker' example
 
   - name: build and publish docker image to registry
     shell: |
@@ -25,6 +25,7 @@
            echo ""
            echo Publish latest
            docker tag teonet docker.pkg.github.com/kirill-scherba/teonet-go/teonet:latest
-           docker push docker.pkg.github.com/kirill-scherba/teonet-go/teonet:latest
+           docker push docker.pkg.github.com/kirill-scherba/teonet-go/teonet:latest   
     register: out
   - debug: var=out.stdout_lines
+

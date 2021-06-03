@@ -113,7 +113,7 @@ func (teo Teonet) connectToPeer(data []byte) (err error) {
 		teolog.Log(teolog.ERROR, "connectToPeer unmarshal error:", err)
 		return
 	}
-	teolog.Log(teolog.DEBUG, nMODULEconp, "got CmdConnectToPeer command", con.Addr, "ID:", con.ID, con)
+	teolog.Log(teolog.DEBUG, nMODULEconp, "got CmdConnectToPeer=2 from teonet, Addr:", con.Addr, "ID:", con.ID)
 
 	teo.peerRequests.add(&con)
 
@@ -174,11 +174,12 @@ func (teo Teonet) connectToAnswerProcess(data []byte) (err error) {
 	// Check server error and send it to wait channel
 	if len(con.Err) != 0 {
 		// Check wait channel
-		ok := true
-		select {
-		case _, ok = <-*req.chanWait:
-		default:
-		}
+		// ok := true
+		// select {
+		// case _, ok = <-*req.chanWait:
+		// default:
+		// }
+		ok := req.chanWait.IsOpen()
 		// Send to wait channel
 		if ok {
 			*req.chanWait <- con.Err
@@ -259,7 +260,7 @@ func (teo Teonet) connectToConnectedPeer(c *Channel, p *Packet) (ok bool) {
 				teolog.Log(teolog.ERROR, "CmdConnectToPeer unmarshal error:", err)
 				return
 			}
-			teolog.Log(teolog.DEBUG, nMODULEconp, "got CmdConnectToPeer command", con.Addr, "ID:", con.ID, con)
+			teolog.Log(teolog.DEBUG, nMODULEconp, "Got answer from new client, ID:", con.ID)
 
 			res, ok := teo.peerRequests.get(con.ID)
 			if ok {
@@ -294,7 +295,7 @@ func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
 				teolog.Log(teolog.ERROR, "connectToConnectedClient unmarshal error:", err)
 				return
 			}
-			teolog.Log(teolog.DEBUG, "Got answer from peer, ID:", con.ID)
+			teolog.Log(teolog.DEBUG, nMODULEconp, "Got answer from new peer, ID:", con.ID)
 
 			req, ok := teo.connRequests.get(con.ID)
 			if ok {
@@ -302,11 +303,12 @@ func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
 				// teo.log.Println("set server connected", req.Addr, "ID:", con.ID)
 				teo.Connected(c, req.Addr)
 				// Check wait channel
-				ok := true
-				select {
-				case _, ok = <-*req.chanWait:
-				default:
-				}
+				// ok := true
+				// select {
+				// case _, ok = <-*req.chanWait:
+				// default:
+				// }
+				ok := req.chanWait.IsOpen()
 				// Send to wait channel
 				if ok {
 					*req.chanWait <- nil
@@ -320,6 +322,10 @@ func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
 		}
 	}
 	return
+}
+
+func checkChannel() {
+
 }
 
 // ConnectToData teonet connect data
