@@ -30,8 +30,8 @@ func (teo *Teonet) Command(attr ...interface{}) (cmd *Command) {
 			cmd.Cmd = byte(c)
 		case byte:
 			cmd.Cmd = c
-			panic("wrong cmd attribute")
 		default:
+			panic("wrong cmd attribute")
 		}
 		// data
 		switch d := attr[1].(type) {
