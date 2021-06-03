@@ -11,7 +11,7 @@ import (
 const (
 	appName    = "Teonet sample application"
 	appShort   = "teonet"
-	appVersion = "0.0.8"
+	appVersion = "0.0.9"
 )
 
 // reader main application reade receive and process messages
@@ -49,16 +49,20 @@ func main() {
 		showPrivate bool
 		sendTo      string
 		logLevel    string
+		logFilter   string
 	}
 	flag.StringVar(&params.appShort, "app-short", appShort, "application short name")
 	flag.BoolVar(&params.showTrudp, "u", false, "show trudp statistic")
 	flag.BoolVar(&params.showPrivate, "show-private", false, "show private key")
 	flag.StringVar(&params.sendTo, "send-to", "", "send messages to address")
 	flag.StringVar(&params.logLevel, "log-level", "NONE", "log level")
+	flag.StringVar(&params.logFilter, "log-filter", "", "log filter")
 	flag.Parse()
 
 	// Start teonet client
-	teo, err := teonet.New(params.appShort, 0, reader, teonet.Log(), "NONE", params.showTrudp, params.logLevel)
+	teo, err := teonet.New(params.appShort, 0, reader, teonet.Log(), "NONE",
+		params.showTrudp, params.logLevel, teonet.LogFilterT(params.logFilter),
+	)
 	if err != nil {
 		teo.Log().Println("can't init Teonet, error:", err)
 		return
@@ -73,7 +77,7 @@ func main() {
 	// Connect to teonet
 	err = teo.Connect()
 	if err != nil {
-		teo.Log().Println("can't connect to Teonet, error:", err)
+		// teo.Log().Println("can't connect to Teonet, error:", err)
 		return
 	}
 
@@ -105,12 +109,12 @@ func main() {
 	if params.sendTo != "" {
 		for {
 			time.Sleep(5 * time.Second)
+			teo.Log().Println("send message to", params.sendTo)
 			_, err = teo.SendTo(params.sendTo, []byte("Hello world!"))
 			if err != nil {
 				teo.Log().Println(err)
 				continue
 			}
-			teo.Log().Println("send message to", params.sendTo)
 		}
 	}
 

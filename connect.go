@@ -13,8 +13,12 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/kirill-scherba/teonet-go/teolog/teolog"
 	"github.com/kirill-scherba/trudp"
 )
+
+// nMODULEcon is current module name
+var nMODULEcon = "Connect"
 
 const (
 	teonetReconnectAfter = 1 * time.Second
@@ -75,7 +79,7 @@ func (c *ConnectIpPort) getAddrFromHTTP(url string) (err error) {
 // Connected (create teonet channel)
 func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
-	teo.log.Println("connect to teonet")
+	teolog.Log(teolog.CONNECT, nMODULEcon, "to remote teonet node")
 
 	// Set default address if attr ommited
 	if len(attr) == 0 {
@@ -120,10 +124,10 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 		// Error processing
 		if err != nil {
-			teo.log.Printf("connect reader: got error from channel %s, error: %s", c, err)
+			teolog.Logf(teolog.DEBUG, "Connect reader", "got error from channel %s, error: %s", c, err)
 			teo.unsubscribe(subs)
 			teo.auth = nil
-			teo.log.Println("disconnected from teonet")
+			teolog.Logf(teolog.CONNECT, "Disconnected", "from teonet")
 			// Reconnect
 			go func() {
 				for {
@@ -165,7 +169,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 		// Not defined commands
 		default:
-			teo.log.Println("not defined command", cmd.Cmd)
+			teolog.Log(teolog.ERROR, "Got not defined command", cmd.Cmd)
 			return false
 		}
 
@@ -233,8 +237,8 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	teo.config.Address = addr
 	teo.config.save()
 
-	teo.log.Println("connected to teonet")
-	teo.log.Printf("teonet address: %s\n", conOut.Address)
+	// teolog.Log(teolog.DEBUG, nMODULEcon, "to teonet success")
+	teolog.Logf(teolog.CONNECT, "Teonet", "address: %s\n", conOut.Address)
 
 	teo.Connected(teo.auth, string(conOut.ServerAddress))
 

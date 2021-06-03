@@ -14,8 +14,11 @@ import (
 	"path"
 	"strings"
 
+	"github.com/kirill-scherba/teonet-go/teolog/teolog"
 	"github.com/kirill-scherba/trudp"
 )
+
+var nMODULEconf = "Config"
 
 func (teo *Teonet) newConfig(appName string, log *log.Logger) (err error) {
 	teo.config = &config{appName: appName, log: log}
@@ -23,12 +26,12 @@ func (teo *Teonet) newConfig(appName string, log *log.Logger) (err error) {
 	// Check config file exists and create and save new config if does not exists
 	err = teo.config.exists()
 	if err != nil {
-		teo.log.Println(err)
+		teolog.Log(teolog.ERROR, nMODULEconf, err)
 		err = teo.config.create()
 		if err != nil {
 			return
 		}
-		teo.log.Println("new keys and config file created")
+		teolog.Log(teolog.DEBUG, nMODULEconf, "new keys and config file created")
 	}
 
 	// Read config file

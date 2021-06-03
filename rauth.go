@@ -8,24 +8,24 @@ import (
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/kirill-scherba/teonet-go/teolog/teolog"
 )
 
 // Nodes get auth nodes by URL
 func Nodes(url string) (ret *nodes, err error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Println("error get:", err)
+		teolog.Log(teolog.ERROR, "HTTP", "server", err)
 		return
 	}
 	// log.Println(resp)
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("error get:", err)
+		teolog.Log(teolog.ERROR, "HTTP", "server", err)
 		return
 	}
-	// src := string(body)
-	// log.Println("body:", string(body))
 
 	dst := make([]byte, hex.DecodedLen(len(body)))
 	n, err := hex.Decode(dst, body)

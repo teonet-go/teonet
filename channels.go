@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kirill-scherba/teonet-go/teolog/teolog"
 	"github.com/kirill-scherba/trudp"
 )
 
@@ -51,7 +52,7 @@ func (c *channels) add(channel *Channel) {
 	defer c.Unlock()
 	c.m_addr[channel.a] = channel
 	c.m_chan[channel.c] = channel
-	c.teo.log.Println("connected:", channel.a)
+	teolog.Log(teolog.CONNECT, "Peer", "connected:", channel.a)
 }
 
 // del channel
@@ -68,7 +69,7 @@ func (c *channels) del(channel *Channel, delTrudps ...bool) {
 		c.trudp.ChannelDel(channel.c)
 	}
 	c.teo.subscribers.del(c)
-	c.teo.log.Println("disconnec:", channel.a)
+	teolog.Log(teolog.CONNECT, "Peer", "disconnec:", channel.a)
 }
 
 // get channel by address or by trudp channel

@@ -2,6 +2,7 @@ package teonet
 
 import (
 	"errors"
+	"fmt"
 )
 
 // Subscribe to receive packets from address. The reader attribute may be
@@ -29,7 +30,7 @@ func (teo Teonet) subscribe(c *Channel, readerI interface{}) *subscribeData {
 			return v(c, p, err)
 		}
 	default:
-		teo.Log().Panicf("wrong attribute type %T", v)
+		panic(fmt.Sprintf("wrong attribute type %T", v))
 	}
 	return teo.subscribers.add(c, reader)
 }

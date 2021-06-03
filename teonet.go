@@ -13,10 +13,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/kirill-scherba/teonet-go/teolog/teolog"
 	"github.com/kirill-scherba/trudp"
 )
 
-const Version = "0.0.8"
+const Version = "0.0.9"
+
+// nMODULEteo is current module name
+var nMODULEteo = "Teonet"
 
 // Logo print teonet logo
 func Logo(title, ver string) {
@@ -62,6 +66,8 @@ func reader(teo *Teonet, c *Channel, p *Packet, err error) {
 	}
 }
 
+type LogFilterT = trudp.LogFilterT
+
 // New create new teonet connection. The attr parameters:
 //   int - port number to teonet listen
 //   string - internal log Level to show teonet debug messages
@@ -75,6 +81,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 		port      int
 		showTrudp bool
 		logLevel  string
+		logFilter LogFilterT
 		log       *log.Logger
 		reader    Treceivecb
 		api       ApiInterface
@@ -85,6 +92,8 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 			param.port = d
 		case string:
 			param.logLevel = d
+		case trudp.LogFilterT:
+			param.logFilter = d
 		case bool:
 			param.showTrudp = d
 		case *log.Logger:
@@ -129,7 +138,8 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	// Init trudp and start listen port to get messages
 	teo.addClientReader(param.reader)
 	teo.setApiReader(param.api)
-	teo.trudp, err = trudp.Init(param.port, teo.config.trudpPrivateKey, teo.log, param.logLevel,
+	teo.trudp, err = trudp.Init(param.port, teo.config.trudpPrivateKey, teo.log,
+		param.logLevel, trudp.LogFilterT(param.logFilter),
 
 		// Receive data callback
 		func(c *trudp.Channel, p *trudp.Packet, err error) {
@@ -167,22 +177,22 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 				time.Sleep(trudp.ClientConnectTimeout)
 				ch, exists := teo.channels.get(c)
 				if !exists || ch.IsNew() {
-					teo.log.Println("remove dummy trudp channel:", c)
+					teolog.Log(teolog.DEBUG, nMODULEteo, "remove dummy trudp channel:", c)
 					c.ChannelDel(c)
 				} else if ch.IsNew() {
-					teo.log.Println("remove dummy teonet channel:", c)
+					teolog.Log(teolog.DEBUG, nMODULEteo, "remove dummy teonet channel:", c)
 					teo.channels.del(ch)
 				}
 			}(c)
 		},
 	)
 	if err != nil {
-		teo.log.Println("can't initial trudp, error:", err)
+		teolog.Log(teolog.ERROR, nMODULEteo, "can't initial trudp, error:", err)
 		return
 	}
 	teo.newChannels()
 	teo.newPuncher()
-	teo.log.Println("start listen teonet at port", teo.trudp.Port())
+	teolog.Log(teolog.CONNECT, nMODULEteo, "start listen teonet at port", teo.trudp.Port())
 
 	if param.showTrudp {
 		teo.ShowTrudp(true)
