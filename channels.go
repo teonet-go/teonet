@@ -72,7 +72,7 @@ func (c *channels) del(channel *Channel, delTrudps ...bool) {
 	teolog.Log(teolog.CONNECT, "Peer", "disconnec:", channel.a)
 }
 
-// get channel by address or by trudp channel
+// get channel by teonet address or by trudp channel
 func (c *channels) get(attr interface{}) (ch *Channel, exists bool) {
 	c.RLock()
 	defer c.RUnlock()
@@ -81,6 +81,20 @@ func (c *channels) get(attr interface{}) (ch *Channel, exists bool) {
 		ch, exists = c.m_addr[v]
 	case *trudp.Channel:
 		ch, exists = c.m_chan[v]
+	}
+	return
+}
+
+// get channel by ip address
+func (c *channels) getByIP(ip string) (ch *Channel, exists bool) {
+	c.RLock()
+	defer c.RUnlock()
+	for _, v := range c.m_addr {
+		if v.c.String() == ip {
+			ch = v
+			exists = true
+			break
+		}
 	}
 	return
 }

@@ -11,7 +11,7 @@ import (
 const (
 	appName    = "Teonet sample application"
 	appShort   = "teonet"
-	appVersion = "0.0.12"
+	appVersion = "0.0.13"
 )
 
 // reader main application reade receive and process messages
@@ -45,6 +45,7 @@ func main() {
 	// Parse applications flags
 	var params struct {
 		appShort    string
+		port        int
 		showTrudp   bool
 		showPrivate bool
 		sendTo      string
@@ -52,6 +53,7 @@ func main() {
 		logFilter   string
 	}
 	flag.StringVar(&params.appShort, "app-short", appShort, "application short name")
+	flag.IntVar(&params.port, "p", 0, "local port")
 	flag.BoolVar(&params.showTrudp, "u", false, "show trudp statistic")
 	flag.BoolVar(&params.showPrivate, "show-private", false, "show private key")
 	flag.StringVar(&params.sendTo, "send-to", "", "send messages to address")
@@ -60,7 +62,7 @@ func main() {
 	flag.Parse()
 
 	// Start teonet client
-	teo, err := teonet.New(params.appShort, 0, reader, teonet.Log(), "NONE",
+	teo, err := teonet.New(params.appShort, params.port, reader, teonet.Log(), "NONE",
 		params.showTrudp, params.logLevel, teonet.LogFilterT(params.logFilter),
 	)
 	if err != nil {

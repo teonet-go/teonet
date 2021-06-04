@@ -17,7 +17,7 @@ import (
 	"github.com/kirill-scherba/trudp"
 )
 
-const Version = "0.0.10"
+const Version = "0.0.11"
 
 // nMODULEteo is current module name
 var nMODULEteo = "Teonet"
@@ -46,7 +46,9 @@ func reader(teo *Teonet, c *Channel, p *Packet, err error) {
 
 	// Check error and 'connect to peer connected' processing
 	if err != nil {
+		// fmt.Println("teonet reader delete channel", c)
 		teo.channels.del(c)
+
 	} else if teo.connectToConnectedPeer(c, p) || teo.connectToConnectedClient(c, p) {
 		return
 	}
@@ -176,11 +178,16 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 			go func(c *trudp.Channel) {
 				time.Sleep(trudp.ClientConnectTimeout)
 				ch, exists := teo.channels.get(c)
-				if !exists || ch.IsNew() {
-					teolog.Log(teolog.DEBUG, nMODULEteo, "remove dummy trudp channel:", c)
-					c.ChannelDel(c)
+				if !exists /* || ch.IsNew() */ {
+					// fmt.Println("c.String()", c.String())
+					if newch, ok := teo.channels.getByIP(c.String()); !ok {
+						teolog.Log(teolog.DEBUG, nMODULEteo, "remove dummy trudp channel:", c, ch)
+						c.ChannelDel(c)
+					} else {
+						teolog.Log(teolog.DEBUGvv, nMODULEteo, "trudp channel was reconnected:", c.String(), newch)
+					}
 				} else if ch.IsNew() {
-					teolog.Log(teolog.DEBUG, nMODULEteo, "remove dummy teonet channel:", c)
+					teolog.Log(teolog.DEBUG, nMODULEteo, "remove dummy(new) teonet channel:", c, ch)
 					teo.channels.del(ch)
 				}
 			}(c)
