@@ -11,7 +11,7 @@ import (
 const (
 	appName    = "Teonet sample application"
 	appShort   = "teonet"
-	appVersion = "0.0.13"
+	appVersion = "0.1.0"
 )
 
 // reader main application reade receive and process messages
@@ -86,24 +86,29 @@ func main() {
 	// Connect to Peer (selected in send-to application flag) and receive
 	// packets in own reader
 	if params.sendTo != "" {
-		err := teo.ConnectTo(params.sendTo,
-			// Receive and process packets from this channel(address). Return
-			// true if packet processed. If return false package will processed
-			// by other readers include main application reader (just comment
-			// 'processed = true' line and you'll see two 'got from ...' message)
-			func(c *teonet.Channel, p *teonet.Packet, err error) (processed bool) {
-				if err == nil {
-					// Print received message
-					teo.Log().Printf("got(r) from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n\n",
-						c, p.Data(), len(p.Data()), p.ID(), float64(c.Triptime().Microseconds())/1000.0,
-					)
-					processed = true
-				}
-				return
-			},
-		)
-		if err != nil {
-			teo.Log().Println("can't connect to Peer, error:", err)
+		for {
+			err := teo.ConnectTo(params.sendTo,
+				// Receive and process packets from this channel(address). Return
+				// true if packet processed. If return false package will processed
+				// by other readers include main application reader (just comment
+				// 'processed = true' line and you'll see two 'got from ...' message)
+				func(c *teonet.Channel, p *teonet.Packet, err error) (processed bool) {
+					if err == nil {
+						// Print received message
+						teo.Log().Printf("got(r) from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n\n",
+							c, p.Data(), len(p.Data()), p.ID(), float64(c.Triptime().Microseconds())/1000.0,
+						)
+						processed = true
+					}
+					return
+				},
+			)
+			if err != nil {
+				teo.Log().Println("can't connect to Peer, error:", err)
+				time.Sleep(1 * time.Second)
+				continue
+			}
+			break
 		}
 	}
 
