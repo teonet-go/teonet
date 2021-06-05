@@ -183,6 +183,11 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 		case CmdConnectToPeer:
 			go teo.processCmdConnectToPeer(cmd.Data)
 
+		// This commands (and empty body) added to remove "not defined" error
+		// from default case
+		case CmdResendConnectTo, CmdResendConnectToPeer:
+			return false
+
 		// Not defined commands
 		default:
 			teolog.Log(teolog.ERROR, "Got not defined command", cmd.Cmd)
