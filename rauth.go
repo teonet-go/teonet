@@ -92,6 +92,11 @@ func (r nodes) String() (s string) {
 	return
 }
 
+// Slice return nodes address slice
+func (r nodes) Slice() []NodeAddr {
+	return r.address
+}
+
 // byteSlice help binary marshal/ubmarshal byte slice
 type byteSlice struct{}
 
