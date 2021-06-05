@@ -137,6 +137,11 @@ func (teo Teonet) Channel(addr string) (ch *Channel, exists bool) {
 	return teo.channels.get(addr)
 }
 
+// Channel get teonet channel by ip address
+func (teo Teonet) ChannelByIP(addr string) (ch *Channel, exists bool) {
+	return teo.channels.getByIP(addr)
+}
+
 type Channel struct {
 	a string         // Teonet address
 	c *trudp.Channel // Trudp channel
