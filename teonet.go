@@ -17,7 +17,7 @@ import (
 	"github.com/kirill-scherba/trudp"
 )
 
-const Version = "0.0.11"
+const Version = "0.1.0"
 
 // nMODULEteo is current module name
 var nMODULEteo = "Teonet"
@@ -224,6 +224,8 @@ type Teonet struct {
 type Treceivecb func(teo *Teonet, c *Channel, p *Packet, err error) bool
 type TreceivecbShort func(c *Channel, p *Packet, err error) bool
 
+func (teo Teonet) Rhost() *Channel { return teo.auth }
+
 // addReader add teonet client reader
 func (teo *Teonet) addClientReader(reader Treceivecb) {
 	teo.clientReaders = append(teo.clientReaders, reader)
@@ -252,4 +254,9 @@ func (teo Teonet) Log() *log.Logger {
 // Port get teonet local port
 func (teo Teonet) Port() uint32 {
 	return uint32(teo.trudp.Port())
+}
+
+// Get this app Address
+func (teo Teonet) MyAddr() string {
+	return teo.config.Address
 }
