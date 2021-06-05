@@ -52,6 +52,22 @@ const (
 // AuthCmd auth command type
 type AuthCmd byte
 
+func (c AuthCmd) String() string {
+	switch c {
+	case CmdConnect:
+		return "CmdConnect"
+	case CmdConnectTo:
+		return "CmdConnectTo"
+	case CmdConnectToPeer:
+		return "CmdConnectToPeer"
+	case CmdResendConnectTo:
+		return "CmdResendConnectTo"
+	case CmdResendConnectToPeer:
+		return "CmdResendConnectToPeer"
+	}
+	return "not defined"
+}
+
 // Connet errors
 var ErrIncorrectServerKey = errors.New("incorrect server key received")
 var ErrIncorrectPublicKey = errors.New("incorrect public key received")
