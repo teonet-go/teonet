@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math/rand"
 	"reflect"
 	"time"
 
@@ -38,6 +39,14 @@ const (
 	// CmdConnectToPeer command send by teonet auth to server to receive
 	// connection from client
 	CmdConnectToPeer
+
+	// CmdResendConnectTo need to resend CmdConnectTo data from rauth to auth servers
+	// to find peer and send command data to it
+	CmdResendConnectTo
+
+	// CmdResendConnectToPeerto need to resend CmdConnectToPeer data from rauth
+	// to auth servers to find client and send command data to it
+	CmdResendConnectToPeer
 )
 
 // AuthCmd auth command type
@@ -59,13 +68,19 @@ func (c *ConnectIpPort) getAddrFromHTTP(url string) (err error) {
 		// log.Fatalf("can't get nodes from %s, error: %s\n", url, err)
 		return
 	}
-	if len(n.address) == 0 {
+	l := len(n.address)
+	if l == 0 {
 		err = errors.New("empty list of nodes returned")
 		return
 	}
 	fmt.Println(n)
-	// TODO: get i from random
+
+	// Get random node
 	i := 0
+	if l > 1 {
+		i = rand.Intn(l)
+		fmt.Println("l ->", l, "i ->", i)
+	}
 	c.IP = n.address[i].IP
 	c.Port = int(n.address[i].Port)
 	return
@@ -162,11 +177,11 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 		// Client got answer to cmdConnectTo(connect to peer)
 		case CmdConnectTo:
-			go teo.connectToAnswerProcess(cmd.Data)
+			go teo.processCmdConnectTo(cmd.Data)
 
 		// Peer got CmdConnectToPeer command
 		case CmdConnectToPeer:
-			go teo.connectToPeer(cmd.Data)
+			go teo.processCmdConnectToPeer(cmd.Data)
 
 		// Not defined commands
 		default:
