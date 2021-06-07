@@ -41,6 +41,8 @@ func (teo *Teonet) Command(attr ...interface{}) (cmd *Command) {
 			cmd.Data = d
 		case string:
 			cmd.Data = []byte(d)
+		case nil:
+			// empty data
 		default:
 			panic("wrong data attribute")
 		}

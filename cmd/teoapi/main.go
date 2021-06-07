@@ -19,11 +19,15 @@ func Commands(teo *teonet.Teonet, api *teonet.API) {
 
 	api.Add(
 		teonet.MakeAPI(
-			"hello",
-			"<name string> get hello name message",
-			"usage: hello <name string>",
-			129,
-			teonet.Server,
+			"hello",                    // Command name
+			"get 'hello name' message", // Short description
+			"",                         // Long description
+			"<name string>",            // Usage (input parameter)
+			"<answer string>",          // Return (output parameters)
+			api.Cmd(129),               // Command number cmd = 129
+			teonet.ServerMode,          // Connect mode
+			teonet.DataAnswer,          // Answer mode
+			// Command reader (execute when command received)
 			func(c *teonet.Channel, data []byte) bool {
 				data = append([]byte("Hello "), data...)
 				// Use SendNoWait function when you answer to just received
@@ -35,11 +39,15 @@ func Commands(teo *teonet.Teonet, api *teonet.API) {
 				return true
 			}),
 		teonet.MakeAPI(
-			"description",
-			"got application description",
-			"usage: description",
-			130,
-			teonet.Server,
+			"description",                 // Command name
+			"get application description", // Short description
+			"",                            // Long description
+			"",                            // Usage (input parameter)
+			"<description string>",        // Return (output parameters)
+			api.CmdNext(),                 // Command number cmd = 130
+			teonet.ServerMode,             // Connect mode
+			teonet.DataAnswer,             // Answer mode
+			// Command reader (execute when command received)
 			func(c *teonet.Channel, data []byte) bool {
 				ret := []byte(appName)
 				c.SendNoWait(ret)
@@ -83,7 +91,15 @@ func main() {
 	teo.AddReader(api.Reader())
 
 	// Print API
-	fmt.Printf("API description:\n%s\n\n", api)
+	fmt.Printf("API description:\n\n%s\n\n", api.Help())
+
+	// Test API marshal/unmarshal
+	data, _ := api.MarshalBinary()
+	fmt.Println("API to binary:", data)
+
+	apiDataAr := new(teonet.APIDataAr)
+	apiDataAr.UnmarshalBinary(data)
+	fmt.Println("APIData from binary:", apiDataAr.Apis[0].Name(), apiDataAr)
 
 	// Connect to teonet
 	for teo.Connect() != nil {

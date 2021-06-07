@@ -39,7 +39,7 @@ func Nodes(url string) (ret *nodes, err error) {
 }
 
 type nodes struct {
-	byteSlice
+	ByteSlice
 	address []NodeAddr
 }
 
@@ -97,10 +97,10 @@ func (r nodes) Slice() []NodeAddr {
 	return r.address
 }
 
-// byteSlice help binary marshal/ubmarshal byte slice
-type byteSlice struct{}
+// ByteSlice help binary marshal/ubmarshal byte slice
+type ByteSlice struct{}
 
-func (b byteSlice) WriteSlice(buf *bytes.Buffer, data []byte) (err error) {
+func (b ByteSlice) WriteSlice(buf *bytes.Buffer, data []byte) (err error) {
 	if err = binary.Write(buf, binary.LittleEndian, uint16(len(data))); err != nil {
 		return
 	}
@@ -108,7 +108,7 @@ func (b byteSlice) WriteSlice(buf *bytes.Buffer, data []byte) (err error) {
 	return
 }
 
-func (b byteSlice) ReadSlice(buf *bytes.Buffer) (data []byte, err error) {
+func (b ByteSlice) ReadSlice(buf *bytes.Buffer) (data []byte, err error) {
 	var l uint16
 	if err = binary.Read(buf, binary.LittleEndian, &l); err != nil {
 		return
@@ -118,7 +118,7 @@ func (b byteSlice) ReadSlice(buf *bytes.Buffer) (data []byte, err error) {
 	return
 }
 
-func (b byteSlice) ReadString(buf *bytes.Buffer) (data string, err error) {
+func (b ByteSlice) ReadString(buf *bytes.Buffer) (data string, err error) {
 	d, err := b.ReadSlice(buf)
 	if err != nil {
 		return
@@ -127,7 +127,7 @@ func (b byteSlice) ReadString(buf *bytes.Buffer) (data string, err error) {
 	return
 }
 
-func (b byteSlice) WriteStringSlice(buf *bytes.Buffer, data []string) (err error) {
+func (b ByteSlice) WriteStringSlice(buf *bytes.Buffer, data []string) (err error) {
 	if err = binary.Write(buf, binary.LittleEndian, uint16(len(data))); err != nil {
 		return
 	}
@@ -140,7 +140,7 @@ func (b byteSlice) WriteStringSlice(buf *bytes.Buffer, data []string) (err error
 	return
 }
 
-func (b byteSlice) ReadStringSlice(buf *bytes.Buffer) (data []string, err error) {
+func (b ByteSlice) ReadStringSlice(buf *bytes.Buffer) (data []string, err error) {
 	var l uint16
 	if err = binary.Read(buf, binary.LittleEndian, &l); err != nil {
 		return

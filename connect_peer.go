@@ -330,7 +330,7 @@ func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
 
 // ConnectToData teonet connect data
 type ConnectToData struct {
-	byteSlice
+	ByteSlice
 	ID        string   // Request id
 	FromAddr  string   // Peer address
 	ToAddr    string   // Client address

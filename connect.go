@@ -290,7 +290,7 @@ func (teo Teonet) Connected(c *Channel, addr string) {
 
 // ConnectData teonet connect data
 type ConnectData struct {
-	byteSlice
+	ByteSlice
 	PubliKey      []byte // Client public key (generated from private key)
 	Address       []byte // Client address (received after connect if empty)
 	ServerKey     []byte // Server public key (send if exists or received in connect if empty)
