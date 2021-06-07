@@ -17,7 +17,7 @@ import (
 	"github.com/kirill-scherba/trudp"
 )
 
-const Version = "0.1.0"
+const Version = "0.1.1"
 
 // nMODULEteo is current module name
 var nMODULEteo = "Teonet"
@@ -226,9 +226,16 @@ type TreceivecbShort func(c *Channel, p *Packet, err error) bool
 
 func (teo Teonet) Rhost() *Channel { return teo.auth }
 
-// addReader add teonet client reader
+// addClientReader add teonet client reader
 func (teo *Teonet) addClientReader(reader Treceivecb) {
 	teo.clientReaders = append(teo.clientReaders, reader)
+}
+
+// AddReader add teonet client reader
+func (teo *Teonet) AddReader(reader TreceivecbShort) {
+	teo.clientReaders = append(teo.clientReaders, func(teo *Teonet, c *Channel, p *Packet, err error) bool {
+		return reader(c, p, err)
+	})
 }
 
 // ShowTrudp show/stop trudp statistic

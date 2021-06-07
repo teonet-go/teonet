@@ -1,3 +1,4 @@
+// Teonet echo client/server sample application
 package main
 
 import (
@@ -9,9 +10,9 @@ import (
 )
 
 const (
-	appName    = "Teonet sample application"
+	appName    = "Teonet echo client/server sample application"
 	appShort   = "teonet"
-	appVersion = "0.1.0"
+	appVersion = "0.1.1"
 )
 
 // reader main application reade receive and process messages
@@ -31,7 +32,7 @@ func reader(teo *teonet.Teonet, c *teonet.Channel, p *teonet.Packet, err error) 
 	// Send answer in server mode
 	if c.ServerMode() {
 		answer := []byte("Teonet answer to " + string(p.Data()))
-		c.SendAnswer(answer)
+		c.SendNoWait(answer)
 	}
 
 	return true

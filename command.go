@@ -30,6 +30,8 @@ func (teo *Teonet) Command(attr ...interface{}) (cmd *Command) {
 			cmd.Cmd = byte(c)
 		case byte:
 			cmd.Cmd = c
+		case int:
+			cmd.Cmd = byte(c)
 		default:
 			panic("wrong cmd attribute")
 		}
@@ -61,8 +63,8 @@ func (c Command) Send(channel *Channel) (id uint32, err error) {
 	return channel.Send(c.Bytes())
 }
 
-func (c Command) SendAnswer(channel *Channel) (id uint32, err error) {
-	return channel.SendAnswer(c.Bytes())
+func (c Command) SendNoWait(channel *Channel) (id uint32, err error) {
+	return channel.SendNoWait(c.Bytes())
 }
 
 func (c Command) SendTo(addr string) (id uint32, err error) {

@@ -159,11 +159,14 @@ func (c Channel) Triptime() time.Duration {
 	return c.c.Triptime()
 }
 
+// Send send data to channel
 func (c Channel) Send(data []byte) (id uint32, err error) {
 	return c.c.Send(data)
 }
 
-func (c Channel) SendAnswer(data []byte) (id uint32, err error) {
+// SendNoWait (or SendDirect) send data to channel, it use inside readers when packet just read
+// and resend in quck time. If you send from routine use Send function
+func (c Channel) SendNoWait(data []byte) (id uint32, err error) {
 	return c.c.SendAnswer(data)
 }
 

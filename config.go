@@ -252,8 +252,8 @@ func (c config) makeAddress(keyData []byte) (addr string, err error) {
 	return
 }
 
-// GetAddress get teonet address
-func (t Teonet) GetAddress() (addr string) {
+// Address get teonet address
+func (t Teonet) Address() (addr string) {
 	return t.config.Address
 }
 

@@ -103,8 +103,9 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	return
 }
 
-// processCmdConnectToPeer (3) peer got ConnectTo request from teonet auth (peer prepare to
-// connect from client and send answer with it IPs to auth server)
+// processCmdConnectToPeer (3) peer got CmdConnectToPeer request from teonet
+// auth (peer prepare to connect from client and send answer with its IPs to
+// auth server)
 func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 
 	// Unmarshal data
@@ -129,6 +130,7 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 		ToAddr:    con.FromAddr,
 		LocalIPs:  ips,
 		LocalPort: uint32(port),
+		Resend:    con.Resend,
 	}
 	data, _ = conPeer.MarshalBinary()
 
@@ -144,7 +146,7 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 		IP:        con.IP,
 		Port:      con.Port,
 	}, func() bool { _, ok := teo.peerRequests.get(con.ID); return !ok },
-	/* 100*time.Millisecond, */
+		10*time.Millisecond,
 	)
 
 	return
@@ -230,7 +232,7 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 
 	// Punch firewall
 	teo.puncher.punch(con.ID, IPs{
-		LocalIPs:  []string{}, // con.LocalIPs, // empty list of local address
+		LocalIPs:  []string{}, // empty list, don't send punch to local address
 		LocalPort: con.LocalPort,
 		IP:        con.IP,
 		Port:      con.Port,
@@ -271,7 +273,7 @@ func (teo Teonet) connectToConnectedPeer(c *Channel, p *Packet) (ok bool) {
 				teo.Connected(c, res.FromAddr)
 				teo.peerRequests.del(con.ID)
 				teolog.Log(teolog.DEBUG, "Send answer to client, ID:", con.ID)
-				c.SendAnswer(p.Data())
+				c.SendNoWait(p.Data())
 			} else {
 				teo.channels.del(c)
 				teolog.Log(teolog.ERROR, "wrong request ID:", con.ID)
@@ -337,6 +339,7 @@ type ConnectToData struct {
 	LocalIPs  []string // List of local IPs (set by client or peer)
 	LocalPort uint32   // Local port (set by client or peer)
 	Err       []byte   // Error of connect data processing
+	Resend    bool     // Resend flag
 }
 
 func (c ConnectToData) MarshalBinary() (data []byte, err error) {
@@ -350,6 +353,7 @@ func (c ConnectToData) MarshalBinary() (data []byte, err error) {
 	c.WriteStringSlice(buf, c.LocalIPs)
 	binary.Write(buf, binary.LittleEndian, c.LocalPort)
 	c.WriteSlice(buf, c.Err)
+	binary.Write(buf, binary.LittleEndian, c.Resend)
 
 	data = buf.Bytes()
 	return
@@ -386,7 +390,13 @@ func (c *ConnectToData) UnmarshalBinary(data []byte) (err error) {
 		return
 	}
 
-	c.Err, err = c.ReadSlice(buf)
+	if c.Err, err = c.ReadSlice(buf); err != nil {
+		return
+	}
+
+	if err = binary.Read(buf, binary.LittleEndian, &c.Resend); err != nil {
+		return
+	}
 
 	return
 }
