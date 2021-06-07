@@ -65,7 +65,7 @@ RUN ls /go/src/github.com/kirill-scherba/
 
 WORKDIR /go/src/github.com/kirill-scherba/teonet
 
-RUN go get && go install ./cmd/teonet
+RUN go get && go install ./cmd/teonet && go install ./cmd/teoapi && go install ./cmd/teoapicli
 
 RUN ls /go/bin
 
