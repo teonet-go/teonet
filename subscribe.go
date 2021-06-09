@@ -13,6 +13,7 @@ func (teo Teonet) Subscribe(address string, reader interface{}) (res *subscribeD
 		err = errors.New("address does not connected")
 		return
 	}
+
 	teo.subscribe(c, reader)
 	return
 }
@@ -35,8 +36,8 @@ func (teo Teonet) subscribe(c *Channel, readerI interface{}) *subscribeData {
 	return teo.subscribers.add(c, reader)
 }
 
-// unsubscribe from channel data
-func (teo Teonet) unsubscribe(s *subscribeData) {
+// Unsubscribe from channel data
+func (teo Teonet) Unsubscribe(s *subscribeData) {
 	teo.subscribers.del(s)
 }
 

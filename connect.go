@@ -142,7 +142,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	var subs *subscribeData
 	defer func() {
 		if err != nil {
-			teo.unsubscribe(subs)
+			teo.Unsubscribe(subs)
 		}
 	}()
 	var chanWait = make(chanWait)
@@ -156,7 +156,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 		// Error processing
 		if err != nil {
 			teolog.Logf(teolog.DEBUG, "Connect reader", "got error from channel %s, error: %s", c, err)
-			teo.unsubscribe(subs)
+			teo.Unsubscribe(subs)
 			teo.auth = nil
 			teolog.Logf(teolog.CONNECT, "Disconnected", "from teonet")
 			// Reconnect

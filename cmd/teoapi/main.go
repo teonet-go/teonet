@@ -18,41 +18,52 @@ const (
 func Commands(teo *teonet.Teonet, api *teonet.API) {
 
 	api.Add(
-		teonet.MakeAPI(
-			"hello",                    // Command name
-			"get 'hello name' message", // Short description
-			"",                         // Long description
-			"<name string>",            // Usage (input parameter)
-			"<answer string>",          // Return (output parameters)
-			api.Cmd(129),               // Command number cmd = 129
-			teonet.ServerMode,          // Connect mode
-			teonet.DataAnswer,          // Answer mode
-			// Command reader (execute when command received)
-			func(c *teonet.Channel, data []byte) bool {
-				data = append([]byte("Hello "), data...)
-				// Use SendNoWait function when you answer to just received
-				// command. If processing of you command get lot of time (read
-				// data from data base or read file etc.) do it in goroutine
-				// and use Send() function. If you don't shure which to use
-				// than use Send() function :)
-				c.SendNoWait(data)
-				return true
-			}),
-		teonet.MakeAPI(
-			"description",                 // Command name
-			"get application description", // Short description
-			"",                            // Long description
-			"",                            // Usage (input parameter)
-			"<description string>",        // Return (output parameters)
-			api.CmdNext(),                 // Command number cmd = 130
-			teonet.ServerMode,             // Connect mode
-			teonet.DataAnswer,             // Answer mode
-			// Command reader (execute when command received)
-			func(c *teonet.Channel, data []byte) bool {
-				ret := []byte(appName)
-				c.SendNoWait(ret)
-				return true
-			}),
+		func(cmdApi teonet.APInterface) teonet.APInterface {
+			cmdApi = teonet.MakeAPI2().
+				SetCmd(api.Cmd(129)).                 // Command number cmd = 129
+				SetName("hello").                     // Command name
+				SetShort("get 'hello name' message"). // Short description
+				SetUsage("<name string>").            // Usage (input parameter)
+				SetReturn("<answer string>").         // Return (output parameters)
+				// Command reader (execute when command received)
+				SetReader(func(c *teonet.Channel, p *teonet.Packet, data []byte) bool {
+					data = append([]byte("Hello "), data...)
+					api.SendAnswer(cmdApi, c, data, p)
+					return true
+				})
+			return cmdApi
+		}(teonet.APIData{}),
+
+		func(cmdApi teonet.APInterface) teonet.APInterface {
+			cmdApi = teonet.MakeAPI2().
+				SetCmd(api.CmdNext()).                   // Command number cmd = 130
+				SetName("description").                  // Command name
+				SetShort("get application description"). // Short description
+				SetReturn("<description string>").       // Return (output parameters)
+				// Command reader (execute when command received)
+				SetReader(func(c *teonet.Channel, p *teonet.Packet, data []byte) bool {
+					ret := []byte(appName)
+					api.SendAnswer(cmdApi, c, ret, p)
+					return true
+				})
+			return cmdApi
+		}(teonet.APIData{}),
+
+		func(cmdApi teonet.APInterface) teonet.APInterface {
+			cmdApi = teonet.MakeAPI2().
+				SetCmd(api.CmdNext()).        // Command number cmd = 130
+				SetName("secret").            // Command name
+				SetShort("get secret key").   // Short description
+				SetUsage("<id string>").      // Usage (input parameter)
+				SetReturn("<secret string>"). // Return (output parameters)
+				// Command reader (execute when command received)
+				SetReader(func(c *teonet.Channel, p *teonet.Packet, data []byte) bool {
+					ret := []byte(appName)
+					api.SendAnswer(cmdApi, c, ret, p)
+					return true
+				})
+			return cmdApi
+		}(teonet.APIData{}),
 	)
 }
 
@@ -86,6 +97,7 @@ func main() {
 		return
 	}
 
+	// Create new API, add commands and reader
 	api := teonet.NewAPI(teo)
 	Commands(teo, api)
 	teo.AddReader(api.Reader())
@@ -93,17 +105,8 @@ func main() {
 	// Print API
 	fmt.Printf("API description:\n\n%s\n\n", api.Help())
 
-	// Test API marshal/unmarshal
-	data, _ := api.MarshalBinary()
-	fmt.Println("API to binary:", data)
-
-	apiDataAr := new(teonet.APIDataAr)
-	apiDataAr.UnmarshalBinary(data)
-	fmt.Println("APIData from binary:", apiDataAr.Apis[0].Name(), apiDataAr)
-
 	// Connect to teonet
 	for teo.Connect() != nil {
-		// teo.Log().Println("can't connect to Teonet, error:", err)
 		time.Sleep(1 * time.Second)
 	}
 

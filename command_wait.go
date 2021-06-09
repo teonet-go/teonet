@@ -14,7 +14,7 @@ import (
 )
 
 // waitFromNew initialize new Wait command module
-func (teo *Teonet) newWaitFrom() (wcom *waitCommand) {
+func (teo *Teonet) NewWaitFrom() (wcom *waitCommand) {
 	wcom = &waitCommand{}
 	wcom.m = make(map[string][]*waitFromRequest)
 	wcom.teo = teo
@@ -50,6 +50,16 @@ type ChanWaitFromData chan *struct {
 // 	Data []byte
 // 	Err  error
 // }
+
+func (wcom *waitCommand) Reader(c *Channel, p *Packet, err error) (ret bool) {
+	// Process waitFrom packets
+	if err == nil {
+		if wcom.check(p) > 0 {
+			return true
+		}
+	}
+	return
+}
 
 // add adds 'wait command from' request
 func (wcom *waitCommand) add(from string, cmd byte, ch ChanWaitFromData, f checkDataFunc) (wfr *waitFromRequest) {
@@ -167,7 +177,12 @@ type checkDataFunc func([]byte) bool
 // Next parameter is checkDataFunc func([]byte) bool. This function calls to
 // check packet data and returns true if packet data valid. This parameter may
 // be ommited too.
-func (teo *TeonetCommand) WaitFrom(from string, cmd byte, attr ...interface{}) <-chan *struct {
+func (wcom *waitCommand) WaitFrom(from string, cmd byte, attr ...interface{}) (data []byte, err error) {
+	res := <-wcom.waitFrom(from, cmd, attr)
+	return res.Data, res.Err
+}
+
+func (wcom *waitCommand) waitFrom(from string, cmd byte, attr ...interface{}) <-chan *struct {
 	Data []byte
 	Err  error
 } {
@@ -190,16 +205,57 @@ func (teo *TeonetCommand) WaitFrom(from string, cmd byte, attr ...interface{}) <
 	})
 
 	go func() {
-		wfr := teo.wcom.add(from, cmd, ch, checkFunc)
+		wfr := wcom.add(from, cmd, ch, checkFunc)
 		time.Sleep(timeout)
-		if teo.wcom.exists(wfr) {
+		if wcom.exists(wfr) {
 			ch <- &struct {
 				Data []byte
 				Err  error
 			}{nil, errors.New("timeout")}
-			teo.wcom.remove(wfr)
+			wcom.remove(wfr)
 		}
 	}()
 
 	return ch
+}
+
+// TODO: check replacing function body to 'return teo.wcom.WaitFrom(from, cmd, attr...)
+func (teo *TeonetCommand) WaitFrom(from string, cmd byte, attr ...interface{}) <-chan *struct {
+	Data []byte
+	Err  error
+} {
+	return teo.wcom.waitFrom(from, cmd, attr...)
+	/*
+		// Parameters definition
+		var checkFunc checkDataFunc
+		timeout := 5 * time.Second
+		for i := range attr {
+			switch v := attr[i].(type) {
+			case time.Duration:
+				timeout = v
+			case func([]byte) bool:
+				checkFunc = v
+			}
+		}
+
+		// Create channel, add wait parameter and wait timeout
+		ch := make(chan *struct {
+			Data []byte
+			Err  error
+		})
+
+		go func() {
+			wfr := teo.wcom.add(from, cmd, ch, checkFunc)
+			time.Sleep(timeout)
+			if teo.wcom.exists(wfr) {
+				ch <- &struct {
+					Data []byte
+					Err  error
+				}{nil, errors.New("timeout")}
+				teo.wcom.remove(wfr)
+			}
+		}()
+
+		return ch
+	*/
 }

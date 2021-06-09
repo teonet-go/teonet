@@ -105,7 +105,7 @@ func NewCommandInterface(appName string, attr ...interface{}) (teo *TeonetComman
 
 // commandInterface get teonet command interface
 func commandInterface(t *Teonet) (teo *TeonetCommand) {
-	teo = &TeonetCommand{t, t.newWaitFrom()}
+	teo = &TeonetCommand{t, t.NewWaitFrom()}
 	teo.addClientReader(func(t *Teonet, c *Channel, p *Packet, err error) (ret bool) {
 		return teo.readerCommand(c, p, err)
 	})

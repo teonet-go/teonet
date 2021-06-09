@@ -21,7 +21,7 @@ type APInterface interface {
 	Ret() string
 	Cmd() byte
 	ExecMode() (APIconnectMode, APIanswerMode)
-	Reader(c *Channel, data []byte) bool
+	Reader(c *Channel, p *Packet, data []byte) bool
 }
 
 // APIconnectMode connection type of received command:
@@ -69,7 +69,7 @@ const (
 // MakeAPI is teonet API interface builder
 func MakeAPI(name, short, long, usage, ret string, cmd byte,
 	execMode APIconnectMode, answerMode APIanswerMode,
-	reader func(c *Channel, data []byte) bool) APInterface {
+	reader func(c *Channel, p *Packet, data []byte) bool) APInterface {
 	apiData := &APIData{
 		name:        name,
 		short:       short,
@@ -94,8 +94,63 @@ type APIData struct {
 	cmd         byte
 	connectMode APIconnectMode
 	answerMode  APIanswerMode
-	reader      func(c *Channel, data []byte) bool
+	reader      func(c *Channel, p *Packet, data []byte) bool
 	ByteSlice
+}
+
+func MakeAPI2() *APIData {
+	return &APIData{
+		connectMode: ServerMode,
+		answerMode:  CmdAnswer,
+		reader: func(c *Channel, p *Packet, data []byte) bool {
+			return true
+		},
+	}
+}
+
+func (a *APIData) SetName(name string) *APIData {
+	a.name = name
+	return a
+}
+
+func (a *APIData) SetShort(short string) *APIData {
+	a.short = short
+	return a
+}
+
+func (a *APIData) SetLong(long string) *APIData {
+	a.long = long
+	return a
+}
+
+func (a *APIData) SetUsage(usage string) *APIData {
+	a.usage = usage
+	return a
+}
+
+func (a *APIData) SetReturn(ret string) *APIData {
+	a.ret = ret
+	return a
+}
+
+func (a *APIData) SetCmd(cmd byte) *APIData {
+	a.cmd = cmd
+	return a
+}
+
+func (a *APIData) SetConnectMode(connectMode APIconnectMode) *APIData {
+	a.connectMode = connectMode
+	return a
+}
+
+func (a *APIData) SetAnswerMode(answerMode APIanswerMode) *APIData {
+	a.answerMode = answerMode
+	return a
+}
+
+func (a *APIData) SetReader(reader func(c *Channel, p *Packet, data []byte) bool) *APIData {
+	a.reader = reader
+	return a
 }
 
 func (a APIData) Name() string  { return a.name }
@@ -107,23 +162,63 @@ func (a APIData) Cmd() byte     { return a.cmd }
 func (a APIData) ExecMode() (APIconnectMode, APIanswerMode) {
 	return a.connectMode, a.answerMode
 }
-func (a APIData) Reader(c *Channel, data []byte) bool {
-	return a.reader(c, data)
+func (a APIData) Reader(c *Channel, p *Packet, data []byte) bool {
+	return a.reader(c, p, data)
 }
 
 // NewAPI create new teonet api
-func NewAPI(teo *Teonet) *API {
-	return &API{Teonet: teo}
+func NewAPI(teo *Teonet) (api *API) {
+	api = &API{Teonet: teo}
+	cmd := byte(255)
+	var cmdApi APInterface
+	cmdApi = MakeAPI("api", "get api", "", "", "<api APIDataAr>", cmd, ServerMode, CmdAnswer,
+		func(c *Channel, p *Packet, data []byte) bool {
+			teo.Log().Println("got api request")
+			outData, _ := api.MarshalBinary()
+			_, answerMode := cmdApi.ExecMode()
+
+			fmt.Println("answerMode:", answerMode)
+			api.SendAnswer(cmdApi, c, outData, p)
+			// teo.Command(cmdApi.Cmd(), d).SendNoWait(c)
+
+			return true
+		})
+	api.Add(cmdApi)
+	return api
 }
 
 // API teonet api receiver
 type API struct {
 	*Teonet
 	// appName        string
+	// appShort       string
 	// appVersion     string
 	// appDescription string
 	cmds []APInterface
 	cmd  byte
+}
+
+// Send answer to request
+func (a *API) SendAnswer(cmd APInterface, c *Channel, data []byte, p *Packet) (id uint32, err error) {
+	_, answerMode := cmd.ExecMode()
+	if answerMode&PacketIDAnswer > 0 {
+		id := make([]byte, 4)
+		binary.LittleEndian.PutUint32(id, p.ID())
+		data = append(id, data...)
+	}
+
+	// Use SendNoWait function when you answer to just received
+	// command. If processing of you command get lot of time (read
+	// data from data base or read file etc.) do it in goroutine
+	// and use Send() function. If you don't shure which to use
+	// than use Send() function :)
+	if answerMode&CmdAnswer > 0 {
+		a.Command(cmd.Cmd(), data).SendNoWait(c)
+	} else {
+		c.SendNoWait(data)
+	}
+
+	return
 }
 
 // Cmd return API command number and save this command to use in CmdNext
@@ -167,7 +262,7 @@ func (a API) Reader() func(c *Channel, p *Packet, err error) (processed bool) {
 				continue
 
 			// Execute command
-			case a.cmds[i].Reader(c, cmd.Data):
+			case a.cmds[i].Reader(c, p, cmd.Data):
 				return true
 			}
 
@@ -323,6 +418,107 @@ func (a *APIDataAr) UnmarshalBinary(data []byte) (err error) {
 			return
 		}
 		a.Apis = append(a.Apis, api)
+	}
+
+	return
+}
+
+func (teo *Teonet) NewAPIClient(address string) (apicli *APIClient, err error) {
+	apicli = new(APIClient)
+	apicli.address = address
+	apicli.waitCommand = teo.NewWaitFrom()
+	apicli.subscribeData, err = teo.Subscribe(address, apicli.waitCommand.Reader)
+	if err != nil {
+		return
+	}
+	err = apicli.getApi()
+	return
+}
+
+type APIClient struct {
+	APIDataAr
+	*waitCommand
+	*subscribeData
+	address string
+}
+
+const (
+	cmdAPI = 255
+)
+
+// WaitFrom wait receiving data from peer. The third function parameter is
+// timeout. It may be omitted or contain timeout time of time. Duration type.
+// If timeout parameter is omitted than default timeout value sets to 2 second.
+// Next parameter is checkDataFunc func([]byte) bool. This function calls to
+// check packet data and returns true if packet data valid. This parameter may
+// be ommited too.
+func (api *APIClient) WaitFrom(command interface{}, attr ...interface{}) (data []byte, err error) {
+	cmd, err := api.getCmd(command)
+	if err != nil {
+		return
+	}
+	res := <-api.waitFrom(api.address, cmd, attr)
+	return res.Data, res.Err
+}
+
+func (api *APIClient) SendTo(command interface{}, data []byte, waits ...func(data []byte, err error)) (id uint32, err error) {
+	cmd, err := api.getCmd(command)
+	if err != nil {
+		return
+	}
+	id, err = api.teo.Command(cmd, data).SendTo(api.address)
+	if len(waits) > 0 {
+		go func() { waits[0](api.WaitFrom(cmd)) }()
+	}
+	return
+}
+
+// GetCmd get command number by name
+func (api *APIClient) GetCmd(name string) (cmd byte, ok bool) {
+	for i := range api.Apis {
+		if api.Apis[i].name == name {
+			cmd = api.Apis[i].cmd
+			ok = true
+			return
+		}
+	}
+	return
+}
+
+// getCmd check command type and return command number
+func (api *APIClient) getCmd(command interface{}) (cmd byte, err error) {
+	switch v := command.(type) {
+	case byte:
+		cmd = v
+	case int:
+		cmd = byte(v)
+	case string:
+		var ok bool
+		cmd, ok = api.GetCmd(v)
+		if !ok {
+			err = fmt.Errorf("command '%s' not found", v)
+			return
+		}
+	default:
+		panic("wrong type of 'command' argument")
+	}
+	return
+}
+
+// getApi send cmdAPI command and get answer with APIDataAr: all API definition
+func (api *APIClient) getApi() (err error) {
+	// api.teo.Log().Println("Send 255('api') without data")
+	api.SendTo(cmdAPI, nil)
+	data, err := api.WaitFrom(cmdAPI)
+	if err != nil {
+		api.teo.Log().Println("can't get api data, err", err)
+		return
+	}
+
+	err = api.APIDataAr.UnmarshalBinary(data)
+	if err != nil {
+		api.teo.Log().Println("can't unmarshal api data, err", err)
+		return
 	}
 
 	return
