@@ -68,7 +68,7 @@ func (c *channels) del(channel *Channel, delTrudps ...bool) {
 	if delTrudp {
 		c.trudp.ChannelDel(channel.c)
 	}
-	c.teo.subscribers.del(c)
+	go c.teo.subscribers.del(channel)
 	teolog.Log(teolog.CONNECT, "Peer", "disconnec:", channel.a)
 }
 
@@ -175,22 +175,9 @@ func (c Channel) Triptime() time.Duration {
 	return c.c.Triptime()
 }
 
-// checkSendAttr check Send function attributes
-func (c Channel) checkSendAttr(attr ...interface{}) (delivered func(p *trudp.Packet)) {
-	for i := range attr {
-		switch v := attr[i].(type) {
-
-		case func(p *trudp.Packet):
-			delivered = v
-		}
-
-	}
-	return
-}
-
 // Send send data to channel
 func (c Channel) Send(data []byte, attr ...interface{}) (id uint32, err error) {
-	var delivered = c.checkSendAttr(attr)
+	var delivered = c.checkSendAttr(attr...)
 	return c.c.Send(data, delivered)
 }
 
@@ -199,6 +186,45 @@ func (c Channel) Send(data []byte, attr ...interface{}) (id uint32, err error) {
 func (c Channel) SendNoWait(data []byte, attr ...interface{}) (id uint32, err error) {
 	var delivered = c.checkSendAttr(attr)
 	return c.c.SendNoWait(data, delivered)
+}
+
+// checkSendAttr check Send function attributes
+func (c Channel) checkSendAttr(attr ...interface{}) (delivered func(p *trudp.Packet)) {
+	var teo *Teonet
+	for i := range attr {
+		switch v := attr[i].(type) {
+
+		// Packet delivered callback
+		case func(p *trudp.Packet):
+			delivered = v
+
+		// Teonet
+		case *Teonet:
+			teo = v
+
+		// Answer callback
+		case func(c *Channel, p *Packet, err error) bool:
+			if teo != nil {
+				c.subscribeToAnswer(teo, v)
+			}
+		}
+
+	}
+	return
+}
+
+func (c Channel) subscribeToAnswer(teo *Teonet, f func(c *Channel, p *Packet, err error) bool) (scr *subscribeData, err error) {
+	scr, err = teo.Subscribe(c.a, func(c *Channel, p *Packet, err error) bool {
+		if f(c, p, err) {
+			teo.Unsubscribe(scr)
+			return true
+		}
+		return false
+	})
+	if err != nil {
+		return
+	}
+	return
 }
 
 func (c Channel) String() string {
