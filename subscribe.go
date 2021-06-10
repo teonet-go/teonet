@@ -1,7 +1,9 @@
 package teonet
 
 import (
+	"container/list"
 	"fmt"
+	"sync"
 )
 
 // Subscribe to receive packets from address. The reader attribute may be
@@ -46,12 +48,72 @@ type subscribeData struct {
 
 // newSubscribers create new subscribers (subscribersData)
 func (teo *Teonet) newSubscribers() {
-	teo.subscribers = new(subscribers)
+	s := new(subscribers)
+	s.idx = make(listIdx)
+	teo.subscribers = s
 }
 
-type subscribers []*subscribeData
+type subscribers struct {
+	lst          list.List // list
+	idx          listIdx   // list index by *subscribeData
+	sync.RWMutex           // mutex
+}
+type listIdx map[*subscribeData]*list.Element
 
-func (s *subscribers) add(channel *Channel, reader Treceivecb) (res *subscribeData) {
+func (s *subscribers) add(channel *Channel, reader Treceivecb) (scr *subscribeData) {
+	s.Lock()
+	defer s.Unlock()
+
+	scr = &subscribeData{channel, reader}
+	s.idx[scr] = s.lst.PushBack(scr)
+	return
+}
+
+func (s *subscribers) del(subs interface{}) {
+	s.Lock()
+	defer s.Unlock()
+
+	switch v := subs.(type) {
+	case *subscribeData:
+		if e, ok := s.idx[v]; ok {
+			delete(s.idx, v)
+			s.lst.Remove(e)
+		}
+
+	case *Channel:
+		var next *list.Element
+		for e := s.lst.Front(); e != nil; e = next {
+			next = e.Next()
+			scr := e.Value.(*subscribeData)
+			if scr.channel == v {
+				delete(s.idx, scr)
+				s.lst.Remove(e)
+			}
+		}
+	}
+}
+
+func (s *subscribers) send(teo *Teonet, c *Channel, p *Packet, err error) bool {
+	s.RLock()
+	defer s.RUnlock()
+
+	var next *list.Element
+	for e := s.lst.Front(); e != nil; e = next {
+		next = e.Next()
+		scr := e.Value.(*subscribeData)
+		if scr.channel == c {
+			if scr.reader(teo, c, p, err) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+/*
+type subscribers0 []*subscribeData
+
+func (s *subscribers0) add(channel *Channel, reader Treceivecb) (res *subscribeData) {
 	res = &subscribeData{channel, reader}
 	*s = append(*s, res)
 	return
@@ -60,7 +122,7 @@ func (s *subscribers) add(channel *Channel, reader Treceivecb) (res *subscribeDa
 // delete from subscribers by subscribeData or by channel (by channel remove
 // all subscibers to channel)
 // TODO: remove nil slice member aniware or add mutex and don't use nil as delete
-func (s subscribers) del(subs interface{}) {
+func (s subscribers0) del(subs interface{}) {
 
 	switch v := subs.(type) {
 	case *subscribeData:
@@ -80,7 +142,7 @@ func (s subscribers) del(subs interface{}) {
 }
 
 // send teonet packet to subscribers and return true if message processed
-func (s subscribers) send(teo *Teonet, c *Channel, p *Packet, err error) bool {
+func (s subscribers0) send(teo *Teonet, c *Channel, p *Packet, err error) bool {
 	for i := range s {
 		if s[i] == nil {
 			continue
@@ -94,3 +156,4 @@ func (s subscribers) send(teo *Teonet, c *Channel, p *Packet, err error) bool {
 	}
 	return false
 }
+*/
