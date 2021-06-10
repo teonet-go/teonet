@@ -114,6 +114,22 @@ func (c *channels) list() (n *nodes) {
 	return
 }
 
+// peers get slice of channels address
+func (c *channels) peers() (p []string) {
+	c.RLock()
+	defer c.RUnlock()
+
+	for key := range c.m_addr {
+		p = append(p, key)
+	}
+	return
+}
+
+// Peers get slice of channels address
+func (teo Teonet) Peers() (p []string) {
+	return teo.channels.peers()
+}
+
 // Nodes get list of channels IPs in nodes struct
 func (teo Teonet) Nodes(attr ...NodeAddr) (n *nodes) {
 	if len(attr) == 0 {
