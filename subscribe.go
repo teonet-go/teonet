@@ -1,20 +1,18 @@
 package teonet
 
 import (
-	"errors"
 	"fmt"
 )
 
 // Subscribe to receive packets from address. The reader attribute may be
 // teonet.Treceivecb or teonet.TreceivecbShort type
-func (teo Teonet) Subscribe(address string, reader interface{}) (res *subscribeData, err error) {
+func (teo Teonet) Subscribe(address string, reader interface{}) (scr *subscribeData, err error) {
 	c, ok := teo.channels.get(address)
 	if !ok {
-		err = errors.New("address does not connected")
+		err = ErrPeerNotConnected
 		return
 	}
-
-	teo.subscribe(c, reader)
+	scr = teo.subscribe(c, reader)
 	return
 }
 
