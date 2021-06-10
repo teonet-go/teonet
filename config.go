@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -205,7 +206,7 @@ func (c *config) createKeys() (err error) {
 
 	// Create teonet (address) private key
 	c.PrivateKeyData = c.generatePrivateKey()
-	c.log.Printf("new private key hex: %x\n", c.PrivateKeyData)
+	fmt.Printf("new private key hex: %x\n", c.PrivateKeyData)
 
 	return
 }

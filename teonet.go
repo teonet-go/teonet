@@ -243,11 +243,13 @@ func (teo Teonet) ShowTrudp(set bool) {
 	teo.trudp.SetShowStat(set)
 }
 
+var ErrPeerNotConnected = errors.New("peer does not connected")
+
 // Send data to peer
 func (teo Teonet) SendTo(addr string, data []byte) (id uint32, err error) {
 	c, ok := teo.channels.get(addr)
 	if !ok {
-		err = errors.New("peer does not connected")
+		err = ErrPeerNotConnected
 		return
 	}
 	return c.Send(data)
