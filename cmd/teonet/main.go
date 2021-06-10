@@ -12,7 +12,7 @@ import (
 const (
 	appName    = "Teonet echo client/server sample application"
 	appShort   = "teonet"
-	appVersion = "0.1.1"
+	appVersion = "0.1.2"
 )
 
 // reader main application reade receive and process messages
