@@ -38,7 +38,7 @@ func (teo Teonet) subscribe(c *Channel, readerI interface{}) *subscribeData {
 
 // Unsubscribe from channel data
 func (teo Teonet) Unsubscribe(s *subscribeData) {
-	teo.subscribers.del(s)
+	go teo.subscribers.del(s)
 }
 
 type subscribeData struct {
