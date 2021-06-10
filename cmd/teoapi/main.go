@@ -51,14 +51,14 @@ func Commands(teo *teonet.Teonet, api *teonet.API) {
 
 		func(cmdApi teonet.APInterface) teonet.APInterface {
 			cmdApi = teonet.MakeAPI2().
-				SetCmd(api.CmdNext()).        // Command number cmd = 130
+				SetCmd(api.CmdNext()).        // Command number cmd = 131
 				SetName("secret").            // Command name
 				SetShort("get secret key").   // Short description
 				SetUsage("<id string>").      // Usage (input parameter)
 				SetReturn("<secret string>"). // Return (output parameters)
 				// Command reader (execute when command received)
 				SetReader(func(c *teonet.Channel, p *teonet.Packet, data []byte) bool {
-					ret := []byte(appName)
+					ret := []byte("this is very strong secret key: ququruqu")
 					api.SendAnswer(cmdApi, c, ret, p)
 					return true
 				})

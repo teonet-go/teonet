@@ -473,11 +473,23 @@ func (api *APIClient) SendTo(command interface{}, data []byte, waits ...func(dat
 	return
 }
 
-// GetCmd get command number by name
-func (api *APIClient) GetCmd(name string) (cmd byte, ok bool) {
+// Cmd get command number by name
+func (api *APIClient) Cmd(name string) (cmd byte, ok bool) {
 	for i := range api.Apis {
 		if api.Apis[i].name == name {
 			cmd = api.Apis[i].cmd
+			ok = true
+			return
+		}
+	}
+	return
+}
+
+// Return get return parameter by name
+func (api *APIClient) Return(name string) (ret string, ok bool) {
+	for i := range api.Apis {
+		if api.Apis[i].name == name {
+			ret = api.Apis[i].ret
 			ok = true
 			return
 		}
@@ -494,7 +506,7 @@ func (api *APIClient) getCmd(command interface{}) (cmd byte, err error) {
 		cmd = byte(v)
 	case string:
 		var ok bool
-		cmd, ok = api.GetCmd(v)
+		cmd, ok = api.Cmd(v)
 		if !ok {
 			err = fmt.Errorf("command '%s' not found", v)
 			return
@@ -521,5 +533,35 @@ func (api *APIClient) getApi() (err error) {
 		return
 	}
 
+	return
+}
+
+// String stringlify APIClient
+func (api APIClient) String() (str string) {
+
+	str += "API commands\n\n"
+	str += api.Help(false)
+
+	return
+}
+
+func (api APIClient) Help(short bool) (str string) {
+	var max = 20
+	for i, a := range api.Apis {
+		if i > 0 {
+			str += "\n"
+		}
+		if short {
+			str += fmt.Sprintf("%-*s %3d - %s", max, a.Name(), a.Cmd(), a.Short())
+			continue
+		}
+		if i > 0 {
+			str += "\n"
+		}
+		str += fmt.Sprintf("%-*s %s\n", max, a.Name(), a.Short())
+		str += fmt.Sprintf("%*s command: %d\n", max, "", a.Cmd())
+		str += fmt.Sprintf("%*s usage:   %s\n", max, "", a.Name()+" "+a.Usage())
+		str += fmt.Sprintf("%*s return:  %s", max, "", a.Ret())
+	}
 	return
 }
