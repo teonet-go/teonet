@@ -175,15 +175,30 @@ func (c Channel) Triptime() time.Duration {
 	return c.c.Triptime()
 }
 
+// checkSendAttr check Send function attributes
+func (c Channel) checkSendAttr(attr ...interface{}) (delivered func(p *trudp.Packet)) {
+	for i := range attr {
+		switch v := attr[i].(type) {
+
+		case func(p *trudp.Packet):
+			delivered = v
+		}
+
+	}
+	return
+}
+
 // Send send data to channel
-func (c Channel) Send(data []byte) (id uint32, err error) {
-	return c.c.Send(data)
+func (c Channel) Send(data []byte, attr ...interface{}) (id uint32, err error) {
+	var delivered = c.checkSendAttr(attr)
+	return c.c.Send(data, delivered)
 }
 
 // SendNoWait (or SendDirect) send data to channel, it use inside readers when packet just read
 // and resend in quck time. If you send from routine use Send function
-func (c Channel) SendNoWait(data []byte) (id uint32, err error) {
-	return c.c.SendAnswer(data)
+func (c Channel) SendNoWait(data []byte, attr ...interface{}) (id uint32, err error) {
+	var delivered = c.checkSendAttr(attr)
+	return c.c.SendNoWait(data, delivered)
 }
 
 func (c Channel) String() string {
