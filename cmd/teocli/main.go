@@ -10,6 +10,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"time"
 
 	"github.com/kirill-scherba/teonet/cmd/teocli/menu"
 
@@ -256,10 +257,9 @@ func (c CmdSendTo) Exec(line string) (err error) {
 		}
 	}
 
-	// Subscribe to channel and wait answer from channel, unsubscribe when
-	// function return
+	// Send data to peer and wait answer
 	wait := make(chan interface{})
-	sbc, err := c.teo.Subscribe(address, func(c *teonet.Channel, p *teonet.Packet, err error) bool {
+	id, err := c.teo.SendTo(address, data, func(c *teonet.Channel, p *teonet.Packet, err error) bool {
 		if err != nil {
 			// fmt.Printf("got error: %s, from: %s\n", err, address)
 			return false
@@ -269,26 +269,19 @@ func (c CmdSendTo) Exec(line string) (err error) {
 		return true
 	})
 	if err != nil {
-		fmt.Printf("can't subscribe to %s, error: %s\n", address, err)
+		fmt.Printf("can't send to %s, error: %s\n", address, err)
 		if err == teonet.ErrPeerNotConnected {
 			fmt.Printf("use: 'connectto %s' to connect\n", address)
 		}
 		return nil
 	}
-	defer c.teo.Unsubscribe(sbc)
-
-	// Send data to peer
-	id, err := c.teo.SendTo(address, data)
-	if err != nil {
-		fmt.Printf("can't send to %s, error: %s\n", address, err)
-		// if err == teonet.ErrPeerNotConnected {
-		// 	fmt.Printf("use: 'connectto %s' to connect\n", address)
-		// }
-		return nil
-	}
 	fmt.Printf("send data to %s, packet ip: %d\n", address, id)
-	<-wait
-	close(wait)
+	select {
+	case <-wait:
+		close(wait)
+	case <-time.After(time.Duration(3 * time.Second)):
+		fmt.Println("can't got data, error: timeout")
+	}
 
 	return
 }
