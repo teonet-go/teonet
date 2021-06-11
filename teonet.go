@@ -44,21 +44,16 @@ func Log() *log.Logger {
 // reader is Main teonet reader
 func reader(teo *Teonet, c *Channel, p *Packet, err error) {
 
+	// Delete channel on err after all other reader process this error
 	defer func() {
-		// Delete channel
 		if err != nil {
-			// fmt.Println("teonet reader delete channel", c)
 			teo.channels.del(c)
 
 		}
 	}()
 
 	// Check error and 'connect to peer connected' processing
-	if err != nil {
-		// fmt.Println("teonet reader delete channel", c)
-		// teo.channels.del(c)
-
-	} else if teo.connectToConnectedPeer(c, p) || teo.connectToConnectedClient(c, p) {
+	if err == nil && (teo.connectToConnectedPeer(c, p) || teo.connectToConnectedClient(c, p)) {
 		return
 	}
 
