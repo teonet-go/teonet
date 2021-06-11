@@ -68,7 +68,7 @@ func (c *channels) del(channel *Channel, delTrudps ...bool) {
 	if delTrudp {
 		c.trudp.ChannelDel(channel.c)
 	}
-	go c.teo.subscribers.del(channel)
+	c.teo.subscribers.del(channel)
 	teolog.Log(teolog.CONNECT, "Peer", "disconnec:", channel.a)
 }
 

@@ -38,7 +38,7 @@ func (teo Teonet) subscribe(c *Channel, readerI interface{}) *subscribeData {
 
 // Unsubscribe from channel data
 func (teo Teonet) Unsubscribe(s *subscribeData) {
-	go teo.subscribers.del(s)
+	teo.subscribers.del(s)
 }
 
 type subscribeData struct {
@@ -95,18 +95,22 @@ func (s *subscribers) del(subs interface{}) {
 
 func (s *subscribers) send(teo *Teonet, c *Channel, p *Packet, err error) bool {
 	s.RLock()
-	defer s.RUnlock()
+	// defer s.RUnlock()
 
 	var next *list.Element
 	for e := s.lst.Front(); e != nil; e = next {
 		next = e.Next()
 		scr := e.Value.(*subscribeData)
 		if scr.channel == c {
+			s.RUnlock()
 			if scr.reader(teo, c, p, err) {
 				return true
 			}
+			s.RLock()
 		}
 	}
+
+	s.RUnlock()
 	return false
 }
 
