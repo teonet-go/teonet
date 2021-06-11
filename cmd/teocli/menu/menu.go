@@ -102,7 +102,7 @@ func (m *Menu) Run() (err error) {
 		case line == "exit", line == "quit":
 			return
 		default:
-			if err = m.executeCommand(line); err != nil {
+			if err = m.ExecuteCommand(line); err != nil {
 				fmt.Println("error:", err)
 			}
 		}
@@ -110,7 +110,7 @@ func (m *Menu) Run() (err error) {
 	return
 }
 
-func (m Menu) executeCommand(line string) (err error) {
+func (m Menu) ExecuteCommand(line string) (err error) {
 
 	c := m.findCommand(line)
 	if c == nil {
@@ -172,7 +172,7 @@ func (c CmdHelp) Exec(line string) (err error) {
 	flags.Parse(c.menu.SplitSpace(line))
 	args := flags.Args()
 	if len(args) == 1 {
-		c.menu.executeCommand(args[0] + " " + cmdHelp)
+		c.menu.ExecuteCommand(args[0] + " " + cmdHelp)
 		return
 	}
 

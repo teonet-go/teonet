@@ -56,9 +56,9 @@ type config struct {
 }
 
 const (
-	teonetDir  = "teonet"
-	teonetFile = "teonet.conf"
-	bufferSize = 2048
+	ConfigDir        = "teonet"
+	configFile       = "teonet.conf"
+	configBufferSize = 2048
 )
 
 func (c config) marshal() (data []byte, err error) {
@@ -79,7 +79,7 @@ func (c config) file() (res string, err error) {
 	if err != nil {
 		return
 	}
-	res += "/" + teonetDir + "/" + c.appName + "/" + teonetFile
+	res += "/" + ConfigDir + "/" + c.appName + "/" + configFile
 	return
 }
 
@@ -140,12 +140,12 @@ func (c *config) read() (err error) {
 	}
 
 	// Read file data
-	data := make([]byte, bufferSize)
+	data := make([]byte, configBufferSize)
 	n, err := f.Read(data)
 	if err != nil {
 		return
 	}
-	if n == bufferSize {
+	if n == configBufferSize {
 		err = errors.New("too small read buffer")
 		return
 	}
