@@ -15,6 +15,13 @@ type Alias struct {
 
 type aliasMap map[string]string
 
+func (a *Alias) Address(name string) string {
+	if address, ok := a.get(name); ok {
+		return address
+	}
+	return name
+}
+
 func (a *Alias) add(name, address string) {
 	a.Lock()
 	defer a.Unlock()

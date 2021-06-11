@@ -131,7 +131,7 @@ func (c CmdConnectTo) Exec(line string) (err error) {
 	}
 
 	// Connect to Peer
-	var address = args[0]
+	var address = c.alias.Address(args[0])
 	err = c.teo.ConnectTo(address)
 	if err != nil {
 		fmt.Printf("can't connect to %s, error: %s\n", address, err)
@@ -181,7 +181,7 @@ func (c CmdAPI) Exec(line string) (err error) {
 	}
 
 	// Create API interface and get API
-	var address = args[0]
+	var address = c.alias.Address(args[0])
 	api, err := c.teo.NewAPIClient(address)
 	if err != nil {
 		fmt.Printf("can't get api %s, error: %s\n", address, err)
@@ -268,7 +268,7 @@ func (c CmdSendTo) Exec(line string) (err error) {
 	}
 
 	// Address and Data
-	var address = args[0]
+	var address = c.alias.Address(args[0])
 	var data []byte
 	if len(args) > 1 {
 		for i, v := range args[1:] {
