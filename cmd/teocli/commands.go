@@ -118,7 +118,11 @@ func (c CmdConnectTo) Exec(line string) (err error) {
 	if list {
 		peers := c.teo.Peers()
 		for i := range peers {
-			fmt.Printf("%s\n", peers[i])
+			alias := c.alias.Name(peers[i])
+			if alias != "" {
+				alias = " - " + alias
+			}
+			fmt.Printf("%s\n", peers[i]+alias)
 		}
 		return
 	}
@@ -159,8 +163,8 @@ func (c CmdAPI) Usage() string { return "<address> [command] [arguments...]" }
 func (c CmdAPI) Help() string  { return "get peers api" }
 func (c CmdAPI) Exec(line string) (err error) {
 	flags := c.NewFlagSet(c.Name(), c.Usage(), c.Help())
-	// var list bool
-	// flags.BoolVar(&list, "list", list, "list all connected peers")
+	var list bool
+	flags.BoolVar(&list, "list", list, "list all connected api")
 	err = flags.Parse(c.menu.SplitSpace(line))
 	if err != nil {
 		return
@@ -173,6 +177,15 @@ func (c CmdAPI) Exec(line string) (err error) {
 		return
 	}
 
+	// Check -list flag
+	if list {
+		apis := c.api.list(c.alias)
+		for i := range apis {
+			fmt.Printf("%s\n", apis[i])
+		}
+		return
+	}
+
 	// Check length of arguments
 	if len(args) == 0 {
 		flags.Usage()
@@ -182,13 +195,17 @@ func (c CmdAPI) Exec(line string) (err error) {
 
 	// Create API interface and get API
 	var address = c.alias.Address(args[0])
-	api, err := c.teo.NewAPIClient(address)
-	if err != nil {
-		fmt.Printf("can't get api %s, error: %s\n", address, err)
-		if err == teonet.ErrPeerNotConnected {
-			fmt.Printf("use: 'connectto %s' to connect\n", address)
+	api, ok := c.api.get(address)
+	if !ok {
+		api, err = c.teo.NewAPIClient(address)
+		if err != nil {
+			fmt.Printf("can't get api %s, error: %s\n", address, err)
+			if err == teonet.ErrPeerNotConnected {
+				fmt.Printf("use: 'connectto %s' to connect\n", address)
+			}
+			return nil
 		}
-		return nil
+		c.api.add(address, api)
 	}
 	if len(args) == 1 {
 		fmt.Print(api.String() + "\n\n")
@@ -230,7 +247,7 @@ func (c CmdAPI) Exec(line string) (err error) {
 	return
 }
 func (c CmdAPI) Compliter() (cmpl []menu.Compliter) {
-	return c.menu.MakeCompliterFromString([]string{})
+	return c.menu.MakeCompliterFromString([]string{"-list"})
 }
 
 // Create CmdSendTo commands

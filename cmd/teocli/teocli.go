@@ -25,6 +25,7 @@ func NewTeocli(teo *teonet.Teonet) (cli *Teocli, err error) {
 	cli.menu.Add(cli.commands...)
 	cli.batch = &Batch{cli.menu}
 	cli.alias = newAlias()
+	cli.api = newAPI()
 
 	return
 }
@@ -34,6 +35,7 @@ type Teocli struct {
 	batch    *Batch
 	alias    *Alias
 	menu     *menu.Menu
+	api      *API
 	teo      *teonet.Teonet
 }
 

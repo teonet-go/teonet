@@ -15,11 +15,20 @@ type Alias struct {
 
 type aliasMap map[string]string
 
+// Address get address by name
 func (a *Alias) Address(name string) string {
 	if address, ok := a.get(name); ok {
 		return address
 	}
 	return name
+}
+
+// Name get name by address
+func (a *Alias) Name(address string) string {
+	if name, ok := a.find(address); ok {
+		return name
+	}
+	return ""
 }
 
 func (a *Alias) add(name, address string) {
@@ -38,6 +47,20 @@ func (a *Alias) get(name string) (address string, ok bool) {
 	a.RLock()
 	defer a.RUnlock()
 	address, ok = a.m[name]
+	return
+}
+
+func (a *Alias) find(address string) (name string, ok bool) {
+	a.RLock()
+	defer a.RUnlock()
+	for n, addr := range a.m {
+		// list = append(list, name+" "+address)
+		if addr == address {
+			ok = true
+			name = n
+			return
+		}
+	}
 	return
 }
 

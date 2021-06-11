@@ -565,3 +565,5 @@ func (api APIClient) Help(short bool) (str string) {
 	}
 	return
 }
+
+func (api APIClient) Address() string { return api.address }
