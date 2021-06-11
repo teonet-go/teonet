@@ -48,7 +48,7 @@ func (a *API) get(name string) (api *teonet.APIClient, ok bool) {
 func (a *API) list(alias *Alias) (list []string) {
 	a.RLock()
 	defer a.RUnlock()
-	for name, _ := range a.m {
+	for name := range a.m {
 		list = append(list, name+" - "+alias.Name(name))
 	}
 	return
