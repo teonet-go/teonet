@@ -78,11 +78,13 @@ func main() {
 		os.Exit(0)
 	}
 
+connect:
 	// Connect to teonet
 	err = teo.Connect()
 	if err != nil {
-		// teo.Log().Println("can't connect to Teonet, error:", err)
-		return
+		teo.Log().Println("can't connect to Teonet, error:", err)
+		time.Sleep(1 * time.Second)
+		goto connect
 	}
 
 	// Sleep forever if sendTo flag does not set
@@ -90,7 +92,7 @@ func main() {
 		select {}
 	}
 
-connectTo:
+connectto:
 	// Connect to Peer (selected in send-to application flag) and receive
 	// packets in own reader
 	if err := teo.ConnectTo(params.sendTo,
@@ -114,7 +116,7 @@ connectTo:
 	); err != nil {
 		teo.Log().Println("can't connect to Peer, error:", err)
 		time.Sleep(1 * time.Second)
-		goto connectTo
+		goto connectto
 	}
 
 sendto:
