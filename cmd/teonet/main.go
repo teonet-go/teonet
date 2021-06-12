@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	appShort   = "teocli"
+	appShort   = "teonet"
 	appName    = "Teonet CLI application"
 	appVersion = "0.0.3"
 )

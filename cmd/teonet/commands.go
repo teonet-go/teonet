@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/kirill-scherba/teonet"
-	"github.com/kirill-scherba/teonet/cmd/teocli/menu"
+	"github.com/kirill-scherba/teonet/cmd/teonet/menu"
 )
 
 // Command name
