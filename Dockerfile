@@ -40,7 +40,7 @@
 #
 #   docker build -t teonet -f ./Dockerfile ../.
 #
-# it recomendet use host network when run teonet  
+# it recomendet use host network when run teonet server application
 #
 #   docker tag teonet docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.5
 #   docker push docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.5
@@ -56,7 +56,6 @@ FROM golang:1.16.4 AS builder
 
 WORKDIR /go/src/github.com/kirill-scherba/
 RUN apt update 
-# && apt install -y libssl-dev
 
 COPY ./teonet ./teonet
 COPY ./trudp ./trudp
@@ -65,7 +64,11 @@ RUN ls /go/src/github.com/kirill-scherba/
 
 WORKDIR /go/src/github.com/kirill-scherba/teonet
 
-RUN go get && go install ./cmd/teonet && go install ./cmd/teoapi && go install ./cmd/teoapicli && go install ./cmd/teocli
+RUN go get 
+RUN go install ./cmd/teoapi 
+RUN go install ./cmd/teoapicli
+RUN go install ./cmd/teoecho 
+RUN go install ./cmd/teonet
 
 RUN ls /go/bin
 
@@ -79,10 +82,6 @@ WORKDIR /app
 
 # runtime dependencies
 RUN apt update 
-# && apt install -y libssl1.1 && mkdir -p ~/.config/teonet
-# libssl1.1  -- 109 MB
-# openssl    -- 110 MB
-# libssl-dev -- 117 MB
 
 # install previously built application
 COPY --from=builder /go/bin/* /usr/local/bin/

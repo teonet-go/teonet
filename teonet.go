@@ -17,7 +17,7 @@ import (
 	"github.com/kirill-scherba/trudp"
 )
 
-const Version = "0.1.4"
+const Version = "0.1.7"
 
 // nMODULEteo is current module name
 var nMODULEteo = "Teonet"
