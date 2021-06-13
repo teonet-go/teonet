@@ -6,12 +6,7 @@
 
 package teonet
 
-import (
-	"errors"
-	"strconv"
-	"sync"
-	"time"
-)
+/*
 
 // waitFromNew initialize new Wait command module
 func (teo *Teonet) NewWaitFrom() (wcom *waitCommand) {
@@ -218,6 +213,8 @@ func (wcom *waitCommand) waitFrom(from string, cmd byte, attr ...interface{}) <-
 
 	return ch
 }
+
+*/
 
 // TODO: check replacing function body to 'return teo.wcom.WaitFrom(from, cmd, attr...)
 // func (teo *TeonetCommand) WaitFrom(from string, cmd byte, attr ...interface{}) <-chan *struct {

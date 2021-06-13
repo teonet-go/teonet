@@ -105,37 +105,38 @@ func NewCommandInterface(appName string, attr ...interface{}) (teo *TeonetComman
 
 // commandInterface get teonet command interface
 func commandInterface(t *Teonet) (teo *TeonetCommand) {
-	teo = &TeonetCommand{t, t.NewWaitFrom()}
-	teo.addClientReader(func(t *Teonet, c *Channel, p *Packet, err error) (ret bool) {
-		return teo.readerCommand(c, p, err)
-	})
+	// teo = &TeonetCommand{t, t.NewWaitFrom()}
+	teo = &TeonetCommand{t}
+	// teo.addClientReader(func(t *Teonet, c *Channel, p *Packet, err error) (ret bool) {
+	// 	return teo.readerCommand(c, p, err)
+	// })
 	return
 }
 
 // TeonetCommand is teonet command interface
 type TeonetCommand struct {
 	*Teonet
-	wcom *waitCommand
+	// wcom *waitCommand
 }
 
 // readerCommand is Main teonet reader running in teonet command interface mode.
 // This reader process received waitFrom commands
-func (teo *TeonetCommand) readerCommand(c *Channel, p *Packet, err error) (ret bool) {
-	// Process waitFrom packets
-	if err == nil {
-		if teo.wcom.check(p) > 0 {
-			return true
-		}
-	}
-	return
-}
+// func (teo *TeonetCommand) readerCommand(c *Channel, p *Packet, err error) (ret bool) {
+// 	// Process waitFrom packets
+// 	if err == nil {
+// 		if teo.wcom.check(p) > 0 {
+// 			return true
+// 		}
+// 	}
+// 	return
+// }
 
 type ApiInterface interface {
 	ProcessPacket(p interface{})
 }
 
-// setApiReader sets teonet reader. This reader process received API commands
-func (teo *Teonet) setApiReader(api ApiInterface) {
+// addApiReader sets teonet reader. This reader process received API commands
+func (teo *Teonet) addApiReader(api ApiInterface) {
 	if api == nil {
 		return
 	}
@@ -157,4 +158,24 @@ func (teo TeonetCommand) SendTo(addr string, cmd byte, data []byte) (n int, err 
 	id, err := teo.Command(cmd, data).SendTo(addr)
 	n = int(id)
 	return
+}
+
+func (teo TeonetCommand) WaitFrom(addr string, cmd byte, attr ...interface{}) <-chan *struct {
+	Data []byte
+	Err  error
+} {
+	ch := make(chan *struct {
+		Data []byte
+		Err  error
+	})
+	attr = append(attr, cmd)
+	go func() {
+		data, err := teo.Teonet.WaitFrom(addr, attr...)
+		ch <- &struct {
+			Data []byte
+			Err  error
+		}{data, err}
+	}()
+
+	return ch
 }

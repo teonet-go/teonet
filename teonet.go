@@ -141,9 +141,11 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 		return
 	}
 
-	// Init trudp and start listen port to get messages
+	// Add client readers
+	teo.addApiReader(param.api)
 	teo.addClientReader(param.reader)
-	teo.setApiReader(param.api)
+
+	// Init trudp and start listen port to get messages
 	teo.trudp, err = trudp.Init(param.port, teo.config.trudpPrivateKey, teo.log,
 		param.logLevel, trudp.LogFilterT(param.logFilter),
 
