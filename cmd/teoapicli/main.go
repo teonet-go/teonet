@@ -12,7 +12,11 @@ import (
 const (
 	appShort   = "teoapicli"
 	appName    = "Teonet api client sample application"
-	appVersion = "0.0.1"
+	appVersion = "0.0.2"
+)
+
+const (
+	apis = "WXJfYLDEtg6Rkm1OHm9I9ud9rR6qPlMH6NE"
 )
 
 func main() {
@@ -32,7 +36,7 @@ func main() {
 	flag.StringVar(&params.appShort, "app-short", appShort, "application short name")
 	flag.IntVar(&params.port, "p", 0, "local port")
 	flag.BoolVar(&params.showTrudp, "u", false, "show trudp statistic")
-	flag.StringVar(&params.connectTo, "connect-to", "", "connect to api server")
+	flag.StringVar(&params.connectTo, "connect-to", apis, "connect to api server")
 	flag.StringVar(&params.logLevel, "log-level", "NONE", "log level")
 	flag.StringVar(&params.logFilter, "log-filter", "", "log filter")
 	flag.Parse()

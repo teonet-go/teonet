@@ -425,9 +425,8 @@ func (a *APIDataAr) UnmarshalBinary(data []byte) (err error) {
 
 func (teo *Teonet) NewAPIClient(address string) (apicli *APIClient, err error) {
 	apicli = new(APIClient)
+	apicli.teo = teo
 	apicli.address = address
-	apicli.waitCommand = teo.NewWaitFrom()
-	apicli.subscribeData, err = teo.Subscribe(address, apicli.waitCommand.Reader)
 	if err != nil {
 		return
 	}
@@ -437,12 +436,12 @@ func (teo *Teonet) NewAPIClient(address string) (apicli *APIClient, err error) {
 
 type APIClient struct {
 	APIDataAr
-	*waitCommand
-	*subscribeData
 	address string
+	teo     *Teonet
 }
 
 const (
+	// Get server api command
 	cmdAPI = 255
 )
 
@@ -457,8 +456,9 @@ func (api *APIClient) WaitFrom(command interface{}, attr ...interface{}) (data [
 	if err != nil {
 		return
 	}
-	res := <-api.waitFrom(api.address, cmd, attr)
-	return res.Data, res.Err
+	attr = append(attr, cmd)
+	data, err = api.teo.WaitFrom(api.address, attr...)
+	return
 }
 
 func (api *APIClient) SendTo(command interface{}, data []byte, waits ...func(data []byte, err error)) (id uint32, err error) {
@@ -467,6 +467,10 @@ func (api *APIClient) SendTo(command interface{}, data []byte, waits ...func(dat
 		return
 	}
 	id, err = api.teo.Command(cmd, data).SendTo(api.address)
+	// TODO: i can't understand what does this code do :-)
+	// I think we need just add attr paramenter to this function and set at
+	// api.teo.Command(cmd, data).SendTo(api.address) call:
+	// api.teo.Command(cmd, data).SendTo(api.address, attr...)
 	if len(waits) > 0 {
 		go func() { waits[0](api.WaitFrom(cmd)) }()
 	}

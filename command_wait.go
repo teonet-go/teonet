@@ -220,9 +220,9 @@ func (wcom *waitCommand) waitFrom(from string, cmd byte, attr ...interface{}) <-
 }
 
 // TODO: check replacing function body to 'return teo.wcom.WaitFrom(from, cmd, attr...)
-func (teo *TeonetCommand) WaitFrom(from string, cmd byte, attr ...interface{}) <-chan *struct {
-	Data []byte
-	Err  error
-} {
-	return teo.wcom.waitFrom(from, cmd, attr...)
-}
+// func (teo *TeonetCommand) WaitFrom(from string, cmd byte, attr ...interface{}) <-chan *struct {
+// 	Data []byte
+// 	Err  error
+// } {
+// 	return teo.wcom.waitFrom(from, cmd, attr...)
+// }
