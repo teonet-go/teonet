@@ -61,16 +61,16 @@ func (c Command) Bytes() (data []byte) {
 	return
 }
 
-func (c Command) Send(channel *Channel) (id uint32, err error) {
+func (c Command) Send(channel *Channel, attr ...interface{}) (id uint32, err error) {
 	return channel.Send(c.Bytes())
 }
 
-func (c Command) SendNoWait(channel *Channel) (id uint32, err error) {
+func (c Command) SendNoWait(channel *Channel, attr ...interface{}) (id uint32, err error) {
 	return channel.SendNoWait(c.Bytes())
 }
 
-func (c Command) SendTo(addr string) (id uint32, err error) {
-	return c.teo.SendTo(addr, c.Bytes())
+func (c Command) SendTo(addr string, attr ...interface{}) (id uint32, err error) {
+	return c.teo.SendTo(addr, c.Bytes(), attr...)
 }
 
 func (c Command) MarshalBinary() (data []byte, err error) {

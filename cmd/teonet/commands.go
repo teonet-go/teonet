@@ -209,39 +209,40 @@ func (c CmdAPI) Exec(line string) (err error) {
 	}
 	if len(args) == 1 {
 		fmt.Print(api.String() + "\n\n")
-	} else {
-		var command = args[1]
-		var data []byte
-		if len(args) > 2 {
-			for i, v := range args[2:] {
-				if i > 0 {
-					data = append(data, byte(' '))
-				}
-				data = append(data, []byte(v)...)
+		return
+	}
+
+	var command = args[1]
+	var data []byte
+	if len(args) > 2 {
+		for i, v := range args[2:] {
+			if i > 0 {
+				data = append(data, byte(' '))
 			}
+			data = append(data, []byte(v)...)
 		}
-		wait := make(chan interface{})
-		_, err = api.SendTo(command, data, func(data []byte, err error) {
-			if err != nil {
-				fmt.Println("got error:", err)
-			} else {
-				if ret, ok := api.Return(command); ok && strings.Contains(ret, "string") {
-					fmt.Println("got answer:", string(data))
-				} else {
-					fmt.Println("got answer:", data)
-				}
-			}
-			wait <- struct{}{}
-		})
+	}
+	wait := make(chan interface{})
+	_, err = api.SendTo(command, data, func(data []byte, err error) {
 		if err != nil {
-			fmt.Printf("can't send api command %s, error: %s\n", command, err)
-			return nil
+			fmt.Println("got error:", err)
+		} else {
+			if ret, ok := api.Return(command); ok && strings.Contains(ret, "string") {
+				fmt.Println("got answer:", string(data))
+			} else {
+				fmt.Println("got answer:", data)
+			}
 		}
-		select {
-		case <-wait:
-		case <-time.After(time.Duration(3 * time.Second)):
-			fmt.Println("can't got answer, error: timeout")
-		}
+		wait <- struct{}{}
+	})
+	if err != nil {
+		fmt.Printf("can't send api command %s, error: %s\n", command, err)
+		return nil
+	}
+	select {
+	case <-wait:
+	case <-time.After(time.Duration(3 * time.Second)):
+		fmt.Println("can't got answer, error: timeout")
 	}
 
 	return
