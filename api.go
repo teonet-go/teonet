@@ -167,12 +167,31 @@ func (a APIData) Reader(c *Channel, p *Packet, data []byte) bool {
 }
 
 // NewAPI create new teonet api
-func NewAPI(teo *Teonet) (api *API) {
-	api = &API{Teonet: teo}
-	cmd := byte(255)
+func (teo *Teonet) NewAPI(name, short, long, version string) (api *API) {
+	api = &API{
+		Teonet:  teo,
+		name:    name,
+		short:   short,
+		long:    long,
+		version: version,
+	}
+	// cmd := byte(255)
 	var cmdApi APInterface
-	cmdApi = MakeAPI("api", "get api", "", "", "<api APIDataAr>", cmd, ServerMode, CmdAnswer,
-		func(c *Channel, p *Packet, data []byte) bool {
+	// cmdApi = MakeAPI("api", "get api", "", "", "<api APIDataAr>", cmd, ServerMode, CmdAnswer,
+	// 	func(c *Channel, p *Packet, data []byte) bool {
+	// 		teo.Log().Println("got api request")
+	// 		outData, _ := api.MarshalBinary()
+	// 		_, answerMode := cmdApi.ExecMode()
+
+	// 		fmt.Println("answerMode:", answerMode)
+	// 		api.SendAnswer(cmdApi, c, outData, p)
+	// 		// teo.Command(cmdApi.Cmd(), d).SendNoWait(c)
+
+	// 		return true
+	// 	})
+	cmdApi = MakeAPI2().SetName("api").SetCmd(255).SetShort("get api").SetReturn("<api APIDataAr>").
+		SetConnectMode(ServerMode).SetAnswerMode(CmdAnswer).
+		SetReader(func(c *Channel, p *Packet, data []byte) bool {
 			teo.Log().Println("got api request")
 			outData, _ := api.MarshalBinary()
 			_, answerMode := cmdApi.ExecMode()
@@ -190,12 +209,13 @@ func NewAPI(teo *Teonet) (api *API) {
 // API teonet api receiver
 type API struct {
 	*Teonet
-	// appName        string
-	// appShort       string
-	// appVersion     string
-	// appDescription string
-	cmds []APInterface
-	cmd  byte
+	name    string        // API (application) name
+	short   string        // API short name
+	long    string        // API decription (or long name)
+	version string        // API version
+	cmds    []APInterface // API commands
+	cmd     byte          // API cmdApi command number
+	ByteSlice
 }
 
 // Send answer to request
@@ -390,6 +410,10 @@ func (a *APIData) UnmarshalBinary(buf *bytes.Buffer /*data []byte*/) (err error)
 func (a API) MarshalBinary() (data []byte, err error) {
 	buf := new(bytes.Buffer)
 
+	a.WriteSlice(buf, []byte(a.name))
+	a.WriteSlice(buf, []byte(a.short))
+	a.WriteSlice(buf, []byte(a.long))
+	a.WriteSlice(buf, []byte(a.version))
 	numCmds := uint16(len(a.cmds))
 	binary.Write(buf, binary.LittleEndian, numCmds)
 	for i := range a.cmds {
@@ -401,13 +425,29 @@ func (a API) MarshalBinary() (data []byte, err error) {
 }
 
 type APIDataAr struct {
-	Apis []APIData
+	name    string    // API (application) name
+	short   string    // API short name
+	long    string    // API decription (or long name)
+	version string    // API version
+	Apis    []APIData // API commands data
 	ByteSlice
 }
 
 func (a *APIDataAr) UnmarshalBinary(data []byte) (err error) {
 	var buf = bytes.NewBuffer(data)
 
+	if a.name, err = a.ReadString(buf); err != nil {
+		return
+	}
+	if a.short, err = a.ReadString(buf); err != nil {
+		return
+	}
+	if a.long, err = a.ReadString(buf); err != nil {
+		return
+	}
+	if a.version, err = a.ReadString(buf); err != nil {
+		return
+	}
 	var numCmds uint16
 	if err = binary.Read(buf, binary.LittleEndian, &numCmds); err != nil {
 		return
@@ -543,14 +583,24 @@ func (api *APIClient) getApi() (err error) {
 // String stringlify APIClient
 func (api APIClient) String() (str string) {
 
-	str += "API commands\n\n"
 	str += api.Help(false)
 
 	return
 }
 
 func (api APIClient) Help(short bool) (str string) {
+
+	// Name version and description
+	str += fmt.Sprintf("%s, ver %s\n", api.name, api.version)
+	str += fmt.Sprintf("(short name: %s)\n\n", api.short)
+	if api.long != "" {
+		str += api.long + "\n\n"
+	}
+
+	// TODO: Claculate max
 	var max = 20
+	// Commands
+	str += "API commands:\n\n"
 	for i, a := range api.Apis {
 		if i > 0 {
 			str += "\n"

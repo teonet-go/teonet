@@ -12,7 +12,8 @@ import (
 const (
 	appName    = "Teonet api server sample application"
 	appShort   = "teoapi"
-	appVersion = "0.0.1"
+	appVersion = "0.1.0"
+	appLong    = ""
 )
 
 func Commands(teo *teonet.Teonet, api *teonet.API) {
@@ -98,7 +99,7 @@ func main() {
 	}
 
 	// Create new API, add commands and reader
-	api := teonet.NewAPI(teo)
+	api := teo.NewAPI(appName, appShort, appLong, appVersion)
 	Commands(teo, api)
 	teo.AddReader(api.Reader())
 
