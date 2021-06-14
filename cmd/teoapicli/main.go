@@ -82,7 +82,7 @@ func main() {
 					// teo.Log().Printf("got(r) from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n\n",
 					// 	c, p.Data(), len(p.Data()), p.ID(), float64(c.Triptime().Microseconds())/1000.0,
 					// )
-					teo.Log().Printf("Got '%s', from %s\n", p.Data()[1:], c)
+					teo.Log().Printf("Got '%s', from %s\n", p.Data(), c)
 					processed = true
 				}
 				return

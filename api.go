@@ -9,6 +9,7 @@ package teonet
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 )
 
@@ -175,21 +176,8 @@ func (teo *Teonet) NewAPI(name, short, long, version string) (api *API) {
 		long:    long,
 		version: version,
 	}
-	// cmd := byte(255)
 	var cmdApi APInterface
-	// cmdApi = MakeAPI("api", "get api", "", "", "<api APIDataAr>", cmd, ServerMode, CmdAnswer,
-	// 	func(c *Channel, p *Packet, data []byte) bool {
-	// 		teo.Log().Println("got api request")
-	// 		outData, _ := api.MarshalBinary()
-	// 		_, answerMode := cmdApi.ExecMode()
-
-	// 		fmt.Println("answerMode:", answerMode)
-	// 		api.SendAnswer(cmdApi, c, outData, p)
-	// 		// teo.Command(cmdApi.Cmd(), d).SendNoWait(c)
-
-	// 		return true
-	// 	})
-	cmdApi = MakeAPI2().SetName("api").SetCmd(255).SetShort("get api").SetReturn("<api APIDataAr>").
+	cmdApi = MakeAPI2().SetName("api").SetCmd(cmdAPI).SetShort("get api").SetReturn("<api APIDataAr>").
 		SetConnectMode(ServerMode).SetAnswerMode(CmdAnswer).
 		SetReader(func(c *Channel, p *Packet, data []byte) bool {
 			teo.Log().Println("got api request")
@@ -198,7 +186,6 @@ func (teo *Teonet) NewAPI(name, short, long, version string) (api *API) {
 
 			fmt.Println("answerMode:", answerMode)
 			api.SendAnswer(cmdApi, c, outData, p)
-			// teo.Command(cmdApi.Cmd(), d).SendNoWait(c)
 
 			return true
 		})
@@ -491,12 +478,40 @@ const (
 // Next parameter is checkDataFunc func([]byte) bool. This function calls to
 // check packet data and returns true if packet data valid. This parameter may
 // be ommited too.
-func (api *APIClient) WaitFrom(command interface{}, attr ...interface{}) (data []byte, err error) {
+func (api *APIClient) WaitFrom(command interface{}, packetID ...interface{}) (data []byte, err error) {
+
+	// Get command number
 	cmd, err := api.getCmd(command)
 	if err != nil {
 		return
 	}
-	attr = append(attr, cmd)
+
+	// Get answer mode
+	var answerMode APIanswerMode
+	// When we execute cmdAPI=255 the APIcommands is not loaded yet. The cmdAPI
+	// always return: <cmdAPI byte><api APIDataAr>
+	// So check cmdAPI first, than get answer mode
+	if cmd == cmdAPI {
+		answerMode = CmdAnswer
+	} else {
+		a, ok := api.AnswerMode(cmd)
+		if !ok {
+			err = errors.New("wrong command")
+			return
+		}
+		answerMode = a
+	}
+
+	// Set WaitFrom attributes depend of answer mode
+	var attr []interface{}
+	if answerMode&CmdAnswer > 0 {
+		attr = append(attr, cmd)
+	}
+	if answerMode&PacketIDAnswer > 0 {
+		attr = append(attr, packetID...)
+	}
+
+	// Wait result
 	data, err = api.teo.WaitFrom(api.address, attr...)
 	return
 }
@@ -512,7 +527,7 @@ func (api *APIClient) SendTo(command interface{}, data []byte, waits ...func(dat
 	// api.teo.Command(cmd, data).SendTo(api.address) call:
 	// api.teo.Command(cmd, data).SendTo(api.address, attr...)
 	if len(waits) > 0 {
-		go func() { waits[0](api.WaitFrom(cmd)) }()
+		go func() { waits[0](api.WaitFrom(cmd, id)) }()
 	}
 	return
 }
@@ -529,11 +544,33 @@ func (api *APIClient) Cmd(name string) (cmd byte, ok bool) {
 	return
 }
 
-// Return get return parameter by name
-func (api *APIClient) Return(name string) (ret string, ok bool) {
+// Return get return parameter by cmd number or name
+func (api *APIClient) Return(command interface{}) (ret string, ok bool) {
+	a, ok := api.apiData(command)
+	if ok {
+		ret = a.ret
+	}
+	return
+}
+
+// AnswerMode get answer mode parameter by cmd number or name
+func (api *APIClient) AnswerMode(command interface{}) (ret APIanswerMode, ok bool) {
+	a, ok := api.apiData(command)
+	if ok {
+		ret = a.answerMode
+	}
+	return
+}
+
+// apiData get return pointer to APIData by cmd number or name
+func (api *APIClient) apiData(command interface{}) (ret *APIData, ok bool) {
+	cmd, err := api.getCmd(command)
+	if err != nil {
+		return
+	}
 	for i := range api.Apis {
-		if api.Apis[i].name == name {
-			ret = api.Apis[i].ret
+		if api.Apis[i].cmd == cmd {
+			ret = &api.Apis[i]
 			ok = true
 			return
 		}
@@ -563,7 +600,6 @@ func (api *APIClient) getCmd(command interface{}) (cmd byte, err error) {
 
 // getApi send cmdAPI command and get answer with APIDataAr: all API definition
 func (api *APIClient) getApi() (err error) {
-	// api.teo.Log().Println("Send 255('api') without data")
 	api.SendTo(cmdAPI, nil)
 	data, err := api.WaitFrom(cmdAPI)
 	if err != nil {
@@ -597,9 +633,16 @@ func (api APIClient) Help(short bool) (str string) {
 		str += api.long + "\n\n"
 	}
 
-	// TODO: Claculate max
-	var max = 20
+	// Calculate name lenngth
+	var max int
+	for i := range api.Apis {
+		if l := len(api.Apis[i].Name()); l > max {
+			max = l
+		}
+	}
+	max += 2
 	// Commands
+	// TODO: make common function to get commands here and in api server print
 	str += "API commands:\n\n"
 	for i, a := range api.Apis {
 		if i > 0 {
@@ -613,9 +656,17 @@ func (api APIClient) Help(short bool) (str string) {
 			str += "\n"
 		}
 		str += fmt.Sprintf("%-*s %s\n", max, a.Name(), a.Short())
-		str += fmt.Sprintf("%*s command: %d\n", max, "", a.Cmd())
-		str += fmt.Sprintf("%*s usage:   %s\n", max, "", a.Name()+" "+a.Usage())
-		str += fmt.Sprintf("%*s return:  %s", max, "", a.Ret())
+		str += fmt.Sprintf("%*s cmd:    %d\n", max, "", a.Cmd())
+		str += fmt.Sprintf("%*s usage:  %s\n", max, "", a.Name()+" "+a.Usage())
+		var answer string
+		if a.answerMode&CmdAnswer > 0 {
+			answer += "<cmd byte>"
+		}
+		if a.answerMode&PacketIDAnswer > 0 {
+			answer += "<packet_id uint32>"
+		}
+		answer += a.Ret()
+		str += fmt.Sprintf("%*s return: %s", max, "", answer)
 	}
 	return
 }
