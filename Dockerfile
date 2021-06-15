@@ -59,6 +59,7 @@ RUN apt update
 
 COPY ./teonet ./teonet
 COPY ./trudp ./trudp
+COPY ./teomon ./teomon
 
 RUN ls /go/src/github.com/kirill-scherba/
 

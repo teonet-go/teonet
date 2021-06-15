@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kirill-scherba/teomon/teomon"
 	"github.com/kirill-scherba/teonet"
 	"github.com/kirill-scherba/teonet/cmd/teonet/menu"
 )
@@ -222,13 +223,33 @@ func (c CmdAPI) Exec(line string) (err error) {
 			data = append(data, []byte(v)...)
 		}
 	}
+	// Send no answer command
+	if answerMode, ok := api.AnswerMode(command); ok && answerMode == teonet.NoAnswer {
+		_, err = api.SendTo(command, data)
+		if err != nil {
+			fmt.Printf("can't send api command %s, error: %s\n", command, err)
+			err = nil
+		}
+		return
+	}
+	// Send command and wait answer
 	wait := make(chan interface{})
 	_, err = api.SendTo(command, data, func(data []byte, err error) {
 		if err != nil {
-			fmt.Println("got error:", err)
+			// fmt.Println("got error:", err)
 		} else {
-			if ret, ok := api.Return(command); ok && strings.Contains(ret, "string") {
-				fmt.Println("got answer:", string(data))
+			if ret, ok := api.Return(command); ok {
+				switch {
+				case strings.Contains(ret, "string"):
+					fmt.Println("got answer:", string(data))
+				case strings.Contains(ret, "[]*Metric"):
+					var peers teomon.Peers
+					err = peers.UnmarshalBinary(data)
+					if err != nil {
+						return
+					}
+					fmt.Println(peers)
+				}
 			} else {
 				fmt.Println("got answer:", data)
 			}

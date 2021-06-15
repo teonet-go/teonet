@@ -6,13 +6,17 @@ import (
 	"os"
 	"time"
 
+	"github.com/kirill-scherba/teomon/teomon"
 	"github.com/kirill-scherba/teonet"
 )
 
 const (
 	appName    = "Teonet echo client/server sample application"
-	appShort   = "teonet"
-	appVersion = "0.1.6"
+	appShort   = "teoecho"
+	appVersion = "0.1.8"
+
+	// Teonet Monitor address
+	monitor = "nOhj2qRDKduN9sHIRoRmJ3LTjOfrKey8llq"
 )
 
 // reader is main application reader it receive and process messages
@@ -87,8 +91,16 @@ connect:
 		goto connect
 	}
 
-	// Sleep forever if sendTo flag does not set
+	// Sleep forever if sendTo flag does not set (in server mode)
 	if params.sendTo == "" {
+
+		// Connect to monitor
+		teomon.Connect(teo, monitor, teomon.Metric{
+			AppName:    appName,
+			AppShort:   appShort,
+			AppVersion: appVersion,
+		})
+
 		select {}
 	}
 

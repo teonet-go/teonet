@@ -207,6 +207,8 @@ type API struct {
 
 // Send answer to request
 func (a *API) SendAnswer(cmd APInterface, c *Channel, data []byte, p *Packet) (id uint32, err error) {
+
+	// Get answer mode
 	_, answerMode := cmd.ExecMode()
 	if answerMode&PacketIDAnswer > 0 {
 		id := make([]byte, 4)
@@ -666,7 +668,9 @@ func (api APIClient) Help(short bool) (str string) {
 			answer += "<packet_id uint32>"
 		}
 		answer += a.Ret()
-		str += fmt.Sprintf("%*s return: %s", max, "", answer)
+		if answer != "" {
+			str += fmt.Sprintf("%*s return: %s", max, "", answer)
+		}
 	}
 	return
 }

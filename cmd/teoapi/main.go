@@ -6,14 +6,18 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kirill-scherba/teomon/teomon"
 	"github.com/kirill-scherba/teonet"
 )
 
 const (
 	appName    = "Teonet api server sample application"
 	appShort   = "teoapi"
-	appVersion = "0.1.0"
+	appVersion = "0.1.1"
 	appLong    = ""
+
+	// Teonet Monitor address
+	monitor = "nOhj2qRDKduN9sHIRoRmJ3LTjOfrKey8llq"
 )
 
 func Commands(teo *teonet.Teonet, api *teonet.API) {
@@ -113,6 +117,13 @@ func main() {
 
 	// Teonet address
 	fmt.Printf("Teonet addres: %s\n\n", teo.Address())
+
+	// Connect to monitor
+	teomon.Connect(teo, monitor, teomon.Metric{
+		AppName:    appName,
+		AppShort:   appShort,
+		AppVersion: appVersion,
+	})
 
 	select {} // sleep forever
 }
