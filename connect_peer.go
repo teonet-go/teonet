@@ -13,6 +13,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/kirill-scherba/bslice"
 	"github.com/kirill-scherba/teonet-go/teolog/teolog"
 	"github.com/kirill-scherba/trudp"
 )
@@ -331,7 +332,6 @@ func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
 
 // ConnectToData teonet connect data
 type ConnectToData struct {
-	ByteSlice
 	ID        string   // Request id
 	FromAddr  string   // Peer address
 	ToAddr    string   // Client address
@@ -341,6 +341,7 @@ type ConnectToData struct {
 	LocalPort uint32   // Local port (set by client or peer)
 	Err       []byte   // Error of connect data processing
 	Resend    bool     // Resend flag
+	bslice.ByteSlice
 }
 
 func (c ConnectToData) MarshalBinary() (data []byte, err error) {

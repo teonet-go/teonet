@@ -11,6 +11,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+
+	"github.com/kirill-scherba/bslice"
 )
 
 // APInterface is teonet api interface
@@ -96,7 +98,7 @@ type APIData struct {
 	connectMode APIconnectMode
 	answerMode  APIanswerMode
 	reader      func(c *Channel, p *Packet, data []byte) bool
-	ByteSlice
+	bslice.ByteSlice
 }
 
 func MakeAPI2() *APIData {
@@ -202,7 +204,7 @@ type API struct {
 	version string        // API version
 	cmds    []APInterface // API commands
 	cmd     byte          // API cmdApi command number
-	ByteSlice
+	bslice.ByteSlice
 }
 
 // Send answer to request
@@ -419,7 +421,7 @@ type APIDataAr struct {
 	long    string    // API decription (or long name)
 	version string    // API version
 	Apis    []APIData // API commands data
-	ByteSlice
+	bslice.ByteSlice
 }
 
 func (a *APIDataAr) UnmarshalBinary(data []byte) (err error) {

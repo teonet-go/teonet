@@ -14,6 +14,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/kirill-scherba/bslice"
 	"github.com/kirill-scherba/teonet-go/teolog/teolog"
 	"github.com/kirill-scherba/trudp"
 )
@@ -291,12 +292,12 @@ func (teo Teonet) Connected(c *Channel, addr string) {
 
 // ConnectData teonet connect data
 type ConnectData struct {
-	ByteSlice
 	PubliKey      []byte // Client public key (generated from private key)
 	Address       []byte // Client address (received after connect if empty)
 	ServerKey     []byte // Server public key (send if exists or received in connect if empty)
 	ServerAddress []byte // Server address (received after connect)
 	Err           []byte // Error of connect data processing
+	bslice.ByteSlice
 }
 
 func (c ConnectData) MarshalBinary() (data []byte, err error) {
