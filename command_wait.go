@@ -56,7 +56,7 @@ func (teo *Teonet) WaitReaderAnswer(wait chan WaitData, timeout time.Duration) (
 
 type WaitReader struct {
 	wait    chan WaitData
-	reader  func(c *Channel, p *Packet, err error) (processed bool)
+	reader  func(c *Channel, p *Packet, e *Event) (processed bool)
 	timeout time.Duration
 }
 
@@ -116,9 +116,9 @@ func (teo *Teonet) MakeWaitReader(attr ...interface{}) (wr *WaitReader) {
 		}
 	}
 
-	wr.reader = func(c *Channel, p *Packet, err error) (processed bool) {
-
-		if err != nil {
+	wr.reader = func(c *Channel, p *Packet, e *Event) (processed bool) {
+		// Skip not Data Events
+		if e.Event != EventData {
 			return
 		}
 
@@ -171,7 +171,7 @@ func (teo *Teonet) MakeWaitReader(attr ...interface{}) (wr *WaitReader) {
 }
 
 func (wr WaitReader) Wait() chan WaitData { return wr.wait }
-func (wr WaitReader) Reader() func(c *Channel, p *Packet, err error) (processed bool) {
+func (wr WaitReader) Reader() func(c *Channel, p *Packet, e *Event) (processed bool) {
 	return wr.reader
 }
 func (wr WaitReader) Timeout() time.Duration { return wr.timeout }

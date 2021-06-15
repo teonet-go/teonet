@@ -151,11 +151,11 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	// Subscribe to teo.auth channel to get and process messages from teonet
 	// server. Subscribers reader shound return true if packet processed by this
 	// reader
-	subs = teo.subscribe(teo.auth, func(teo *Teonet, c *Channel, p *Packet, err error) bool {
+	subs = teo.subscribe(teo.auth, func(teo *Teonet, c *Channel, p *Packet, e *Event) bool {
 
-		// Error processing
-		if err != nil {
-			teolog.Logf(teolog.DEBUG, "Connect reader", "got error from channel %s, error: %s", c, err)
+		// Disconnrct r-host processing
+		if e.Event == EventTeonetDisconnected {
+			teolog.Logf(teolog.DEBUG, "Connect reader", "got error from channel %s, error: %s", c, e.Err)
 			teo.Unsubscribe(subs)
 			teo.auth = nil
 			teolog.Logf(teolog.CONNECT, "Disconnected", "from teonet")
@@ -172,6 +172,11 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 			return true
 		}
 
+		// Skip not Data Event
+		if e.Event != EventData {
+			return false
+		}
+
 		// Commands from teonet server processing
 		cmd := teo.Command(p.Data())
 		switch AuthCmd(cmd.Cmd) {
@@ -179,16 +184,11 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 		// Client got answer to cmdConnect(connect to teonet server)
 		case CmdConnect:
 			// Check if chanW chanal is open
-			// ok := true
-			// select {
-			// case _, ok = <-chanWait:
-			// default:
-			// }
 			ok := chanWait.IsOpen()
-			// Send to channel
 			if !ok {
 				return false
 			}
+			// Send to channel
 			chanWait <- cmd.Data
 
 		// Client got answer to cmdConnectTo(connect to peer)
@@ -274,10 +274,11 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	teo.config.Address = addr
 	teo.config.save()
 
-	// teolog.Log(teolog.DEBUG, nMODULEcon, "to teonet success")
-	teolog.Logf(teolog.CONNECT, "Teonet", "address: %s\n", conOut.Address)
-
 	teo.Connected(teo.auth, string(conOut.ServerAddress))
+
+	// Connected to teonet, show log message and send Event to main reader
+	teolog.Logf(teolog.CONNECT, "Teonet", "address: %s\n", conOut.Address)
+	reader(teo, teo.auth, nil, &Event{EventTeonetConnected, nil})
 
 	return
 }

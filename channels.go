@@ -52,7 +52,10 @@ func (c *channels) add(channel *Channel) {
 	defer c.Unlock()
 	c.m_addr[channel.a] = channel
 	c.m_chan[channel.c] = channel
+
+	// Connected - show log message and send Event to main reader
 	teolog.Log(teolog.CONNECT, "Peer", "connected:", channel.a)
+	reader(c.teo, channel, nil, &Event{EventConnected, nil})
 }
 
 // del channel
@@ -203,7 +206,7 @@ func (c Channel) checkSendAttr(attr ...interface{}) (delivered func(p *trudp.Pac
 			teo = v
 
 		// Answer callback
-		case func(c *Channel, p *Packet, err error) bool:
+		case func(c *Channel, p *Packet, e *Event) bool:
 			if teo != nil {
 				c.subscribeToAnswer(teo, v)
 			}
@@ -213,9 +216,9 @@ func (c Channel) checkSendAttr(attr ...interface{}) (delivered func(p *trudp.Pac
 	return
 }
 
-func (c Channel) subscribeToAnswer(teo *Teonet, f func(c *Channel, p *Packet, err error) bool) (scr *subscribeData, err error) {
-	scr, err = teo.Subscribe(c.a, func(c *Channel, p *Packet, err error) bool {
-		if f(c, p, err) {
+func (c Channel) subscribeToAnswer(teo *Teonet, f func(c *Channel, p *Packet, e *Event) bool) (scr *subscribeData, err error) {
+	scr, err = teo.Subscribe(c.a, func(c *Channel, p *Packet, e *Event) bool {
+		if f(c, p, e) {
 			teo.Unsubscribe(scr)
 			return true
 		}

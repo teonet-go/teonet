@@ -34,7 +34,7 @@ var ErrDoesNotConnectedToTeonet = errors.New("does not connected to teonet")
 // clients teonet address to it, Peer check it in connectToConnected func
 func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	// TODO: check local connection exists
-	teolog.Log(teolog.CONNECT, nMODULEconp, addr)
+	teolog.Log(teolog.DEBUG, nMODULEconp, addr)
 
 	// Check teonet connected
 	// TODO: move this code to function
@@ -79,8 +79,9 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	}
 
 	// Connected, make auto reconnect
-	teo.Subscribe(addr, func(teo *Teonet, c *Channel, p *Packet, err error) (ret bool) {
-		if err != nil {
+	teo.Subscribe(addr, func(teo *Teonet, c *Channel, p *Packet, e *Event) (ret bool) {
+		// Peer disconnected event
+		if e.Event == EventDisconnected {
 			go func() {
 				teolog.Log(teolog.CONNECT, nMODULEconp, "reconnect:", c.Address())
 				for {

@@ -17,7 +17,7 @@ import (
 	"github.com/kirill-scherba/trudp"
 )
 
-const Version = "0.1.13"
+const Version = "0.2.0"
 
 // nMODULEteo is current module name
 var nMODULEteo = "Teonet"
@@ -42,30 +42,30 @@ func Log() *log.Logger {
 }
 
 // reader is Main teonet reader
-func reader(teo *Teonet, c *Channel, p *Packet, err error) {
+func reader(teo *Teonet, c *Channel, p *Packet, e *Event) {
 
 	// Delete channel on err after all other reader process this error
 	defer func() {
-		if err != nil {
+		if e.Err != nil {
 			teo.channels.del(c)
-
 		}
 	}()
 
 	// Check error and 'connect to peer connected' processing
-	if err == nil && (teo.connectToConnectedPeer(c, p) || teo.connectToConnectedClient(c, p)) {
+	// if e.Err == nil && (teo.connectToConnectedPeer(c, p) || teo.connectToConnectedClient(c, p)) {
+	if e.Event == EventData && (teo.connectToConnectedPeer(c, p) || teo.connectToConnectedClient(c, p)) {
 		return
 	}
 
 	// Send to subscribers readers (to readers from teo.subscribe)
-	if teo.subscribers.send(teo, c, p, err) {
+	if teo.subscribers.send(teo, c, p, e) {
 		return
 	}
 
 	// Send to client readers (to reader from teonet.Init)
 	for i := range teo.clientReaders {
 		if teo.clientReaders[i] != nil {
-			if teo.clientReaders[i](teo, c, p, err) {
+			if teo.clientReaders[i](teo, c, p, e) {
 				break
 			}
 		}
@@ -79,7 +79,7 @@ type LogFilterT = trudp.LogFilterT
 //   string - internal log Level to show teonet debug messages
 //   bool - set true to show trudp statistic table
 //   *log.Logger - common logger to show messages in application and teonet, may be created with teonet.Log() function
-//   func(c *Channel, p *Packet, err error) - message receiver
+//   func(c *Channel, p *Packet, e *Event) - message receiver
 func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 
 	// Parse attributes
@@ -105,12 +105,12 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 		case *log.Logger:
 			param.log = d
 		// case Treceivecb:
-		case func(teo *Teonet, c *Channel, p *Packet, err error) bool:
+		case func(teo *Teonet, c *Channel, p *Packet, e *Event) bool:
 			param.reader = d
 		// case TreceivecbShort:
-		case func(c *Channel, p *Packet, err error) bool:
-			param.reader = func(t *Teonet, c *Channel, p *Packet, err error) bool {
-				return d(c, p, err)
+		case func(c *Channel, p *Packet, e *Event) bool:
+			param.reader = func(t *Teonet, c *Channel, p *Packet, e *Event) bool {
+				return d(c, p, e)
 			}
 		case ApiInterface:
 			fmt.Println("set api")
@@ -164,11 +164,28 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 			// else {
 			// 	// teo.log.Println("!!! exists channel !!! ", c)
 			// }
+
+			// Create packet
 			var pac *Packet
 			if p != nil {
 				pac = &Packet{p, ch.a, false}
 			}
-			reader(teo, ch, pac, err)
+
+			// Create Disconnect, TeonetDisconnect or Data Events
+			e := new(Event)
+			if err != nil {
+				e.Err = err
+				if ch == teo.auth {
+					e.Event = EventTeonetDisconnected
+				} else {
+					e.Event = EventDisconnected
+				}
+			} else {
+				e.Event = EventData
+			}
+
+			// Send packet and event to main teonet reader
+			reader(teo, ch, pac, e)
 		},
 
 		// Connect to this server callback
@@ -227,8 +244,38 @@ type Teonet struct {
 	puncher       *puncher
 }
 
-type Treceivecb func(teo *Teonet, c *Channel, p *Packet, err error) bool
-type TreceivecbShort func(c *Channel, p *Packet, err error) bool
+type Treceivecb func(teo *Teonet, c *Channel, p *Packet, e *Event) bool
+type TreceivecbShort func(c *Channel, p *Packet, e *Event) bool
+
+type Event struct {
+	Event TeonetEventType
+	Err   error
+}
+
+type TeonetEventType byte
+
+// Teonet events
+const (
+	EventNone TeonetEventType = iota
+
+	// Event when Teonet client initialized and start listen, Err = nil
+	EventTeonetInit
+
+	// Event when Connect to teonet r-host, Err = nil
+	EventTeonetConnected
+
+	// Event when Disconnect from teonet r-host, Err = dosconnect error
+	EventTeonetDisconnected
+
+	// Event when Connect to peer, Err = nil
+	EventConnected
+
+	// Event when Disconnect from peer, Err = dosconnect error
+	EventDisconnected
+
+	// Event when Data Received, Err = nil
+	EventData
+)
 
 func (teo Teonet) Rhost() *Channel { return teo.auth }
 
@@ -239,9 +286,10 @@ func (teo *Teonet) addClientReader(reader Treceivecb) {
 
 // AddReader add teonet client reader
 func (teo *Teonet) AddReader(reader TreceivecbShort) {
-	teo.clientReaders = append(teo.clientReaders, func(teo *Teonet, c *Channel, p *Packet, err error) bool {
-		return reader(c, p, err)
-	})
+	teo.clientReaders = append(teo.clientReaders,
+		func(teo *Teonet, c *Channel, p *Packet, e *Event) bool {
+			return reader(c, p, e)
+		})
 }
 
 // ShowTrudp show/stop trudp statistic

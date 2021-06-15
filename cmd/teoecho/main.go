@@ -20,9 +20,10 @@ const (
 )
 
 // reader is main application reader it receive and process messages
-func reader(teo *teonet.Teonet, c *teonet.Channel, p *teonet.Packet, err error) bool {
-	// Check errors
-	if err != nil {
+func reader(teo *teonet.Teonet, c *teonet.Channel, p *teonet.Packet, e *teonet.Event) bool {
+	// Skip not Data events
+	// if err != nil {
+	if e.Event != teonet.EventData {
 		return false
 	}
 
@@ -112,8 +113,10 @@ connectto:
 		// true if packet processed. If return false package will processed
 		// by other readers include main application reader (just comment
 		// 'processed = true' line and you'll see two 'got from ...' message)
-		func(c *teonet.Channel, p *teonet.Packet, err error) (processed bool) {
-			if err != nil {
+		func(c *teonet.Channel, p *teonet.Packet, e *teonet.Event) (processed bool) {
+
+			// Skip not Data Events
+			if e.Event != teonet.EventData {
 				return
 			}
 

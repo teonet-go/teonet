@@ -248,11 +248,11 @@ func (a *API) Add(cmds ...APInterface) {
 }
 
 // Reader api commands reader
-func (a API) Reader() func(c *Channel, p *Packet, err error) (processed bool) {
-	return func(c *Channel, p *Packet, err error) (processed bool) {
-		// Skip packet with error
-		if err != nil {
-			return false
+func (a API) Reader() func(c *Channel, p *Packet, e *Event) (processed bool) {
+	return func(c *Channel, p *Packet, e *Event) (processed bool) {
+		// Skip not Data Events
+		if e.Event != EventData {
+			return
 		}
 
 		// Parse command

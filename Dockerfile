@@ -58,8 +58,8 @@ WORKDIR /go/src/github.com/kirill-scherba/
 RUN apt update 
 
 COPY ./teonet ./teonet
-COPY ./trudp ./trudp
 COPY ./teomon ./teomon
+COPY ./trudp ./trudp
 
 RUN ls /go/src/github.com/kirill-scherba/
 

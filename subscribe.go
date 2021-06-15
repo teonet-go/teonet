@@ -23,12 +23,12 @@ func (teo Teonet) subscribe(c *Channel, readerI interface{}) *subscribeData {
 	var reader Treceivecb
 	switch v := readerI.(type) {
 	// case Treceivecb:
-	case func(teo *Teonet, c *Channel, p *Packet, err error) bool:
+	case func(teo *Teonet, c *Channel, p *Packet, e *Event) bool:
 		reader = v
 	// case TreceivecbShort:
-	case func(c *Channel, p *Packet, err error) bool:
-		reader = func(teo *Teonet, c *Channel, p *Packet, err error) bool {
-			return v(c, p, err)
+	case func(c *Channel, p *Packet, e *Event) bool:
+		reader = func(teo *Teonet, c *Channel, p *Packet, e *Event) bool {
+			return v(c, p, e)
 		}
 	default:
 		panic(fmt.Sprintf("wrong attribute type %T", v))
@@ -93,17 +93,16 @@ func (s *subscribers) del(subs interface{}) {
 	}
 }
 
-func (s *subscribers) send(teo *Teonet, c *Channel, p *Packet, err error) bool {
+func (s *subscribers) send(teo *Teonet, c *Channel, p *Packet, e *Event) bool {
 	s.RLock()
-	// defer s.RUnlock()
 
 	var next *list.Element
-	for e := s.lst.Front(); e != nil; e = next {
-		next = e.Next()
-		scr := e.Value.(*subscribeData)
+	for el := s.lst.Front(); el != nil; el = next {
+		next = el.Next()
+		scr := el.Value.(*subscribeData)
 		if scr.channel == c {
 			s.RUnlock()
-			if scr.reader(teo, c, p, err) {
+			if scr.reader(teo, c, p, e) {
 				return true
 			}
 			s.RLock()
@@ -113,51 +112,3 @@ func (s *subscribers) send(teo *Teonet, c *Channel, p *Packet, err error) bool {
 	s.RUnlock()
 	return false
 }
-
-/*
-type subscribers0 []*subscribeData
-
-func (s *subscribers0) add(channel *Channel, reader Treceivecb) (res *subscribeData) {
-	res = &subscribeData{channel, reader}
-	*s = append(*s, res)
-	return
-}
-
-// delete from subscribers by subscribeData or by channel (by channel remove
-// all subscibers to channel)
-// TODO: remove nil slice member aniware or add mutex and don't use nil as delete
-func (s subscribers0) del(subs interface{}) {
-
-	switch v := subs.(type) {
-	case *subscribeData:
-		for i := range s {
-			if s[i] == v {
-				s[i] = nil
-			}
-		}
-
-	case *Channel:
-		for i := range s {
-			if s[i].channel == v {
-				s[i] = nil
-			}
-		}
-	}
-}
-
-// send teonet packet to subscribers and return true if message processed
-func (s subscribers0) send(teo *Teonet, c *Channel, p *Packet, err error) bool {
-	for i := range s {
-		if s[i] == nil {
-			continue
-		}
-		if s[i].channel == c {
-			// fmt.Println("subscribersData got channel")
-			if s[i].reader(teo, c, p, err) {
-				return true
-			}
-		}
-	}
-	return false
-}
-*/
