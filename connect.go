@@ -231,8 +231,6 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	// teo.log.Println("encoded ConnectData:", data, len(data))
 
 	// Send to teoauth
-	// cmd := teo.Command(CmdConnect, data)
-	// _, err = teo.trudp.Send(teo.auth.c, cmd.Bytes())
 	_, err = teo.Command(CmdConnect, data).Send(teo.auth)
 	if err != nil {
 		return
@@ -244,7 +242,6 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	case data = <-chanWait:
 	case <-time.After(trudp.ClientConnectTimeout):
 		err = ErrTimeout
-		// teo.unsubscribe(subs) // unsubscribe already added to defer
 		return
 	}
 
@@ -284,10 +281,12 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	return
 }
 
-// Connected set address to channel and add channel to channels list
-func (teo Teonet) Connected(c *Channel, addr string) {
+// Connected set address to channel, add channel to channels list and send event
+// connected to main teonet reader
+func (teo *Teonet) Connected(c *Channel, addr string) {
 	c.a = addr
 	teo.channels.add(c)
+	reader(teo, c, nil, &Event{EventConnected, nil})
 }
 
 // ConnectData teonet connect data

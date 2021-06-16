@@ -105,6 +105,16 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	return
 }
 
+// WhenConnectedTo call faunction f when connected to peer by address
+func (teo *Teonet) WhenConnectedTo(address string, f func()) {
+	teo.AddReader(func(c *Channel, p *Packet, e *Event) (processed bool) {
+		if e.Event == EventConnected && c.Address() == address {
+			f()
+		}
+		return
+	})
+}
+
 // processCmdConnectToPeer (3) peer got CmdConnectToPeer request from teonet
 // auth (peer prepare to connect from client and send answer with its IPs to
 // auth server)
@@ -268,11 +278,10 @@ func (teo Teonet) connectToConnectedPeer(c *Channel, p *Packet) (ok bool) {
 			}
 			teolog.Log(teolog.DEBUG, nMODULEconp, "Got answer from new client, ID:", con.ID)
 
-			res, ok := teo.peerRequests.get(con.ID)
-			if ok {
-				// teo.log.Println("peer request, id:", res.ID, ok, "addr:", res.Addr, "from:", c)
-				// teo.log.Println("set client connected", res.Addr, "ID:", con.ID)
+			if res, ok := teo.peerRequests.get(con.ID); ok {
+				// Set channel connected
 				teo.Connected(c, res.FromAddr)
+				// Close peerRequests and send answer to client
 				teo.peerRequests.del(con.ID)
 				teolog.Log(teolog.DEBUG, "Send answer to client, ID:", con.ID)
 				c.SendNoWait(p.Data())
@@ -303,20 +312,11 @@ func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
 			}
 			teolog.Log(teolog.DEBUG, nMODULEconp, "Got answer from new peer, ID:", con.ID)
 
-			req, ok := teo.connRequests.get(con.ID)
-			if ok {
-				// teo.log.Println("got connectToConnectedClient, id:", req.ID, ok, "addr:", req.Addr, "from:", c)
-				// teo.log.Println("set server connected", req.Addr, "ID:", con.ID)
+			if req, ok := teo.connRequests.get(con.ID); ok {
+				// Set channel connected
 				teo.Connected(c, req.ToAddr)
-				// Check wait channel
-				// ok := true
-				// select {
-				// case _, ok = <-*req.chanWait:
-				// default:
-				// }
-				ok := req.chanWait.IsOpen()
-				// Send to wait channel
-				if ok {
+				// Send to wait channel to finish connection and close connRequest
+				if req.chanWait.IsOpen() {
 					*req.chanWait <- nil
 				}
 			} else {

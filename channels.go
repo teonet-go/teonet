@@ -55,7 +55,7 @@ func (c *channels) add(channel *Channel) {
 
 	// Connected - show log message and send Event to main reader
 	teolog.Log(teolog.CONNECT, "Peer", "connected:", channel.a)
-	reader(c.teo, channel, nil, &Event{EventConnected, nil})
+	// go reader(c.teo, channel, nil, &Event{EventConnected, nil})
 }
 
 // del channel

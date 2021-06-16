@@ -113,7 +113,6 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 				return d(c, p, e)
 			}
 		case ApiInterface:
-			fmt.Println("set api")
 			param.api = d
 		default:
 			err = fmt.Errorf("wrong attribute type %T", d)
@@ -202,7 +201,6 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 				time.Sleep(trudp.ClientConnectTimeout)
 				ch, exists := teo.channels.get(c)
 				if !exists /* || ch.IsNew() */ {
-					// fmt.Println("c.String()", c.String())
 					if newch, ok := teo.channels.getByIP(c.String()); !ok {
 						teolog.Log(teolog.DEBUG, nMODULEteo, "remove dummy trudp channel:", c, ch)
 						c.ChannelDel(c)
@@ -276,6 +274,26 @@ const (
 	// Event when Data Received, Err = nil
 	EventData
 )
+
+func (e Event) String() (str string) {
+	switch e.Event {
+	case EventNone:
+		str = "EventNone"
+	case EventTeonetInit:
+		str = "EventTeonetInit"
+	case EventTeonetConnected:
+		str = "EventTeonetConnected"
+	case EventTeonetDisconnected:
+		str = "EventTeonetDisconnected"
+	case EventConnected:
+		str = "EventConnected"
+	case EventDisconnected:
+		str = "EventDisconnected"
+	case EventData:
+		str = "EventData"
+	}
+	return
+}
 
 func (teo Teonet) Rhost() *Channel { return teo.auth }
 
