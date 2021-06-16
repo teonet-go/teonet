@@ -13,7 +13,7 @@ import (
 const (
 	appName    = "Teonet echo client/server sample application"
 	appShort   = "teoecho"
-	appVersion = "0.1.8"
+	appVersion = "0.2.0"
 
 	// Teonet Monitor address
 	monitor = "nOhj2qRDKduN9sHIRoRmJ3LTjOfrKey8llq"
