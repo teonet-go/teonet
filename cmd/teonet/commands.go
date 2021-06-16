@@ -249,9 +249,9 @@ func (c CmdAPI) Exec(line string) (err error) {
 						return
 					}
 					fmt.Println(peers)
+				default:
+					fmt.Println("got answer:", data)
 				}
-			} else {
-				fmt.Println("got answer:", data)
 			}
 		}
 		wait <- struct{}{}
@@ -320,8 +320,9 @@ func (c CmdSendTo) Exec(line string) (err error) {
 
 	// Send data to peer and wait answer
 	wait := make(chan interface{})
-	id, err := c.teo.SendTo(address, data, func(c *teonet.Channel, p *teonet.Packet, err error) bool {
-		if err != nil {
+	id, err := c.teo.SendTo(address, data, func(c *teonet.Channel, p *teonet.Packet, e *teonet.Event) bool {
+		// if err != nil {
+		if e.Event != teonet.EventData {
 			// fmt.Printf("got error: %s, from: %s\n", err, address)
 			return false
 		}

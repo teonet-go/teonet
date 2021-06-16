@@ -14,6 +14,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/kirill-scherba/bslice"
 	"github.com/kirill-scherba/teonet-go/teolog/teolog"
 	"github.com/kirill-scherba/trudp"
 )
@@ -151,11 +152,11 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	// Subscribe to teo.auth channel to get and process messages from teonet
 	// server. Subscribers reader shound return true if packet processed by this
 	// reader
-	subs = teo.subscribe(teo.auth, func(teo *Teonet, c *Channel, p *Packet, err error) bool {
+	subs = teo.subscribe(teo.auth, func(teo *Teonet, c *Channel, p *Packet, e *Event) bool {
 
-		// Error processing
-		if err != nil {
-			teolog.Logf(teolog.DEBUG, "Connect reader", "got error from channel %s, error: %s", c, err)
+		// Disconnrct r-host processing
+		if e.Event == EventTeonetDisconnected {
+			teolog.Logf(teolog.DEBUG, "Connect reader", "got error from channel %s, error: %s", c, e.Err)
 			teo.Unsubscribe(subs)
 			teo.auth = nil
 			teolog.Logf(teolog.CONNECT, "Disconnected", "from teonet")
@@ -172,6 +173,11 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 			return true
 		}
 
+		// Skip not Data Event
+		if e.Event != EventData {
+			return false
+		}
+
 		// Commands from teonet server processing
 		cmd := teo.Command(p.Data())
 		switch AuthCmd(cmd.Cmd) {
@@ -179,16 +185,11 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 		// Client got answer to cmdConnect(connect to teonet server)
 		case CmdConnect:
 			// Check if chanW chanal is open
-			// ok := true
-			// select {
-			// case _, ok = <-chanWait:
-			// default:
-			// }
 			ok := chanWait.IsOpen()
-			// Send to channel
 			if !ok {
 				return false
 			}
+			// Send to channel
 			chanWait <- cmd.Data
 
 		// Client got answer to cmdConnectTo(connect to peer)
@@ -230,8 +231,6 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	// teo.log.Println("encoded ConnectData:", data, len(data))
 
 	// Send to teoauth
-	// cmd := teo.Command(CmdConnect, data)
-	// _, err = teo.trudp.Send(teo.auth.c, cmd.Bytes())
 	_, err = teo.Command(CmdConnect, data).Send(teo.auth)
 	if err != nil {
 		return
@@ -243,7 +242,6 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	case data = <-chanWait:
 	case <-time.After(trudp.ClientConnectTimeout):
 		err = ErrTimeout
-		// teo.unsubscribe(subs) // unsubscribe already added to defer
 		return
 	}
 
@@ -274,28 +272,31 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	teo.config.Address = addr
 	teo.config.save()
 
-	// teolog.Log(teolog.DEBUG, nMODULEcon, "to teonet success")
-	teolog.Logf(teolog.CONNECT, "Teonet", "address: %s\n", conOut.Address)
-
 	teo.Connected(teo.auth, string(conOut.ServerAddress))
+
+	// Connected to teonet, show log message and send Event to main reader
+	teolog.Logf(teolog.CONNECT, "Teonet", "address: %s\n", conOut.Address)
+	reader(teo, teo.auth, nil, &Event{EventTeonetConnected, nil})
 
 	return
 }
 
-// Connected set address to channel and add channel to channels list
-func (teo Teonet) Connected(c *Channel, addr string) {
+// Connected set address to channel, add channel to channels list and send event
+// connected to main teonet reader
+func (teo *Teonet) Connected(c *Channel, addr string) {
 	c.a = addr
 	teo.channels.add(c)
+	reader(teo, c, nil, &Event{EventConnected, nil})
 }
 
 // ConnectData teonet connect data
 type ConnectData struct {
-	ByteSlice
 	PubliKey      []byte // Client public key (generated from private key)
 	Address       []byte // Client address (received after connect if empty)
 	ServerKey     []byte // Server public key (send if exists or received in connect if empty)
 	ServerAddress []byte // Server address (received after connect)
 	Err           []byte // Error of connect data processing
+	bslice.ByteSlice
 }
 
 func (c ConnectData) MarshalBinary() (data []byte, err error) {

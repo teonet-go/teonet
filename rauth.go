@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/kirill-scherba/bslice"
 	"github.com/kirill-scherba/teonet-go/teolog/teolog"
 )
 
@@ -39,7 +40,7 @@ func Nodes(url string) (ret *nodes, err error) {
 }
 
 type nodes struct {
-	ByteSlice
+	bslice.ByteSlice
 	address []NodeAddr
 }
 
@@ -95,62 +96,4 @@ func (r nodes) String() (s string) {
 // Slice return nodes address slice
 func (r nodes) Slice() []NodeAddr {
 	return r.address
-}
-
-// ByteSlice help binary marshal/ubmarshal byte slice
-type ByteSlice struct{}
-
-func (b ByteSlice) WriteSlice(buf *bytes.Buffer, data []byte) (err error) {
-	if err = binary.Write(buf, binary.LittleEndian, uint16(len(data))); err != nil {
-		return
-	}
-	err = binary.Write(buf, binary.LittleEndian, data)
-	return
-}
-
-func (b ByteSlice) ReadSlice(buf *bytes.Buffer) (data []byte, err error) {
-	var l uint16
-	if err = binary.Read(buf, binary.LittleEndian, &l); err != nil {
-		return
-	}
-	data = make([]byte, l)
-	err = binary.Read(buf, binary.LittleEndian, data)
-	return
-}
-
-func (b ByteSlice) ReadString(buf *bytes.Buffer) (data string, err error) {
-	d, err := b.ReadSlice(buf)
-	if err != nil {
-		return
-	}
-	data = string(d)
-	return
-}
-
-func (b ByteSlice) WriteStringSlice(buf *bytes.Buffer, data []string) (err error) {
-	if err = binary.Write(buf, binary.LittleEndian, uint16(len(data))); err != nil {
-		return
-	}
-	for i := range data {
-		if err = b.WriteSlice(buf, []byte(data[i])); err != nil {
-			return
-		}
-	}
-
-	return
-}
-
-func (b ByteSlice) ReadStringSlice(buf *bytes.Buffer) (data []string, err error) {
-	var l uint16
-	if err = binary.Read(buf, binary.LittleEndian, &l); err != nil {
-		return
-	}
-	for i := 0; i < int(l); i++ {
-		var d []byte
-		if d, err = b.ReadSlice(buf); err != nil {
-			return
-		}
-		data = append(data, string(d))
-	}
-	return
 }
