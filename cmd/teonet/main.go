@@ -15,7 +15,7 @@ import (
 const (
 	appShort   = "teonet"
 	appName    = "Teonet CLI application"
-	appVersion = "0.2.0"
+	appVersion = "0.2.1"
 )
 
 func main() {
