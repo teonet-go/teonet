@@ -62,11 +62,19 @@ func (c Command) Bytes() (data []byte) {
 }
 
 func (c Command) Send(channel *Channel, attr ...interface{}) (id uint32, err error) {
-	return channel.Send(c.Bytes())
+	// Add teo to attr, it need for subscribe to answer
+	if len(attr) > 0 {
+		attr = append([]interface{}{c.teo}, attr...)
+	}
+	return channel.Send(c.Bytes(), attr...)
 }
 
 func (c Command) SendNoWait(channel *Channel, attr ...interface{}) (id uint32, err error) {
-	return channel.SendNoWait(c.Bytes())
+	// Add teo to attr, it need for subscribe to answer
+	if len(attr) > 0 {
+		attr = append([]interface{}{c.teo}, attr...)
+	}
+	return channel.SendNoWait(c.Bytes(), attr...)
 }
 
 func (c Command) SendTo(addr string, attr ...interface{}) (id uint32, err error) {

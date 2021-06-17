@@ -82,7 +82,9 @@ func TestWaitAnswer(t *testing.T) {
 			return
 		}
 
-		data, err := teo.WaitFrom(apis, cmd)
+		// This command return data without command, if cmd returned should add
+		// cmd to attr WaitFrom parameter
+		data, err := teo.WaitFrom(apis)
 		if err != nil {
 			t.Error(err)
 			return
@@ -103,7 +105,7 @@ func TestWaitAnswer(t *testing.T) {
 		wait := make(chan interface{})
 
 		if _, err = teo.Command(cmd, []byte(name)).
-			SendTo(apis, teo.MakeWaitReader(cmd, func(data []byte) bool {
+			SendTo(apis, teo.MakeWaitReader(func(data []byte) bool {
 				log.Println("got answer:", string(data))
 				wait <- struct{}{}
 				return true

@@ -48,6 +48,9 @@ const (
 	// CmdResendConnectToPeerto need to resend CmdConnectToPeer data from rauth
 	// to auth servers to find client and send command data to it
 	CmdResendConnectToPeer
+
+	// CmdGetIP used in rauth and return channels IP:Port
+	CmdGetIP
 )
 
 // AuthCmd auth command type
@@ -65,6 +68,8 @@ func (c AuthCmd) String() string {
 		return "CmdResendConnectTo"
 	case CmdResendConnectToPeer:
 		return "CmdResendConnectToPeer"
+	case CmdGetIP:
+		return "CmdGetIP"
 	}
 	return "not defined"
 }
@@ -79,12 +84,37 @@ type ConnectIpPort struct {
 	Port int
 }
 
-func (c *ConnectIpPort) getAddrFromHTTP(url string) (err error) {
+type ExcludeIPs struct {
+	IPs []string
+}
+
+// exclude IPs from NodeAddr slice
+func (c ConnectIpPort) exclude(nodesin []NodeAddr, excludeIPs ...string) (nodes []NodeAddr) {
+	nodes = nodesin
+	for i := range excludeIPs {
+		for j := range nodes {
+			if nodes[j].IP == excludeIPs[i] {
+				nodes = append(nodes[:j], nodes[j+1:]...)
+				nodes = c.exclude(nodes, excludeIPs...)
+				return
+			}
+		}
+	}
+	return
+}
+
+func (c *ConnectIpPort) getAddrFromHTTP(url string, excludeIPs ...string) (err error) {
+	// Get connection nodes by URL
 	n, err := Nodes(url)
 	if err != nil {
 		// log.Fatalf("can't get nodes from %s, error: %s\n", url, err)
 		return
 	}
+
+	// Exclude from Nodes list by IPs
+	n.address = c.exclude(n.address, excludeIPs...)
+
+	// Return error if nodes list is empty
 	l := len(n.address)
 	if l == 0 {
 		err = errors.New("empty list of nodes returned")
@@ -96,10 +126,10 @@ func (c *ConnectIpPort) getAddrFromHTTP(url string) (err error) {
 	i := 0
 	if l > 1 {
 		i = rand.Intn(l)
-		fmt.Println("l ->", l, "i ->", i)
 	}
 	c.IP = n.address[i].IP
 	c.Port = int(n.address[i].Port)
+	fmt.Printf("num nodes -> %d, i -> %d, connect to: %s:%d\n\n", l, i, c.IP, c.Port)
 	return
 }
 
@@ -118,21 +148,34 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 		attr = append(attr, "http://teonet.kekalan.cloud:10000/auth")
 	}
 
+	// Parse attr, it may be:
+	//
+	//  - String with URL,
+	//  - ConnectIpPort struct with IP and Port
+	//  - ExcludeIPs struct with IPs slice to exclude from
+	//
+	// If attr string present than connect to URL by http get list of
+	// available nodes remove ExludeIPs and select one of it
 	var con = ConnectIpPort{"95.217.18.68", 8000}
+	var excl ExcludeIPs
+	var url string
 	for i := range attr {
 		switch v := attr[i].(type) {
+		case ExcludeIPs:
+			excl = v
 		case ConnectIpPort:
 			con = v
 		case string:
-			err = con.getAddrFromHTTP(v)
-			if err != nil {
-				return
-			}
+			url = v
 		}
 	}
-
-	// TODO: Connect to auth https server and get auth ip:port to connect to
-	//
+	// Connect to auth https server and get auth ip:port to connect
+	if url != "" {
+		err = con.getAddrFromHTTP(url, excl.IPs...)
+		if err != nil {
+			return
+		}
+	}
 
 	// Connect to trudp auth node
 	ch, err := teo.trudp.Connect(con.IP, con.Port)
@@ -202,7 +245,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 		// This commands (and empty body) added to remove "not defined" error
 		// from default case
-		case CmdResendConnectTo, CmdResendConnectToPeer:
+		case CmdResendConnectTo, CmdResendConnectToPeer, CmdGetIP:
 			return false
 
 		// Not defined commands

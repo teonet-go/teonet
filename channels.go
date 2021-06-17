@@ -191,7 +191,9 @@ func (c Channel) SendNoWait(data []byte, attr ...interface{}) (id uint32, err er
 	return c.c.SendNoWait(data, delivered)
 }
 
-// checkSendAttr check Send function attributes
+// checkSendAttr check Send function attributes:
+// return delevered calback 'func(p *trudp.Packet)' and
+// subscribe to answer with callback 'func(c *Channel, p *Packet, e *Event) bool'
 func (c Channel) checkSendAttr(attr ...interface{}) (delivered func(p *trudp.Packet)) {
 	var teo *Teonet
 	for i := range attr {
@@ -211,7 +213,6 @@ func (c Channel) checkSendAttr(attr ...interface{}) (delivered func(p *trudp.Pac
 				c.subscribeToAnswer(teo, v)
 			}
 		}
-
 	}
 	return
 }
