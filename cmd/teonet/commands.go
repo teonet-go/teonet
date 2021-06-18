@@ -139,7 +139,7 @@ func (c CmdConnectTo) Exec(line string) (err error) {
 	var address = c.alias.Address(args[0])
 	err = c.teo.ConnectTo(address)
 	if err != nil {
-		fmt.Printf("can't connect to %s, error: %s\n", address, err)
+		return
 	}
 	fmt.Println("connected to", address)
 

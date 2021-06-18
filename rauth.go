@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/kirill-scherba/bslice"
@@ -31,7 +30,8 @@ func Nodes(url string) (ret *nodes, err error) {
 	dst := make([]byte, hex.DecodedLen(len(body)))
 	n, err := hex.Decode(dst, body)
 	if err != nil {
-		log.Fatal(err)
+		teolog.Log(teolog.ERROR, "HTTP", "server can't decode answer, error:", err)
+		return
 	}
 
 	ret = new(nodes)
