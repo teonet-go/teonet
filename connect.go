@@ -145,7 +145,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 	// Set default address if attr ommited
 	if len(attr) == 0 {
-		attr = append(attr, "http://teonet.kekalan.cloud:10000/auth")
+		attr = append(attr, "https://teonet.cloud/auth")
 	}
 
 	// Parse attr, it may be:
