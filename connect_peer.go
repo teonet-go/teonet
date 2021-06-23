@@ -280,7 +280,7 @@ func (teo Teonet) connectToConnectedPeer(c *Channel, p *Packet) (ok bool) {
 
 			if res, ok := teo.peerRequests.get(con.ID); ok {
 				// Set channel connected
-				teo.Connected(c, res.FromAddr)
+				teo.SetConnected(c, res.FromAddr)
 				// Close peerRequests and send answer to client
 				teo.peerRequests.del(con.ID)
 				teolog.Log(teolog.DEBUG, "Send answer to client, ID:", con.ID)
@@ -314,7 +314,7 @@ func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
 
 			if req, ok := teo.connRequests.get(con.ID); ok {
 				// Set channel connected
-				teo.Connected(c, req.ToAddr)
+				teo.SetConnected(c, req.ToAddr)
 				// Send to wait channel to finish connection and close connRequest
 				if req.chanWait.IsOpen() {
 					*req.chanWait <- nil

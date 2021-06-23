@@ -315,7 +315,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	teo.config.Address = addr
 	teo.config.save()
 
-	teo.Connected(teo.auth, string(conOut.ServerAddress))
+	teo.SetConnected(teo.auth, string(conOut.ServerAddress))
 
 	// Connected to teonet, show log message and send Event to main reader
 	teolog.Logf(teolog.CONNECT, "Teonet", "address: %s\n", conOut.Address)
@@ -324,9 +324,9 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	return
 }
 
-// Connected set address to channel, add channel to channels list and send event
-// connected to main teonet reader
-func (teo *Teonet) Connected(c *Channel, addr string) {
+// SetConnected set address to channel, add channel to channels list and send event
+// SetConnected to main teonet reader
+func (teo *Teonet) SetConnected(c *Channel, addr string) {
 	c.a = addr
 	teo.channels.add(c)
 	reader(teo, c, nil, &Event{EventConnected, nil})

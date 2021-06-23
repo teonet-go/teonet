@@ -17,7 +17,7 @@ import (
 	"github.com/kirill-scherba/trudp"
 )
 
-const Version = "0.2.5"
+const Version = "0.2.6"
 
 // nMODULEteo is current module name
 var nMODULEteo = "Teonet"
@@ -331,6 +331,12 @@ func (teo *Teonet) SendTo(addr string, data []byte, attr ...interface{}) (id uin
 	}
 	// Send to channel
 	return c.Send(data, attr...)
+}
+
+// Connected return true if peer with selected address is connected now
+func (teo *Teonet) Connected(addr string) (ok bool) {
+	_, ok = teo.channels.get(addr)
+	return
 }
 
 // Log get teonet log
