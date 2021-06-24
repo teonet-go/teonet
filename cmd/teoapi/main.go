@@ -13,7 +13,7 @@ import (
 const (
 	appName    = "Teonet api server sample application"
 	appShort   = "teoapi"
-	appVersion = "0.2.2"
+	appVersion = "0.2.3"
 	appLong    = ""
 
 	// Teonet Monitor address
