@@ -145,6 +145,11 @@ func (teo Teonet) Nodes(attr ...NodeAddr) (n *nodes) {
 	return
 }
 
+// NumPeers return number of connected peers
+func (teo Teonet) NumPeers() int {
+	return len(teo.Peers())
+}
+
 // new create new teonet channel
 func (c *channels) new(channel *trudp.Channel) *Channel {
 	address := newChannelPrefix + trudp.RandomString(addressLen-len(newChannelPrefix))

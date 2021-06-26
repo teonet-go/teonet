@@ -115,6 +115,17 @@ func (teo *Teonet) WhenConnectedTo(address string, f func()) {
 	})
 }
 
+// WhenConnectedDisconnected call faunction f when connected or disconnected to any peer
+func (teo *Teonet) WhenConnectedDisconnected(f func()) {
+	teo.AddReader(func(c *Channel, p *Packet, ev *Event) (processed bool) {
+		switch ev.Event {
+		case EventConnected, EventDisconnected:
+			f()
+		}
+		return
+	})
+}
+
 // processCmdConnectToPeer (3) peer got CmdConnectToPeer request from teonet
 // auth (peer prepare to connect from client and send answer with its IPs to
 // auth server)
