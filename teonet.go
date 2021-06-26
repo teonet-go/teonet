@@ -17,7 +17,7 @@ import (
 	"github.com/kirill-scherba/trudp"
 )
 
-const Version = "0.2.11"
+const Version = "0.2.12"
 
 // nMODULEteo is current module name
 var nMODULEteo = "Teonet"
@@ -154,15 +154,10 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 			if !ok {
 				if teo.auth != nil && c == teo.auth.c {
 					ch = teo.auth
-					// teo.log.Println("!!! auth channel !!! ", c)
 				} else {
 					ch = teo.channels.new(c)
-					// teo.log.Println("!!! new empty channel !!! ", c)
 				}
 			}
-			// else {
-			// 	// teo.log.Println("!!! exists channel !!! ", c)
-			// }
 
 			// Create packet
 			var pac *Packet
@@ -192,15 +187,13 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 			// Wait this trudp channel connected to teonet channel and delete
 			// it if not connected during timeout
 			_, exists := teo.channels.get(c)
-			// teo.log.Println("server connection done, from", c.String(), "error:", err,
-			// 	"teonet channel exists:", exists)
 			if exists {
 				return
 			}
 			go func(c *trudp.Channel) {
 				time.Sleep(trudp.ClientConnectTimeout)
 				ch, exists := teo.channels.get(c)
-				if !exists /* || ch.IsNew() */ {
+				if !exists {
 					if newch, ok := teo.channels.getByIP(c.String()); !ok {
 						teolog.Log(teolog.DEBUG, nMODULEteo, "remove dummy trudp channel:", c, ch)
 						c.ChannelDel(c)
