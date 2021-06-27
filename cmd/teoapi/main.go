@@ -13,7 +13,7 @@ import (
 const (
 	appName    = "Teonet api server sample application"
 	appShort   = "teoapi"
-	appVersion = "0.2.7"
+	appVersion = "0.2.8"
 	appLong    = ""
 
 	// Teonet Monitor address
@@ -123,6 +123,7 @@ func main() {
 		AppName:    appName,
 		AppShort:   appShort,
 		AppVersion: appVersion,
+		TeoVersion: teonet.Version,
 	})
 
 	select {} // sleep forever

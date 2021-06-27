@@ -13,7 +13,7 @@ import (
 const (
 	appName    = "Teonet echo client/server sample application"
 	appShort   = "teoecho"
-	appVersion = "0.2.7"
+	appVersion = "0.2.8"
 
 	// Teonet Monitor address
 	monitor = "nOhj2qRDKduN9sHIRoRmJ3LTjOfrKey8llq"
@@ -100,6 +100,7 @@ connect:
 			AppName:    appName,
 			AppShort:   appShort,
 			AppVersion: appVersion,
+			TeoVersion: teonet.Version,
 		})
 
 		select {}
