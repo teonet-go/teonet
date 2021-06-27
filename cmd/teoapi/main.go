@@ -13,12 +13,14 @@ import (
 const (
 	appName    = "Teonet api server sample application"
 	appShort   = "teoapi"
-	appVersion = "0.2.8"
+	appVersion = "0.2.9"
 	appLong    = ""
 
 	// Teonet Monitor address
 	monitor = "nOhj2qRDKduN9sHIRoRmJ3LTjOfrKey8llq"
 )
+
+var appStartTime = time.Now()
 
 func Commands(teo *teonet.Teonet, api *teonet.API) {
 
@@ -120,10 +122,11 @@ func main() {
 
 	// Connect to monitor
 	teomon.Connect(teo, monitor, teomon.Metric{
-		AppName:    appName,
-		AppShort:   appShort,
-		AppVersion: appVersion,
-		TeoVersion: teonet.Version,
+		AppName:      appName,
+		AppShort:     appShort,
+		AppVersion:   appVersion,
+		TeoVersion:   teonet.Version,
+		AppStartTime: appStartTime,
 	})
 
 	select {} // sleep forever

@@ -13,11 +13,13 @@ import (
 const (
 	appName    = "Teonet echo client/server sample application"
 	appShort   = "teoecho"
-	appVersion = "0.2.8"
+	appVersion = "0.2.9"
 
 	// Teonet Monitor address
 	monitor = "nOhj2qRDKduN9sHIRoRmJ3LTjOfrKey8llq"
 )
+
+var appStartTime = time.Now()
 
 // reader is main application reader it receive and process messages
 func reader(teo *teonet.Teonet, c *teonet.Channel, p *teonet.Packet, e *teonet.Event) bool {
@@ -97,10 +99,11 @@ connect:
 
 		// Connect to monitor
 		teomon.Connect(teo, monitor, teomon.Metric{
-			AppName:    appName,
-			AppShort:   appShort,
-			AppVersion: appVersion,
-			TeoVersion: teonet.Version,
+			AppName:      appName,
+			AppShort:     appShort,
+			AppVersion:   appVersion,
+			TeoVersion:   teonet.Version,
+			AppStartTime: appStartTime,
 		})
 
 		select {}
