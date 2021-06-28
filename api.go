@@ -622,9 +622,7 @@ func (api *APIClient) getApi() (err error) {
 
 // String stringlify APIClient
 func (api APIClient) String() (str string) {
-
 	str += api.Help(false)
-
 	return
 }
 
@@ -656,9 +654,9 @@ func (api APIClient) Help(short bool) (str string) {
 			str += fmt.Sprintf("%-*s %3d - %s", max, a.Name(), a.Cmd(), a.Short())
 			continue
 		}
-		if i > 0 {
-			str += "\n"
-		}
+		// if i > 0 {
+		// 	str += "\n"
+		// }
 		str += fmt.Sprintf("%-*s %s\n", max, a.Name(), a.Short())
 		str += fmt.Sprintf("%*s cmd:    %d\n", max, "", a.Cmd())
 		str += fmt.Sprintf("%*s usage:  %s\n", max, "", a.Name()+" "+a.Usage())
@@ -671,7 +669,7 @@ func (api APIClient) Help(short bool) (str string) {
 		}
 		answer += a.Ret()
 		if answer != "" {
-			str += fmt.Sprintf("%*s return: %s", max, "", answer)
+			str += fmt.Sprintf("%*s return: %s\n", max, "", answer)
 		}
 	}
 	return

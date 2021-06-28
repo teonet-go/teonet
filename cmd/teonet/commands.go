@@ -209,7 +209,7 @@ func (c CmdAPI) Exec(line string) (err error) {
 		c.api.add(address, api)
 	}
 	if len(args) == 1 {
-		fmt.Print(api.String() + "\n\n")
+		fmt.Print(api.String() + "\n")
 		return
 	}
 
