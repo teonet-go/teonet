@@ -207,6 +207,11 @@ type API struct {
 	bslice.ByteSlice
 }
 
+// Short get app short name
+func (a API) Short() string {
+	return a.short
+}
+
 // Send answer to request
 func (a *API) SendAnswer(cmd APInterface, c *Channel, data []byte, p *Packet) (id uint32, err error) {
 

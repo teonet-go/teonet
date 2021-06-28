@@ -62,7 +62,7 @@ const (
 )
 
 func (c config) marshal() (data []byte, err error) {
-	data, err = json.Marshal(c)
+	data, err = json.MarshalIndent(c, "", " ")
 	if err != nil {
 		return
 	}
@@ -75,11 +75,17 @@ func (c *config) unmarshal(data []byte) error {
 
 // file get file name
 func (c config) file() (res string, err error) {
+	return ConfigFile(c.appName, configFile)
+}
+
+// ConfigFile return config file full name (path + name)
+// TODO: if os.UserConfigDir() return err - do thomesing right
+func ConfigFile(appName string, file string) (res string, err error) {
 	res, err = os.UserConfigDir()
 	if err != nil {
 		return
 	}
-	res += "/" + ConfigDir + "/" + c.appName + "/" + configFile
+	res += "/" + ConfigDir + "/" + appName + "/" + file
 	return
 }
 
