@@ -654,9 +654,7 @@ func (api APIClient) Help(short bool) (str string) {
 			str += fmt.Sprintf("%-*s %3d - %s", max, a.Name(), a.Cmd(), a.Short())
 			continue
 		}
-		// if i > 0 {
-		// 	str += "\n"
-		// }
+
 		str += fmt.Sprintf("%-*s %s\n", max, a.Name(), a.Short())
 		str += fmt.Sprintf("%*s cmd:    %d\n", max, "", a.Cmd())
 		str += fmt.Sprintf("%*s usage:  %s\n", max, "", a.Name()+" "+a.Usage())

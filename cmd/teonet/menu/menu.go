@@ -9,16 +9,18 @@ import (
 	"strings"
 
 	"github.com/chzyer/readline"
+	"github.com/kirill-scherba/teonet"
 )
 
-func New() (cmd *Menu, err error) {
-	cmd = &Menu{}
+func New(appShort string) (cmd *Menu, err error) {
+	cmd = &Menu{appShort: appShort}
 	return
 }
 
 type Menu struct {
-	r     *readline.Instance
-	items []Item
+	r        *readline.Instance
+	items    []Item
+	appShort string
 }
 
 type Item interface {
@@ -32,9 +34,13 @@ type Item interface {
 type Compliter readline.PrefixCompleterInterface
 
 func (m *Menu) newReadline() (l *readline.Instance, err error) {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		dir = os.TempDir()
+	}
 	l, err = readline.NewEx(&readline.Config{
 		Prompt:              "\033[31mteo»\033[0m ",
-		HistoryFile:         os.TempDir() + "/readline.tmp",
+		HistoryFile:         dir + "/" + teonet.ConfigDir + "/" + m.appShort + "/readline.tmp",
 		AutoComplete:        m.makeCompliter(),
 		InterruptPrompt:     "^C",
 		EOFPrompt:           "exit",

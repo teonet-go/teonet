@@ -10,14 +10,14 @@ import (
 )
 
 // NewTeocli create new teonet cli client
-func NewTeocli(teo *teonet.Teonet) (cli *Teocli, err error) {
+func NewTeocli(teo *teonet.Teonet, appShort string) (cli *Teocli, err error) {
 	cli = &Teocli{teo: teo}
 
 	// Add commands
 	cli.addCommands()
 
 	// Create readline based cli menu and add menu items (commands)
-	cli.menu, err = menu.New()
+	cli.menu, err = menu.New(appShort)
 	if err != nil {
 		err = fmt.Errorf("can't create menu, %s", err)
 		return

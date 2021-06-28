@@ -40,7 +40,7 @@ func main() {
 	fmt.Println("connected to teonet")
 
 	// Create Teonet CLI
-	cli, err := NewTeocli(teo)
+	cli, err := NewTeocli(teo, appShort)
 	if err != nil {
 		fmt.Println("can't create Teonet CLI, err:", err)
 	}
