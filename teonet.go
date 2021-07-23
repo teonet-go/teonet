@@ -17,14 +17,18 @@ import (
 	"github.com/kirill-scherba/trudp"
 )
 
-const Version = "0.2.15"
+const Version = "0.2.16"
 
 // nMODULEteo is current module name
 var nMODULEteo = "Teonet"
 
 // Logo print teonet logo
 func Logo(title, ver string) {
-	fmt.Println("" +
+	fmt.Println(LogoString(title, ver))
+}
+
+func LogoString(title, ver string) string {
+	return fmt.Sprint("" +
 		" _____                     _   \n" +
 		"|_   _|__  ___  _ __   ___| |_  v4\n" +
 		"  | |/ _ \\/ _ \\| '_ \\ / _ \\ __|\n" +
