@@ -83,7 +83,9 @@ func (c config) file() (res string, err error) {
 func ConfigFile(appName string, file string) (res string, err error) {
 	res, err = os.UserConfigDir()
 	if err != nil {
-		return
+		// Get dir for Android
+		res = os.Getenv("SECONDARY_STORAGE")
+		// return
 	}
 	res += "/" + ConfigDir + "/" + appName + "/" + file
 	return
