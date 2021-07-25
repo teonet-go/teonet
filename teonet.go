@@ -17,7 +17,7 @@ import (
 	"github.com/kirill-scherba/trudp"
 )
 
-const Version = "0.2.17"
+const Version = "0.2.18"
 
 // nMODULEteo is current module name
 var nMODULEteo = "Teonet"
@@ -88,38 +88,49 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 
 	// Parse attributes
 	var param struct {
-		port      int
-		showTrudp bool
-		logLevel  string
-		logFilter LogFilterT
-		log       *log.Logger
-		reader    Treceivecb
-		api       ApiInterface
+		port           int
+		showTrudp      bool
+		logLevel       string
+		logFilter      LogFilterT
+		log            *log.Logger
+		reader         Treceivecb
+		api            ApiInterface
+		configFilesDir ConfigFilesDir
 	}
 	for i := range attr {
 		switch d := attr[i].(type) {
+		// Local port
 		case int:
 			param.port = d
+		// Log level
 		case string:
 			param.logLevel = d
+		// Log filter
 		case trudp.LogFilterT:
 			param.logFilter = d
+		// Show trudp flag
 		case bool:
 			param.showTrudp = d
+		// Logger
 		case *log.Logger:
 			param.log = d
-		// case Treceivecb:
+		// Treceivecb:
 		case func(teo *Teonet, c *Channel, p *Packet, e *Event) bool:
 			param.reader = d
-		// case TreceivecbShort:
+		// TreceivecbShort:
 		case func(c *Channel, p *Packet, e *Event) bool:
 			param.reader = func(t *Teonet, c *Channel, p *Packet, e *Event) bool {
 				return d(c, p, e)
 			}
+		// API interface
 		case ApiInterface:
 			param.api = d
+		// Config file folder
+		case ConfigFilesDir:
+			param.configFilesDir = d
+		// Some enother (incorrect) attribute
 		default:
-			err = fmt.Errorf("wrong attribute type %T", d)
+			err = fmt.Errorf("incorrect attribute type %T", d)
 			return
 		}
 	}
@@ -139,7 +150,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	teo.log = log
 
 	// Create config holder and read config
-	err = teo.newConfig(appName, log)
+	err = teo.newConfig(appName, log, param.configFilesDir)
 	if err != nil {
 		return
 	}

@@ -21,8 +21,8 @@ import (
 
 var nMODULEconf = "Config"
 
-func (teo *Teonet) newConfig(appName string, log *log.Logger) (err error) {
-	teo.config = &config{appName: appName, log: log}
+func (teo *Teonet) newConfig(appName string, log *log.Logger, c ConfigFilesDir) (err error) {
+	teo.config = &config{appName: appName, log: log, configFilesDir: c}
 
 	// Check config file exists and create and save new config if does not exists
 	err = teo.config.exists()
@@ -53,7 +53,10 @@ type config struct {
 	appName             string          `json:"-"`
 	trudpPrivateKey     *rsa.PrivateKey `json:"-"`
 	log                 *log.Logger     `json:"-"`
+	configFilesDir      ConfigFilesDir  `json:"-"`
 }
+
+type ConfigFilesDir string
 
 const (
 	ConfigDir        = "teonet"
@@ -75,18 +78,19 @@ func (c *config) unmarshal(data []byte) error {
 
 // file get file name
 func (c config) file() (res string, err error) {
-	return ConfigFile(c.appName, configFile)
+	return c.configFile(c.appName, configFile)
 }
 
 // ConfigFile return config file full name (path + name)
 // TODO: if os.UserConfigDir() return err - do thomesing right
-func ConfigFile(appName string, file string) (res string, err error) {
-	res, err = os.UserConfigDir()
-	if err != nil {
-		// Get dir for Android
-		res = os.Getenv("SECONDARY_STORAGE")
-		err = nil
-		// return
+func (c config) configFile(appName string, file string) (res string, err error) {
+	if c.configFilesDir != "" {
+		res = string(c.configFilesDir)
+	} else {
+		res, err = os.UserConfigDir()
+		if err != nil {
+			return
+		}
 	}
 	res += "/" + ConfigDir + "/" + appName + "/" + file
 	return
