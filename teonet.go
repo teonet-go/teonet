@@ -17,7 +17,7 @@ import (
 	"github.com/kirill-scherba/trudp"
 )
 
-const Version = "0.2.18"
+const Version = "0.2.17"
 
 // nMODULEteo is current module name
 var nMODULEteo = "Teonet"
@@ -84,18 +84,21 @@ type LogFilterT = trudp.LogFilterT
 //   bool - set true to show trudp statistic table
 //   *log.Logger - common logger to show messages in application and teonet, may be created with teonet.Log() function
 //   func(c *Channel, p *Packet, e *Event) - message receiver
+//   func(t *Teonet, c *Channel, p *Packet, e *Event) - message receiver
+//   ApiInterface - api interface
+//   OsConfigDir - os directory to save config
 func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 
 	// Parse attributes
 	var param struct {
-		port        int
-		showTrudp   bool
-		logLevel    string
-		logFilter   LogFilterT
-		log         *log.Logger
-		reader      Treceivecb
-		api         ApiInterface
-		configFiles ConfigFiles
+		port      int
+		showTrudp bool
+		logLevel  string
+		logFilter LogFilterT
+		log       *log.Logger
+		reader    Treceivecb
+		api       ApiInterface
+		configDir OsConfigDir
 	}
 	for i := range attr {
 		switch d := attr[i].(type) {
@@ -126,8 +129,8 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 		case ApiInterface:
 			param.api = d
 		// Config file folder
-		case ConfigFiles:
-			param.configFiles = d
+		case OsConfigDir:
+			param.configDir = d
 		// Some enother (incorrect) attribute
 		default:
 			err = fmt.Errorf("incorrect attribute type %T", d)
@@ -150,7 +153,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	teo.log = log
 
 	// Create config holder and read config
-	err = teo.newConfig(appName, log, param.configFiles)
+	err = teo.newConfig(appName, log, string(param.configDir))
 	if err != nil {
 		return
 	}

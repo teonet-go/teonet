@@ -21,8 +21,9 @@ import (
 
 var nMODULEconf = "Config"
 
-func (teo *Teonet) newConfig(appName string, log *log.Logger, c ConfigFiles) (err error) {
-	teo.config = &config{appName: appName, log: log, configFiles: c}
+func (teo *Teonet) newConfig(appName string, log *log.Logger, osConfigDir string) (err error) {
+	// New config holder
+	teo.config = &config{appName: appName, log: log, osConfigDir: osConfigDir}
 
 	// Check config file exists and create and save new config if does not exists
 	err = teo.config.exists()
@@ -50,15 +51,13 @@ type config struct {
 	PrivateKeyData      []byte          `json:"private_key"`
 	ServerPublicKeyData []byte          `json:"server_key"`
 	Address             string          `json:"address"`
-	appName             string          `json:"-"`
 	trudpPrivateKey     *rsa.PrivateKey `json:"-"`
+	appName             string          `json:"-"`
 	log                 *log.Logger     `json:"-"`
-	configFiles         ConfigFiles     `json:"-"`
+	osConfigDir         string          `json:"-"`
 }
 
-type ConfigFiles struct {
-	Dir string
-}
+type OsConfigDir string
 
 const (
 	ConfigDir        = "teonet"
@@ -86,8 +85,8 @@ func (c config) file() (res string, err error) {
 // ConfigFile return config file full name (path + name)
 // TODO: if os.UserConfigDir() return err - do thomesing right
 func (c config) configFile(appName string, file string) (res string, err error) {
-	if c.configFiles.Dir != "" {
-		res = c.configFiles.Dir
+	if c.osConfigDir != "" {
+		res = c.osConfigDir
 	} else {
 		res, err = os.UserConfigDir()
 		if err != nil {
@@ -200,7 +199,8 @@ func (c *config) create() (err error) {
 		return
 	}
 
-	*c = config{appName: c.appName, log: c.log}
+	// Create new config holder
+	*c = config{appName: c.appName, log: c.log, osConfigDir: c.osConfigDir}
 	err = c.createKeys()
 	if err != nil {
 		return
