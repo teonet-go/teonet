@@ -88,14 +88,14 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 
 	// Parse attributes
 	var param struct {
-		port           int
-		showTrudp      bool
-		logLevel       string
-		logFilter      LogFilterT
-		log            *log.Logger
-		reader         Treceivecb
-		api            ApiInterface
-		configFilesDir ConfigFilesDir
+		port        int
+		showTrudp   bool
+		logLevel    string
+		logFilter   LogFilterT
+		log         *log.Logger
+		reader      Treceivecb
+		api         ApiInterface
+		configFiles ConfigFiles
 	}
 	for i := range attr {
 		switch d := attr[i].(type) {
@@ -126,8 +126,8 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 		case ApiInterface:
 			param.api = d
 		// Config file folder
-		case ConfigFilesDir:
-			param.configFilesDir = d
+		case ConfigFiles:
+			param.configFiles = d
 		// Some enother (incorrect) attribute
 		default:
 			err = fmt.Errorf("incorrect attribute type %T", d)
@@ -150,7 +150,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	teo.log = log
 
 	// Create config holder and read config
-	err = teo.newConfig(appName, log, param.configFilesDir)
+	err = teo.newConfig(appName, log, param.configFiles)
 	if err != nil {
 		return
 	}

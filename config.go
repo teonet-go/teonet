@@ -21,8 +21,8 @@ import (
 
 var nMODULEconf = "Config"
 
-func (teo *Teonet) newConfig(appName string, log *log.Logger, c ConfigFilesDir) (err error) {
-	teo.config = &config{appName: appName, log: log, configFilesDir: c}
+func (teo *Teonet) newConfig(appName string, log *log.Logger, c ConfigFiles) (err error) {
+	teo.config = &config{appName: appName, log: log, configFiles: c}
 
 	// Check config file exists and create and save new config if does not exists
 	err = teo.config.exists()
@@ -53,10 +53,12 @@ type config struct {
 	appName             string          `json:"-"`
 	trudpPrivateKey     *rsa.PrivateKey `json:"-"`
 	log                 *log.Logger     `json:"-"`
-	configFilesDir      ConfigFilesDir  `json:"-"`
+	configFiles         ConfigFiles     `json:"-"`
 }
 
-type ConfigFilesDir string
+type ConfigFiles struct {
+	Dir string
+}
 
 const (
 	ConfigDir        = "teonet"
@@ -84,8 +86,8 @@ func (c config) file() (res string, err error) {
 // ConfigFile return config file full name (path + name)
 // TODO: if os.UserConfigDir() return err - do thomesing right
 func (c config) configFile(appName string, file string) (res string, err error) {
-	if c.configFilesDir != "" {
-		res = string(c.configFilesDir)
+	if c.configFiles.Dir != "" {
+		res = c.configFiles.Dir
 	} else {
 		res, err = os.UserConfigDir()
 		if err != nil {
