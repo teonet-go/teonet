@@ -11,6 +11,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/kirill-scherba/bslice"
@@ -138,7 +139,11 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 		teolog.Log(teolog.ERROR, "connectToPeer unmarshal error:", err)
 		return
 	}
-	teolog.Log(teolog.DEBUG, nMODULEconp, "got CmdConnectToPeer=2 from teonet, Addr:", con.FromAddr, "ID:", con.ID, "From IP:", con.FromAddr)
+	teolog.Log(teolog.DEBUG, nMODULEconp,
+		"got CmdConnectToPeer=2 from teonet",
+		"Addr:", con.FromAddr,
+		"ID:", con.ID,
+		"From IP:", con.IP+":"+strconv.Itoa(int(con.Port)))
 
 	teo.peerRequests.add(&con)
 
