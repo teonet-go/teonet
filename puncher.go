@@ -136,7 +136,7 @@ func (p *puncher) punch(key string, ips IPs, stop func() bool, delays ...time.Du
 		if len(delays) > 0 {
 			time.Sleep(delays[0])
 		}
-		for i := 0; i < 5; i++ {
+		for i := 0; i < 15; i++ {
 			if stop() {
 				break
 			}
