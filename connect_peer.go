@@ -165,7 +165,7 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 	// Send command to teonet
 	teo.Command(CmdConnectToPeer, data).Send(teo.auth)
 
-	// Punch firewall
+	// Punch firewall (from server to client - server mode)
 	// TODO: calculat punch start delay here: 1) triptime from client to auth +
 	// 2) triptime of this packet (from auth to this peer)
 	teo.puncher.punch(con.ID, IPs{
@@ -174,6 +174,7 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 		IP:        con.IP,
 		Port:      con.Port,
 	}, func() bool { _, ok := teo.peerRequests.get(con.ID); return !ok },
+		serverMode,
 		10*time.Millisecond,
 	)
 
@@ -258,13 +259,13 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 		return
 	}
 
-	// Punch firewall
+	// Punch firewall (from client to server)
 	teo.puncher.punch(con.ID, IPs{
 		LocalIPs:  []string{}, // empty list, don't send punch to local address
 		LocalPort: con.LocalPort,
 		IP:        con.IP,
 		Port:      con.Port,
-	}, func() bool { _, ok := teo.connRequests.get(con.ID); return !ok })
+	}, func() bool { _, ok := teo.connRequests.get(con.ID); return !ok }, clientMode)
 
 	waitCh := make(chan *net.UDPAddr)
 	teo.puncher.subscribe(con.ID, &PuncherData{&waitCh})

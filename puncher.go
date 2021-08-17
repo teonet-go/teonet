@@ -18,6 +18,13 @@ import (
 
 const IPv6Allow = false
 
+type connectModeT byte
+
+const (
+	clientMode connectModeT = iota
+	serverMode
+)
+
 // getIPs return string slice with local IP address of this host
 func (teo Teonet) getIPs() (ips []string, err error) {
 	ifaces, err := net.Interfaces()
@@ -131,7 +138,8 @@ func (p *puncher) send(key string, ips IPs) (err error) {
 }
 
 // Punch client ip:ports (send udp packets to received IPs)
-func (p *puncher) punch(key string, ips IPs, stop func() bool, delays ...time.Duration) {
+// mode: true - server to client mode; false - client to server mode
+func (p *puncher) punch(key string, ips IPs, stop func() bool, mode connectModeT, delays ...time.Duration) {
 	go func() {
 		if len(delays) > 0 {
 			time.Sleep(delays[0])
@@ -139,6 +147,9 @@ func (p *puncher) punch(key string, ips IPs, stop func() bool, delays ...time.Du
 		for i := 0; i < 15; i++ {
 			if stop() {
 				break
+			}
+			if mode == clientMode {
+				key = trudp.PunchPrefix + key
 			}
 			p.send(key, ips)
 			time.Sleep(time.Duration(((i + 1) * 30)) * time.Millisecond)
