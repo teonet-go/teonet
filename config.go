@@ -82,8 +82,8 @@ func (c config) file() (res string, err error) {
 	return c.configFile(c.appName, configFile)
 }
 
-// ConfigFile return config file full name (path + name)
-// TODO: if os.UserConfigDir() return err - do thomesing right
+// configFile return config file full name (path + name)
+// TODO: if os.UserConfigDir() return err - do something right
 func (c config) configFile(appName string, file string) (res string, err error) {
 	if c.osConfigDir != "" {
 		res = c.osConfigDir
@@ -95,6 +95,11 @@ func (c config) configFile(appName string, file string) (res string, err error) 
 	}
 	res += "/" + ConfigDir + "/" + appName + "/" + file
 	return
+}
+
+// ConfigFile return full path to config file
+func (teo Teonet) ConfigFile(appName string, file string) (res string, err error) {
+	return teo.config.configFile(appName, file)
 }
 
 func (c config) save() (err error) {
