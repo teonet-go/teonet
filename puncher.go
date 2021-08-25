@@ -7,6 +7,7 @@
 package teonet
 
 import (
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -127,6 +128,7 @@ func (p *puncher) send(key string, ips IPs) (err error) {
 		if err != nil {
 			return 0, err
 		}
+		fmt.Printf("send %s to %s\n", key, dst.String())
 		return p.trudp.WriteTo(dst, []byte(key))
 	}
 	for i := range ips.LocalIPs {
@@ -144,12 +146,12 @@ func (p *puncher) punch(key string, ips IPs, stop func() bool, mode connectModeT
 		if len(delays) > 0 {
 			time.Sleep(delays[0])
 		}
+		if mode == clientMode {
+			key = trudp.PunchPrefix + key
+		}
 		for i := 0; i < 15; i++ {
 			if stop() {
 				break
-			}
-			if mode == clientMode {
-				key = trudp.PunchPrefix + key
 			}
 			p.send(key, ips)
 			time.Sleep(time.Duration(((i + 1) * 30)) * time.Millisecond)

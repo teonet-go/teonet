@@ -1,8 +1,8 @@
 module github.com/kirill-scherba/teonet
 
-// replace github.com/kirill-scherba/trudp => ../trudp
+replace github.com/kirill-scherba/trudp => ../trudp
 
-// replace github.com/kirill-scherba/teomon/teomon => ../teomon/teomon
+replace github.com/kirill-scherba/teomon/teomon => ../teomon/teomon
 
 go 1.16
 

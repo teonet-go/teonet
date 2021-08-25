@@ -194,7 +194,11 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 		teolog.Log(teolog.ERROR, "CmdConnectTo answer unmarshal error:", err.Error())
 		return
 	}
-	teolog.Log(teolog.DEBUG, "Got CmdConnectTo=1 answer from teonet, Addr:", con.FromAddr, "ID:", con.ID)
+	teolog.Log(teolog.DEBUG, "Got CmdConnectTo=1 answer from teonet,",
+		"Addr:", con.FromAddr,
+		"ID:", con.ID,
+		"IP", con.IP+":"+strconv.Itoa(int(con.Port)),
+	)
 
 	// Check connRequests
 	req, ok := teo.connRequests.get(con.ID)
@@ -234,7 +238,7 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 	connect := func(ip string, port uint32) (ok bool, err error) {
 
 		_, ok = teo.connRequests.get(con.ID)
-		// teo.log.Println(">>> connect to", ip, port, "skip:", !ok)
+		teo.log.Println(">>> connect to", ip, port, "skip:", !ok)
 		if !ok {
 			// err = errors.New("skip(already connected)")
 			teolog.Log(teolog.DEBUG, nMODULEconp, "skip (already connected)")
