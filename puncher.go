@@ -7,13 +7,13 @@
 package teonet
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/kirill-scherba/teonet-go/teolog/teolog"
 	"github.com/kirill-scherba/trudp"
 )
 
@@ -128,7 +128,7 @@ func (p *puncher) send(key string, ips IPs) (err error) {
 		if err != nil {
 			return 0, err
 		}
-		fmt.Printf("send %s to %s\n", key, dst.String())
+		teolog.Logf(teolog.DEBUG, "Puncher", "send %s to %s\n", key, dst.String())
 		return p.trudp.WriteTo(dst, []byte(key))
 	}
 	for i := range ips.LocalIPs {

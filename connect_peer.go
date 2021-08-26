@@ -238,7 +238,7 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 	connect := func(ip string, port uint32) (ok bool, err error) {
 
 		_, ok = teo.connRequests.get(con.ID)
-		teo.log.Println(">>> connect to", ip, port, "skip:", !ok)
+		// teolog.Log(teolog.DEBUG, nMODULEconp, "connect to", ip, port, "skip flag:", !ok)
 		if !ok {
 			// err = errors.New("skip(already connected)")
 			teolog.Log(teolog.DEBUG, nMODULEconp, "skip (already connected)")
