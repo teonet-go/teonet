@@ -262,7 +262,7 @@ func (c CmdAPI) Exec(line string) (err error) {
 	}
 	select {
 	case <-wait:
-	case <-time.After(time.Duration(3 * time.Second)):
+	case <-time.After(time.Duration(10 * time.Second)):
 		fmt.Println("can't got answer, error: timeout")
 	}
 
