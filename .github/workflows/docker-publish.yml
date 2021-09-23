@@ -1,0 +1,52 @@
+name: Docker Publish Image CI
+
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags: 
+      - v*.*.*
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+    env:
+      NAME: teonet
+      USER: ${{ secrets.USER }}
+      PERSONAL_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+      PACKAGES_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build the Docker image
+      
+      run: docker build --build-arg github_user="$USER" --build-arg github_personal_token="$PERSONAL_TOKEN" -t $NAME -f ./Dockerfile .
+    
+    - name: Branch name
+      id: branch_name
+      run: |
+        echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
+        echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
+        echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+
+    - name: Set name, branch and tag to environment
+      env:
+        SOURCE_NAME: ${{ steps.branch_name.outputs.SOURCE_NAME }}
+        SOURCE_BRANCH: ${{ steps.branch_name.outputs.SOURCE_BRANCH }}
+        SOURCE_TAG: ${{ steps.branch_name.outputs.SOURCE_TAG }}
+      run: |
+        echo $SOURCE_NAME
+        echo $SOURCE_BRANCH
+        echo $SOURCE_TAG
+  
+    - name: Publish Docker image to Github Packages
+      env:
+        VERSION: ${{ steps.branch_name.outputs.SOURCE_TAG }}
+      run: |
+          docker login docker.pkg.github.com -u $USER -p $PACKAGES_TOKEN
+          echo ""
+          docker tag $NAME docker.pkg.github.com/kirill-scherba/teonet-go/$NAME:${VERSION:1}
+          docker push docker.pkg.github.com/kirill-scherba/teonet-go/$NAME:${VERSION:1}
+          echo ""
+          docker tag $NAME docker.pkg.github.com/kirill-scherba/teonet-go/$NAME:latest
+          docker push docker.pkg.github.com/kirill-scherba/teonet-go/$NAME:latest

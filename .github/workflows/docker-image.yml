@@ -1,0 +1,23 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+    env:
+      NAME: teonet
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build the Docker image
+      env:
+        USER: ${{ secrets.USER }}
+        PERSONAL_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+      run: docker build --build-arg github_user="$USER" --build-arg github_personal_token="$PERSONAL_TOKEN" -t $NAME -f ./Dockerfile .
