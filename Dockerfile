@@ -11,8 +11,8 @@
 # Publish to github:
 #
 #  docker login docker.pkg.github.com -u USERNAME -p TOKEN
-#  docker tag teonet docker.pkg.github.com/kirill-scherba/teonet/teonet:0.0.5
-#  docker push docker.pkg.github.com/kirill-scherba/teonet/teonet:0.0.5
+#  docker tag teonet docker.pkg.github.com/kirill-scherba/teonet/teonet:x.x.x
+#  docker push docker.pkg.github.com/kirill-scherba/teonet/teonet:x.x.x
 #
 # Publish to local repository:
 #
@@ -35,35 +35,51 @@
 #
 
 
+# Docker builder
 #
-# temporary wail this repos is private use next command to build image:
+# 
 #
-#   docker build -t teonet -f ./Dockerfile ../.
+# Docker build (included private repositories):
 #
+#   docker build --build-arg github_user="USERNAME" --build-arg github_personal_token="TOKEN_FOR_REPOSITORIES" -t teonet -f ./Dockerfile .
+#
+# Docker test run:
 # it recomendet use host network when run teonet server application
 #
-#   docker tag teonet docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.5
-#   docker push docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.5
-#   docker run --restart always -it --name teonet --network host docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.5 teonet -u
+#   docker tag teonet docker.pkg.github.com/kirill-scherba/teonet-go/teonet:x.x.x
+#   docker push docker.pkg.github.com/kirill-scherba/teonet-go/teonet:x.x.x
+#   docker run --restart always -it --name teonet --network host docker.pkg.github.com/kirill-scherba/teonet-go/teonet:x.x.x teonet -u
 #
-#   docker run --rm -it --name teonet-v4 -v $HOME/.config/teonet:/root/.config/teonet docker.pkg.github.com/kirill-scherba/teonet-go/teonet:0.0.5 teonet -u -app-short teonet-v4-1 -send-to dBTgSEHoZ3XXsOqjSkOTINMARqGxHaXIDxl
+#   docker run --rm -it --name teonet-v4 -v $HOME/.config/teonet:/root/.config/teonet docker.pkg.github.com/kirill-scherba/teonet-go/teonet:x.x.x teonet -u -app-short teonet-v4-1 -send-to dBTgSEHoZ3XXsOqjSkOTINMARqGxHaXIDxl
 #
 #
 
 # Docker builder
 # 
-FROM golang:1.16.4 AS builder
-
-WORKDIR /go/src/github.com/kirill-scherba/
-RUN apt update 
-
-COPY ./teonet ./teonet
-COPY ./teomon ./teomon
-COPY ./trudp ./trudp
-
-RUN ls /go/src/github.com/kirill-scherba/
+FROM golang:1.17.1 AS builder
 
 WORKDIR /go/src/github.com/kirill-scherba/teonet
+# RUN apt update 
+
+COPY ./ ./
+
+# Add the keys
+ARG github_user
+ENV github_user=$github_user
+ARG github_personal_token
+ENV github_personal_token=$github_personal_token
+
+# Select private repo
+RUN go env -w GOPRIVATE=\
+github.com/kirill-scherba/teonet,\
+github.com/kirill-scherba/teomon,\
+github.com/kirill-scherba/trudp
+
+# Change github url
+RUN git config \
+    --global \
+    url."https://${github_user}:${github_personal_token}@github.com".insteadOf \
+    "https://github.com"
 
 RUN go get 
 RUN go install ./cmd/teoapi 
@@ -82,7 +98,7 @@ FROM ubuntu:latest AS production
 WORKDIR /app
 
 # runtime dependencies
-RUN apt update 
+# RUN apt update 
 
 # install ssl cretificates
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
