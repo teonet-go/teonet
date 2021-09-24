@@ -25,6 +25,7 @@ type APInterface interface {
 	Cmd() byte
 	ExecMode() (APIconnectMode, APIanswerMode)
 	Reader(c *Channel, p *Packet, data []byte) bool
+	Reader2(data []byte, answer func(data []byte)) bool
 }
 
 // APIconnectMode connection type of received command:
@@ -72,7 +73,9 @@ const (
 // MakeAPI is teonet API interface builder
 func MakeAPI(name, short, long, usage, ret string, cmd byte,
 	execMode APIconnectMode, answerMode APIanswerMode,
-	reader func(c *Channel, p *Packet, data []byte) bool) APInterface {
+	reader func(c *Channel, p *Packet, data []byte) bool,
+	reader2 func(data []byte, answer func(data []byte)) bool,
+) APInterface {
 	apiData := &APIData{
 		name:        name,
 		short:       short,
@@ -81,6 +84,7 @@ func MakeAPI(name, short, long, usage, ret string, cmd byte,
 		ret:         ret,
 		cmd:         cmd,
 		reader:      reader,
+		reader2:     reader2,
 		connectMode: execMode,
 		answerMode:  answerMode,
 	}
@@ -98,6 +102,7 @@ type APIData struct {
 	connectMode APIconnectMode
 	answerMode  APIanswerMode
 	reader      func(c *Channel, p *Packet, data []byte) bool
+	reader2     func(data []byte, answer func(data []byte)) bool
 	bslice.ByteSlice
 }
 
@@ -106,6 +111,9 @@ func MakeAPI2() *APIData {
 		connectMode: ServerMode,
 		answerMode:  CmdAnswer,
 		reader: func(c *Channel, p *Packet, data []byte) bool {
+			return true
+		},
+		reader2: func(data []byte, answer func(data []byte)) bool {
 			return true
 		},
 	}
@@ -156,6 +164,11 @@ func (a *APIData) SetReader(reader func(c *Channel, p *Packet, data []byte) bool
 	return a
 }
 
+func (a *APIData) SetReader2(reader2 func(data []byte, answer func(data []byte)) bool) *APIData {
+	a.reader2 = reader2
+	return a
+}
+
 func (a APIData) Name() string  { return a.name }
 func (a APIData) Short() string { return a.short }
 func (a APIData) Long() string  { return a.long }
@@ -167,6 +180,9 @@ func (a APIData) ExecMode() (APIconnectMode, APIanswerMode) {
 }
 func (a APIData) Reader(c *Channel, p *Packet, data []byte) bool {
 	return a.reader(c, p, data)
+}
+func (a APIData) Reader2(data []byte, answer func(data []byte)) bool {
+	return a.reader2(data, answer)
 }
 
 // NewAPI create new teonet api
@@ -237,6 +253,12 @@ func (a *API) SendAnswer(cmd APInterface, c *Channel, data []byte, p *Packet) (i
 	return
 }
 
+// Send answer to request
+func (a *API) SendAnswer2(data []byte, answer func(data []byte)) (id uint32, err error) {
+	answer(data)
+	return
+}
+
 // Cmd return API command number and save this command to use in CmdNext
 func (a *API) Cmd(cmd byte) byte {
 	a.cmd = cmd
@@ -254,40 +276,63 @@ func (a *API) Add(cmds ...APInterface) {
 	a.cmds = append(a.cmds, cmds...)
 }
 
-// Reader api commands reader
+// Reader process teonet commands as described in API
 func (a API) Reader() func(c *Channel, p *Packet, e *Event) (processed bool) {
 	return func(c *Channel, p *Packet, e *Event) (processed bool) {
 		// Skip not Data Events
 		if e.Event != EventData {
 			return
 		}
-
-		// Parse command
-		cmd := a.Command(p.Data())
-
-		// Select and Execute commands readers
-		for i := range a.cmds {
-
-			switch {
-			// Check if we can execute this command depend of ExecMode
-			case !a.canExecute(a.cmds[i], c):
-				continue
-
-			// Check command number
-			case a.cmds[i].Cmd() != cmd.Cmd:
-				continue
-
-			// Execute command
-			case a.cmds[i].Reader(c, p, cmd.Data):
-				return true
-			}
-
-			// All done in 'unic command mode' when only one command with this
-			// number may be added
-			break
-		}
-		return
+		// Execute reader
+		return a.readerExec(
+			p.Data(),
+			func(i int) bool { return a.canExecute(a.cmds[i], c) },
+			func(i int, data []byte) bool { return a.cmds[i].Reader(c, p, data) },
+		)
 	}
+}
+
+// Reader2 process not teonet (webrtc for example) commands as described in API
+func (a API) Reader2() func(data []byte, answer func(data []byte)) (processed bool) {
+	return func(data []byte, answer func(data []byte)) (processed bool) {
+		return a.readerExec(
+			data,
+			func(i int) bool { return true },
+			func(i int, data []byte) bool { return a.cmds[i].Reader2(data, answer) },
+		)
+	}
+}
+
+// readerExec parce and execute command
+func (a API) readerExec(data []byte, canExecute func(i int) bool,
+	execute func(i int, data []byte) bool) (processed bool) {
+
+	// Parse command
+	cmd := a.Command(data)
+
+	// Select and Execute commands readers
+	for i := range a.cmds {
+
+		switch {
+		// Check if we can execute this command depend of ExecMode
+		case !canExecute(i):
+			continue
+
+		// Check command number
+		case a.cmds[i].Cmd() != cmd.Cmd:
+			continue
+
+		// Execute command
+		case execute(i, cmd.Data):
+			return true
+		}
+
+		// All done in 'unic command mode' when only one command with this
+		// number may be added
+		break
+	}
+
+	return
 }
 
 // String return strin with api commands
@@ -532,9 +577,10 @@ func (api *APIClient) SendTo(command interface{}, data []byte, waits ...func(dat
 	}
 	id, err = api.teo.Command(cmd, data).SendTo(api.address)
 	// TODO: i can't understand what does this code do :-)
-	// I think we need just add attr paramenter to this function and set at
-	// api.teo.Command(cmd, data).SendTo(api.address) call:
-	// api.teo.Command(cmd, data).SendTo(api.address, attr...)
+	// May be we need just call:
+	// api.teo.Command(cmd, data).SendTo(api.address, waits...)
+	// or in this case wee can lost cmd and id?
+	// Shure this code exactly than got answer with cmd and id in its data!!!
 	if len(waits) > 0 {
 		go func() { waits[0](api.WaitFrom(cmd, id)) }()
 	}
