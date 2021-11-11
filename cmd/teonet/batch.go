@@ -18,11 +18,6 @@ const (
 
 type Batch struct{ menu *menu.Menu }
 
-// type AliasData struct {
-// 	alias   string
-// 	address string
-// }
-
 // run aliases from config file
 func (b *Batch) run(name string) (err error) {
 	// Get file name
@@ -57,10 +52,32 @@ func (b *Batch) run(name string) (err error) {
 	return
 }
 
-// write write aliase to config file
-// func (b Batch) write() {
-// }
+// Save batch to config file
+func (b Batch) Save(name string, prefix string, batch []string) (err error) {
+	// Get file name
+	fname, err := b.file(name)
+	if err != nil {
+		return
+	}
 
+	// Create or open file for write
+	f, err := os.Create(fname)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	// Write batch to file
+	datawriter := bufio.NewWriter(f)
+	for _, data := range batch {
+		_, _ = datawriter.WriteString(prefix + " " + data + "\n")
+	}
+	datawriter.Flush()
+
+	return
+}
+
+// file return full file name with config dir folder
 func (b Batch) file(name string) (f string, err error) {
 	f, err = os.UserConfigDir()
 	if err != nil {
@@ -69,8 +86,3 @@ func (b Batch) file(name string) (f string, err error) {
 	f += "/" + teonet.ConfigDir + "/" + appShort + "/" + name
 	return
 }
-
-// func GetAlias(m *menu.Menu) {
-// 	b := new(Batch)
-// 	b.read(m, aliasConfigFile)
-// }

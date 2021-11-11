@@ -46,32 +46,38 @@ func (c CmdAlias) Name() string  { return cmdAlias }
 func (c CmdAlias) Usage() string { return "<name> <address>" }
 func (c CmdAlias) Help() string  { return "create alias for address" }
 func (c CmdAlias) Exec(line string) (err error) {
-	var list bool
+	var list, save bool
 	flags := c.NewFlagSet(c.Name(), c.Usage(), c.Help())
 	flags.BoolVar(&list, "list", list, "list of alias")
+	flags.BoolVar(&save, "save", list, "save list of alias")
 	err = flags.Parse(c.menu.SplitSpace(line))
 	if err != nil {
 		return
 	}
 	args := flags.Args()
 
+	switch {
 	// Check help
-	if len(args) > 0 && args[0] == cmdHelp {
+	case len(args) > 0 && args[0] == cmdHelp:
 		flags.Usage()
 		return
-	}
 
 	// Check -list flag
-	if list {
+	case list:
 		aliases := c.alias.list()
 		for i := range aliases {
 			fmt.Printf("%s\n", aliases[i])
 		}
 		return
-	}
+
+	// Check -save flag
+	case save:
+		aliases := c.alias.list()
+		c.batch.Save(aliasBatchFile, cmdAlias, aliases)
+		return
 
 	// Check length of arguments
-	if len(args) != 2 {
+	case len(args) != 2:
 		flags.Usage()
 		err = ErrWrongNumArguments
 		return
@@ -83,7 +89,7 @@ func (c CmdAlias) Exec(line string) (err error) {
 	return
 }
 func (c CmdAlias) Compliter() (cmpl []menu.Compliter) {
-	return c.menu.MakeCompliterFromString([]string{"-list"})
+	return c.menu.MakeCompliterFromString([]string{"-list", "-save"})
 }
 
 // Create cmdConnectTo commands
