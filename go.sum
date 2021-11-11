@@ -25,6 +25,8 @@ github.com/kirill-scherba/teomon/teomon v0.0.0-20210817194118-0dd95a7d0ef9/go.mo
 github.com/kirill-scherba/teonet-go v0.0.0-20210310112151-0983adff39db/go.mod h1:yFKpFDQN6JDCfcvTHUHcljNJgKlAZJ0BZorf1vEeOV8=
 github.com/kirill-scherba/teonet-go v0.0.0-20210530210358-60f02a8c38f0 h1:53E5XJhoVrqUaI1vd0TEfomJB2CeaRD0eRJWY7PcrtA=
 github.com/kirill-scherba/teonet-go v0.0.0-20210530210358-60f02a8c38f0/go.mod h1:yFKpFDQN6JDCfcvTHUHcljNJgKlAZJ0BZorf1vEeOV8=
+github.com/kirill-scherba/teonet-go v0.0.0-20211010220905-9885a72eb7eb h1:U+bgj2jvgbldA3Uru6gnv9PJ+ICLO2XOsCjy/l6TN4k=
+github.com/kirill-scherba/teonet-go v0.0.0-20211010220905-9885a72eb7eb/go.mod h1:yFKpFDQN6JDCfcvTHUHcljNJgKlAZJ0BZorf1vEeOV8=
 github.com/kirill-scherba/trudp v0.1.1 h1:Do9rj23QFhHACPdmAy6lvkKBoVmDCmJYS6NpEG7mAzQ=
 github.com/kirill-scherba/trudp v0.1.1/go.mod h1:JwbvcQ8Wnd3/WR4XkX2wXT79diM6oAfxxWDC2+GS+hg=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=

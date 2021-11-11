@@ -46,32 +46,38 @@ func (c CmdAlias) Name() string  { return cmdAlias }
 func (c CmdAlias) Usage() string { return "<name> <address>" }
 func (c CmdAlias) Help() string  { return "create alias for address" }
 func (c CmdAlias) Exec(line string) (err error) {
-	var list bool
+	var list, save bool
 	flags := c.NewFlagSet(c.Name(), c.Usage(), c.Help())
-	flags.BoolVar(&list, "list", list, "list of alias")
+	flags.BoolVar(&list, "list", list, "show list of alias")
+	flags.BoolVar(&save, "save", list, "save list of alias")
 	err = flags.Parse(c.menu.SplitSpace(line))
 	if err != nil {
 		return
 	}
 	args := flags.Args()
 
+	switch {
 	// Check help
-	if len(args) > 0 && args[0] == cmdHelp {
+	case len(args) > 0 && args[0] == cmdHelp:
 		flags.Usage()
 		return
-	}
 
 	// Check -list flag
-	if list {
+	case list:
 		aliases := c.alias.list()
 		for i := range aliases {
 			fmt.Printf("%s\n", aliases[i])
 		}
 		return
-	}
+
+	// Check -save flag
+	case save:
+		aliases := c.alias.list()
+		c.batch.Save(aliasBatchFile, cmdAlias, aliases)
+		return
 
 	// Check length of arguments
-	if len(args) != 2 {
+	case len(args) != 2:
 		flags.Usage()
 		err = ErrWrongNumArguments
 		return
@@ -83,7 +89,7 @@ func (c CmdAlias) Exec(line string) (err error) {
 	return
 }
 func (c CmdAlias) Compliter() (cmpl []menu.Compliter) {
-	return c.menu.MakeCompliterFromString([]string{"-list"})
+	return c.menu.MakeCompliterFromString([]string{"-list", "-save"})
 }
 
 // Create cmdConnectTo commands
@@ -100,23 +106,24 @@ func (c CmdConnectTo) Name() string  { return cmdConnectTo }
 func (c CmdConnectTo) Usage() string { return "<address>" }
 func (c CmdConnectTo) Help() string  { return "connect to teonet peer" }
 func (c CmdConnectTo) Exec(line string) (err error) {
-	var list bool
+	var list, save bool
 	flags := c.NewFlagSet(c.Name(), c.Usage(), c.Help())
-	flags.BoolVar(&list, "list", list, "list all connected peers")
+	flags.BoolVar(&list, "list", list, "list connected peers")
+	flags.BoolVar(&save, "save", list, "save connected peer aliases")
 	err = flags.Parse(c.menu.SplitSpace(line))
 	if err != nil {
 		return
 	}
 	args := flags.Args()
 
+	switch {
 	// Check help
-	if len(args) > 0 && args[0] == cmdHelp {
+	case len(args) > 0 && args[0] == cmdHelp:
 		flags.Usage()
 		return
-	}
 
 	// Check -list flag
-	if list {
+	case list:
 		peers := c.teo.Peers()
 		for i := range peers {
 			alias := c.alias.Name(peers[i])
@@ -126,10 +133,22 @@ func (c CmdConnectTo) Exec(line string) (err error) {
 			fmt.Printf("%s\n", peers[i]+alias)
 		}
 		return
-	}
+
+	// Check -save flag
+	case save:
+		var connecttos []string
+		peers := c.teo.Peers()
+		for i := range peers {
+			alias := c.alias.Name(peers[i])
+			if alias != "" {
+				connecttos = append(connecttos, alias)
+			}
+		}
+		c.batch.Save(connectBatchFile, cmdConnectTo, connecttos)
+		return
 
 	// Check length of arguments
-	if len(args) != 1 {
+	case len(args) != 1:
 		flags.Usage()
 		err = ErrWrongNumArguments
 		return
@@ -146,7 +165,7 @@ func (c CmdConnectTo) Exec(line string) (err error) {
 	return
 }
 func (c CmdConnectTo) Compliter() (cmpl []menu.Compliter) {
-	return c.menu.MakeCompliterFromString([]string{"-list"})
+	return c.menu.MakeCompliterFromString([]string{"-list", "-save"})
 }
 
 // Create cmdConnectTo commands
