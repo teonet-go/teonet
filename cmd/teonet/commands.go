@@ -48,7 +48,7 @@ func (c CmdAlias) Help() string  { return "create alias for address" }
 func (c CmdAlias) Exec(line string) (err error) {
 	var list, save bool
 	flags := c.NewFlagSet(c.Name(), c.Usage(), c.Help())
-	flags.BoolVar(&list, "list", list, "list of alias")
+	flags.BoolVar(&list, "list", list, "show list of alias")
 	flags.BoolVar(&save, "save", list, "save list of alias")
 	err = flags.Parse(c.menu.SplitSpace(line))
 	if err != nil {
