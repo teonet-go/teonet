@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kirill-scherba/trudp"
+	"github.com/kirill-scherba/tru"
 )
 
 func (teo *Teonet) newPeerRequests() {
@@ -81,7 +81,7 @@ func (p *connectRequests) get(id string) (res *connectRequestsData, ok bool) {
 func (p *connectRequests) removeDummy() {
 	p.RLock()
 	for id, rec := range p.m {
-		if time.Since(rec.Time) > trudp.ClientConnectTimeout {
+		if time.Since(rec.Time) > tru.ClientConnectTimeout {
 			p.RUnlock()
 			p.del(id)
 			// fmt.Println("connect request removed dummy, id:", id)
@@ -94,7 +94,7 @@ func (p *connectRequests) removeDummy() {
 
 func (p *connectRequests) process() {
 	for {
-		time.Sleep(trudp.ClientConnectTimeout)
+		time.Sleep(tru.ClientConnectTimeout)
 		p.removeDummy()
 	}
 }

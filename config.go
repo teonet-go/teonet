@@ -10,30 +10,28 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path"
 	"strings"
 
-	"github.com/kirill-scherba/teonet-go/teolog/teolog"
-	"github.com/kirill-scherba/trudp"
+	"github.com/kirill-scherba/tru"
 )
 
 var nMODULEconf = "Config"
 
-func (teo *Teonet) newConfig(appName string, log *log.Logger, osConfigDir string) (err error) {
+func (teo *Teonet) newConfig(appName string, osConfigDir string) (err error) {
 	// New config holder
-	teo.config = &config{appName: appName, log: log, osConfigDir: osConfigDir}
+	teo.config = &config{appName: appName, osConfigDir: osConfigDir}
 
 	// Check config file exists and create and save new config if does not exists
 	err = teo.config.exists()
 	if err != nil {
-		teolog.Log(teolog.ERROR, nMODULEconf, err)
+		log.Error.Println(nMODULEconf, err)
 		err = teo.config.create()
 		if err != nil {
 			return
 		}
-		teolog.Log(teolog.DEBUG, nMODULEconf, "new keys and config file created")
+		log.Error.Println(nMODULEconf, "new keys and config file created")
 	}
 
 	// Read config file
@@ -53,7 +51,6 @@ type config struct {
 	Address             string          `json:"address"`
 	trudpPrivateKey     *rsa.PrivateKey `json:"-"`
 	appName             string          `json:"-"`
-	log                 *log.Logger     `json:"-"`
 	osConfigDir         string          `json:"-"`
 }
 
@@ -205,7 +202,7 @@ func (c *config) create() (err error) {
 	}
 
 	// Create new config holder
-	*c = config{appName: c.appName, log: c.log, osConfigDir: c.osConfigDir}
+	*c = config{appName: c.appName, osConfigDir: c.osConfigDir}
 	err = c.createKeys()
 	if err != nil {
 		return
@@ -218,7 +215,7 @@ func (c *config) create() (err error) {
 func (c *config) createKeys() (err error) {
 
 	// Create trudp rsa private key
-	c.trudpPrivateKey, err = trudp.GeneratePrivateKey()
+	c.trudpPrivateKey, err = tru.GeneratePrivateKey()
 	if err != nil {
 		return
 	}

@@ -61,7 +61,7 @@ func (c Command) Bytes() (data []byte) {
 	return
 }
 
-func (c Command) Send(channel *Channel, attr ...interface{}) (id uint32, err error) {
+func (c Command) Send(channel *Channel, attr ...interface{}) (id int, err error) {
 	// Add teo to attr, it need for subscribe to answer
 	if len(attr) > 0 {
 		attr = append([]interface{}{c.teo}, attr...)
@@ -69,7 +69,7 @@ func (c Command) Send(channel *Channel, attr ...interface{}) (id uint32, err err
 	return channel.Send(c.Bytes(), attr...)
 }
 
-func (c Command) SendNoWait(channel *Channel, attr ...interface{}) (id uint32, err error) {
+func (c Command) SendNoWait(channel *Channel, attr ...interface{}) (id int, err error) {
 	// Add teo to attr, it need for subscribe to answer
 	if len(attr) > 0 {
 		attr = append([]interface{}{c.teo}, attr...)
@@ -77,7 +77,7 @@ func (c Command) SendNoWait(channel *Channel, attr ...interface{}) (id uint32, e
 	return channel.SendNoWait(c.Bytes(), attr...)
 }
 
-func (c Command) SendTo(addr string, attr ...interface{}) (id uint32, err error) {
+func (c Command) SendTo(addr string, attr ...interface{}) (id int, err error) {
 	return c.teo.SendTo(addr, c.Bytes(), attr...)
 }
 

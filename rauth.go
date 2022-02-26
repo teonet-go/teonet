@@ -9,28 +9,27 @@ import (
 	"net/http"
 
 	"github.com/kirill-scherba/bslice"
-	"github.com/kirill-scherba/teonet-go/teolog/teolog"
 )
 
 // Nodes get auth nodes by URL
 func Nodes(url string) (ret *nodes, err error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		teolog.Log(teolog.ERROR, "HTTP", "server", err)
+		log.Error.Println("HTTP", "server", err)
 		return
 	}
 	// log.Println(resp)
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		teolog.Log(teolog.ERROR, "HTTP", "server", err)
+		log.Error.Println("HTTP", "server", err)
 		return
 	}
 
 	dst := make([]byte, hex.DecodedLen(len(body)))
 	n, err := hex.Decode(dst, body)
 	if err != nil {
-		teolog.Log(teolog.ERROR, "HTTP", "server can't decode answer, error:", err)
+		log.Error.Println("HTTP", "server can't decode answer, error:", err)
 		return
 	}
 

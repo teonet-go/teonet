@@ -8,10 +8,9 @@ package teonet
 
 import (
 	"encoding/binary"
-	"log"
 	"time"
 
-	"github.com/kirill-scherba/trudp"
+	"github.com/kirill-scherba/tru"
 )
 
 type CheckDataFunc func(data []byte) (ok bool)
@@ -85,7 +84,7 @@ func (teo *Teonet) MakeWaitReader(attr ...interface{}) (wr *WaitReader) {
 		check byte
 		wait  bool
 	}
-	wr.timeout = trudp.ClientConnectTimeout
+	wr.timeout = tru.ClientConnectTimeout
 	for _, a := range attr {
 		switch v := a.(type) {
 
@@ -112,7 +111,7 @@ func (teo *Teonet) MakeWaitReader(attr ...interface{}) (wr *WaitReader) {
 			wr.timeout = v
 
 		default:
-			log.Panicf("wrong reader attribute with type %T\n", v)
+			log.Error.Panicf("wrong reader attribute with type %T\n", v)
 		}
 	}
 

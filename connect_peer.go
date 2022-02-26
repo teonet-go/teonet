@@ -10,13 +10,13 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"net"
 	"strconv"
 	"time"
 
 	"github.com/kirill-scherba/bslice"
-	"github.com/kirill-scherba/teonet-go/teolog/teolog"
-	"github.com/kirill-scherba/trudp"
+	"github.com/kirill-scherba/tru"
 )
 
 var nMODULEconp = "Connect to peer"
@@ -36,7 +36,7 @@ var ErrDoesNotConnectedToTeonet = errors.New("does not connected to teonet")
 // clients teonet address to it, Peer check it in connectToConnected func
 func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	// TODO: check local connection exists
-	teolog.Log(teolog.DEBUG, nMODULEconp, addr)
+	log.Connect.Println(nMODULEconp, addr)
 
 	// Check teonet connected
 	// TODO: move this code to function
@@ -45,13 +45,13 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 		return
 	}
 
-	// Local IDs and port
+	// Local IPs and port
 	ips, _ := teo.getIPs()
-	port := teo.trudp.Port()
+	port := teo.tru.LocalPort()
 
 	// Connect data
 	con := ConnectToData{
-		ID:        trudp.RandomString(35),
+		ID:        tru.RandomString(35),
 		FromAddr:  teo.MyAddr(),
 		ToAddr:    addr,
 		LocalIPs:  ips,
@@ -60,7 +60,7 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	data, _ := con.MarshalBinary()
 
 	// Send command to teonet
-	teolog.Log(teolog.DEBUG, "Send CmdConnectTo=1 to teonet, Addr:", con.ToAddr, "ID:", con.ID)
+	log.Debug.Println("Send CmdConnectTo=1 to teonet, Addr:", con.ToAddr, "ID:", con.ID)
 	teo.Command(CmdConnectTo, data).Send(teo.auth)
 
 	chanW := make(chanWait)
@@ -75,7 +75,7 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 			err = errors.New(string(d))
 			return
 		}
-	case <-time.After(trudp.ClientConnectTimeout):
+	case <-time.After(tru.ClientConnectTimeout):
 		err = ErrTimeout
 		return
 	}
@@ -85,7 +85,7 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 		// Peer disconnected event
 		if e.Event == EventDisconnected {
 			go func() {
-				teolog.Log(teolog.CONNECT, nMODULEconp, "reconnect:", c.Address())
+				log.Connect.Println(nMODULEconp, "reconnect:", c.Address())
 				for {
 					err := teo.ConnectTo(addr, readers...)
 					if err == nil {
@@ -136,10 +136,10 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 	var con ConnectToData
 	err = con.UnmarshalBinary(data)
 	if err != nil {
-		teolog.Log(teolog.ERROR, "connectToPeer unmarshal error:", err)
+		log.Error.Println("connectToPeer unmarshal error:", err)
 		return
 	}
-	teolog.Log(teolog.DEBUG, nMODULEconp,
+	log.Debug.Println(nMODULEconp,
 		"got CmdConnectToPeer=2 from teonet",
 		"Addr:", con.FromAddr,
 		"ID:", con.ID,
@@ -149,7 +149,7 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 
 	// Local IDs and port
 	ips, _ := teo.getIPs()
-	port := teo.trudp.Port()
+	port := teo.tru.LocalPort()
 
 	// Prepare answer
 	conPeer := ConnectToData{
@@ -191,10 +191,10 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 	var con ConnectToData
 	err = con.UnmarshalBinary(data)
 	if err != nil {
-		teolog.Log(teolog.ERROR, "CmdConnectTo answer unmarshal error:", err.Error())
+		log.Error.Println("CmdConnectTo answer unmarshal error:", err.Error())
 		return
 	}
-	teolog.Log(teolog.DEBUG, "Got CmdConnectTo=1 answer from teonet,",
+	log.Debug.Println("Got CmdConnectTo=1 answer from teonet,",
 		"Addr:", con.FromAddr,
 		"ID:", con.ID,
 		"IP", con.IP+":"+strconv.Itoa(int(con.Port)),
@@ -204,7 +204,7 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 	req, ok := teo.connRequests.get(con.ID)
 	if !ok {
 		err = errors.New("got CmdConnectTo answer time out")
-		teolog.Log(teolog.ERROR, err.Error())
+		log.Error.Println(err.Error())
 		return
 	}
 
@@ -229,34 +229,33 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 	conPeer.ID = con.ID
 	data, err = conPeer.MarshalBinary()
 	if err != nil {
-		teolog.Log(teolog.ERROR, nMODULEconp, cantConnectToPeer, err)
+		log.Error.Println(nMODULEconp, cantConnectToPeer, err)
 		return
 	}
 	data = append([]byte(newConnectionPrefix), data...)
 
-	// connect to peer by trudp and send it connect data
-	connect := func(ip string, port uint32) (ok bool, err error) {
+	// connect to peer by tru and send it connect data
+	connect := func(ip string, port int) (ok bool, err error) {
 
 		_, ok = teo.connRequests.get(con.ID)
-		// teolog.Log(teolog.DEBUG, nMODULEconp, "connect to", ip, port, "skip flag:", !ok)
 		if !ok {
 			// err = errors.New("skip(already connected)")
-			teolog.Log(teolog.DEBUG, nMODULEconp, "skip (already connected)")
+			log.Debug.Println(nMODULEconp, "skip (already connected)")
 			return
 		}
 
 		// Connect to peer
-		c, err := teo.trudp.Connect(ip, int(port))
+		c, err := teo.tru.Connect(fmt.Sprintf("%s:%d", ip, port))
 		if err != nil {
-			teolog.Log(teolog.ERROR, nMODULEconp, cantConnectToPeer, err)
+			log.Error.Println(nMODULEconp, cantConnectToPeer, err)
 			return
 		}
 
 		// Send client peer connect request to peer
-		teolog.Log(teolog.DEBUG, "Send answer to peer, ID:", con.ID)
-		_, err = c.Send(data)
+		log.Debug.Println("Send answer to peer, ID:", con.ID)
+		_, err = c.WriteTo(data)
 		if err != nil {
-			teolog.Log(teolog.ERROR, nMODULEconp, cantConnectToPeer, err)
+			log.Error.Println(nMODULEconp, cantConnectToPeer, err)
 			return
 		}
 
@@ -277,7 +276,7 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 	// TODO: add timeout here
 	addr := <-waitCh
 
-	connect(addr.IP.String(), uint32(addr.Port))
+	connect(addr.IP.String(), addr.Port)
 
 	return
 }
@@ -294,21 +293,21 @@ func (teo Teonet) connectToConnectedPeer(c *Channel, p *Packet) (ok bool) {
 			var con ConnectToData
 			err := con.UnmarshalBinary(p.Data()[len(newConnectionPrefix):])
 			if err != nil {
-				teolog.Log(teolog.ERROR, "CmdConnectToPeer unmarshal error:", err)
+				log.Error.Println("CmdConnectToPeer unmarshal error:", err)
 				return
 			}
-			teolog.Log(teolog.DEBUG, nMODULEconp, "Got answer from new client, ID:", con.ID)
+			log.Debug.Println(nMODULEconp, "Got answer from new client, ID:", con.ID)
 
 			if res, ok := teo.peerRequests.get(con.ID); ok {
 				// Set channel connected
 				teo.SetConnected(c, res.FromAddr)
 				// Close peerRequests and send answer to client
 				teo.peerRequests.del(con.ID)
-				teolog.Log(teolog.DEBUG, "Send answer to client, ID:", con.ID)
+				log.Debug.Println("Send answer to client, ID:", con.ID)
 				c.SendNoWait(p.Data())
 			} else {
 				teo.channels.del(c)
-				teolog.Log(teolog.ERROR, "wrong request ID:", con.ID)
+				log.Error.Println("wrong request ID:", con.ID)
 			}
 			return true
 		}
@@ -328,10 +327,10 @@ func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
 			var con ConnectToData
 			err := con.UnmarshalBinary(p.Data()[len(newConnectionPrefix):])
 			if err != nil {
-				teolog.Log(teolog.ERROR, "connectToConnectedClient unmarshal error:", err)
+				log.Error.Println("connectToConnectedClient unmarshal error:", err)
 				return
 			}
-			teolog.Log(teolog.DEBUG, nMODULEconp, "Got answer from new peer, ID:", con.ID)
+			log.Debug.Println(nMODULEconp, "Got answer from new peer, ID:", con.ID)
 
 			if req, ok := teo.connRequests.get(con.ID); ok {
 				// Set channel connected
@@ -342,7 +341,7 @@ func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
 				}
 			} else {
 				teo.channels.del(c)
-				teolog.Log(teolog.ERROR, "wrong request ID:", con.ID)
+				log.Error.Println("wrong request ID:", con.ID)
 			}
 
 			return true

@@ -13,8 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kirill-scherba/teonet-go/teolog/teolog"
-	"github.com/kirill-scherba/trudp"
+	"github.com/kirill-scherba/tru"
 )
 
 const IPv6Allow = false
@@ -61,18 +60,19 @@ func (teo Teonet) getIPs() (ips []string, err error) {
 }
 
 func (teo *Teonet) newPuncher() {
-	if teo.trudp == nil {
+	if teo.tru == nil {
 		panic("trudp should be Init befor call to newPuncher()")
 	}
-	teo.puncher = &puncher{trudp: teo.trudp, m: make(map[string]*PuncherData)}
-	teo.trudp.SetPunchCb(func(data []byte, addr *net.UDPAddr) bool {
-		return teo.puncher.callback(data, addr)
-	})
+	teo.puncher = &puncher{tru: teo.tru, m: make(map[string]*PuncherData)}
+	// TODO: Connect puncer to TRU
+	// teo.tru.SetPunchCb(func(data []byte, addr *net.UDPAddr) bool {
+	// 	return teo.puncher.callback(data, addr)
+	// })
 }
 
 type puncher struct {
-	trudp *trudp.Trudp
-	m     map[string]*PuncherData
+	tru *tru.Tru
+	m   map[string]*PuncherData
 	sync.RWMutex
 }
 
@@ -122,14 +122,11 @@ func (p *puncher) callback(data []byte, addr *net.UDPAddr) (ok bool) {
 
 func (p *puncher) send(key string, ips IPs) (err error) {
 
-	sendKey := func(ip string, port uint32) (int, error) {
+	sendKey := func(ip string, port uint32) (err error) {
 		addr := ip + ":" + strconv.Itoa(int(port))
-		dst, err := net.ResolveUDPAddr(trudp.Network, addr)
-		if err != nil {
-			return 0, err
-		}
-		teolog.Logf(teolog.DEBUG, "Puncher", "send %s to %s\n", key, dst.String())
-		return p.trudp.WriteTo(dst, []byte(key))
+		dst, err := p.tru.WriteTo([]byte(key), addr)
+		log.Debug.Printf("Puncher "+"send %s to %s\n", key, dst.String())
+		return
 	}
 	for i := range ips.LocalIPs {
 		sendKey(ips.LocalIPs[i], ips.LocalPort)
@@ -147,7 +144,8 @@ func (p *puncher) punch(key string, ips IPs, stop func() bool, mode connectModeT
 			time.Sleep(delays[0])
 		}
 		if mode == clientMode {
-			key = trudp.PunchPrefix + key
+			// key = trudp.PunchPrefix + key
+			key = "punch" + key
 		}
 		for i := 0; i < 15; i++ {
 			if stop() {

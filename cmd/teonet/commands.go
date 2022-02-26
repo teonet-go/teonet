@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kirill-scherba/teomon/teomon"
+	"github.com/kirill-scherba/teomon"
 	"github.com/kirill-scherba/teonet"
 	"github.com/kirill-scherba/teonet/cmd/teonet/menu"
 )

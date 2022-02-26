@@ -15,8 +15,7 @@ import (
 	"time"
 
 	"github.com/kirill-scherba/bslice"
-	"github.com/kirill-scherba/teonet-go/teolog/teolog"
-	"github.com/kirill-scherba/trudp"
+	"github.com/kirill-scherba/tru"
 )
 
 // nMODULEcon is current module name
@@ -141,7 +140,7 @@ func (c *ConnectIpPort) getAddrFromHTTP(url string, excludeIPs ...string) (err e
 // Connected (create teonet channel)
 func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
-	teolog.Log(teolog.CONNECT, nMODULEcon, "to remote teonet node")
+	log.Connect.Println(nMODULEcon, "to remote teonet node")
 
 	// Set default address if attr ommited
 	if len(attr) == 0 {
@@ -178,7 +177,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	}
 
 	// Connect to trudp auth node
-	ch, err := teo.trudp.Connect(con.IP, con.Port)
+	ch, err := teo.tru.Connect(fmt.Sprintf("%s:%d", con.IP, con.Port))
 	if err != nil {
 		return
 	}
@@ -199,10 +198,10 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 		// Disconnrct r-host processing
 		if e.Event == EventTeonetDisconnected {
-			teolog.Logf(teolog.DEBUG, "Connect reader", "got error from channel %s, error: %s", c, e.Err)
+			log.Debug.Println("Connect reader", "got error from channel %s, error: %s", c, e.Err)
 			teo.Unsubscribe(subs)
 			teo.auth = nil
-			teolog.Logf(teolog.CONNECT, "Disconnected", "from teonet")
+			log.Connect.Println("Disconnected", "from teonet")
 			// Reconnect
 			go func() {
 				for {
@@ -250,7 +249,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 		// Not defined commands
 		default:
-			teolog.Log(teolog.ERROR, "Got not defined command", cmd.Cmd)
+			log.Error.Println("Got not defined command", cmd.Cmd)
 			return false
 		}
 
@@ -283,7 +282,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	// Wait Connect answer data
 	select {
 	case data = <-chanWait:
-	case <-time.After(trudp.ClientConnectTimeout):
+	case <-time.After(tru.ClientConnectTimeout):
 		err = ErrTimeout
 		return
 	}
@@ -318,7 +317,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	teo.SetConnected(teo.auth, string(conOut.ServerAddress))
 
 	// Connected to teonet, show log message and send Event to main reader
-	teolog.Logf(teolog.CONNECT, "Teonet", "address: %s\n", conOut.Address)
+	log.Connect.Printf("Teonet "+"address: %s\n", conOut.Address)
 	reader(teo, teo.auth, nil, &Event{EventTeonetConnected, nil})
 
 	return

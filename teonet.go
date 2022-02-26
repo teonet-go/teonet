@@ -9,18 +9,23 @@ package teonet
 import (
 	"errors"
 	"fmt"
-	"log"
-	"os"
 	"time"
 
-	"github.com/kirill-scherba/teonet-go/teolog/teolog"
-	"github.com/kirill-scherba/trudp"
+	"github.com/kirill-scherba/tru"
+	"github.com/kirill-scherba/tru/teolog"
 )
 
-const Version = "0.2.28"
+const Version = "0.3.0"
 
 // nMODULEteo is current module name
 var nMODULEteo = "Teonet"
+
+var log = teolog.New()
+
+// Log get teonet log to use it in application and inside teonet
+func Log() *teolog.Teolog {
+	return log
+}
 
 // Logo print teonet logo
 func Logo(title, ver string) {
@@ -38,11 +43,6 @@ func LogoString(title, ver string) string {
 		title + " ver " + ver + ", based on Teonet v4 ver " + Version +
 		"\n",
 	)
-}
-
-// Log get teonet log to use it in application and inside teonet
-func Log() *log.Logger {
-	return log.New(os.Stdout, "", log.Ltime|log.Lmicroseconds /* |log.Lshortfile */)
 }
 
 // reader is Main teonet reader
@@ -76,29 +76,35 @@ func reader(teo *Teonet, c *Channel, p *Packet, e *Event) {
 	}
 }
 
-type LogFilterT = trudp.LogFilterT
+type LogFilter = teolog.Filter
+type ShowStat = tru.ShowStat
+type StartHotkey = tru.StartHotkey
+
+func Logfilter(str string) teolog.Filter { return teolog.Logfilter(str) }
 
 // New create new teonet connection. The attr parameters:
-//   int - port number to teonet listen
-//   string - internal log Level to show teonet debug messages
-//   bool - set true to show trudp statistic table
-//   *log.Logger - common logger to show messages in application and teonet, may be created with teonet.Log() function
+//   int             port number to teonet listen
+//   string          internal log Level to show teonet debug messages
+//   tru.ShowStat    set true to show tru statistic table
+//   tru.StartHotkey start hotkey meny
+//   *teolog.Teolog  teonet logger
+//   ApiInterface    api interface
+//   OsConfigDir     os directory to save config
 //   func(c *Channel, p *Packet, e *Event) - message receiver
 //   func(t *Teonet, c *Channel, p *Packet, e *Event) - message receiver
-//   ApiInterface - api interface
-//   OsConfigDir - os directory to save config
 func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 
 	// Parse attributes
 	var param struct {
-		port      int
-		showTrudp bool
-		logLevel  string
-		logFilter LogFilterT
-		log       *log.Logger
-		reader    Treceivecb
-		api       ApiInterface
-		configDir OsConfigDir
+		port        int
+		showStat    tru.ShowStat
+		startHotkey tru.StartHotkey
+		logLevel    string
+		logFilter   LogFilter
+		log         *teolog.Teolog
+		reader      Treceivecb
+		api         ApiInterface
+		configDir   OsConfigDir
 	}
 	for i := range attr {
 		switch d := attr[i].(type) {
@@ -109,13 +115,16 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 		case string:
 			param.logLevel = d
 		// Log filter
-		case trudp.LogFilterT:
+		case teolog.Filter:
 			param.logFilter = d
-		// Show trudp flag
-		case bool:
-			param.showTrudp = d
+		// Show tru statistic flag
+		case tru.ShowStat:
+			param.showStat = d
+		// Start hotkey menu
+		case tru.StartHotkey:
+			param.startHotkey = d
 		// Logger
-		case *log.Logger:
+		case *teolog.Teolog:
 			param.log = d
 		// Treceivecb:
 		case func(teo *Teonet, c *Channel, p *Packet, e *Event) bool:
@@ -133,7 +142,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 			param.configDir = d
 		// Some enother (incorrect) attribute
 		default:
-			err = fmt.Errorf("incorrect attribute type %T", d)
+			err = fmt.Errorf("incorrect attribute type '%T'", d)
 			return
 		}
 	}
@@ -153,7 +162,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	teo.log = log
 
 	// Create config holder and read config
-	err = teo.newConfig(appName, log, string(param.configDir))
+	err = teo.newConfig(appName, string(param.configDir))
 	if err != nil {
 		return
 	}
@@ -162,12 +171,14 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	teo.addApiReader(param.api)
 	teo.addClientReader(param.reader)
 
-	// Init trudp and start listen port to get messages
-	teo.trudp, err = trudp.Init(param.port, teo.config.trudpPrivateKey, teo.log,
-		param.logLevel, trudp.LogFilterT(param.logFilter),
+	// Init tru and start listen port to get messages
+	teo.tru, err = tru.New(param.port, teo.log, param.showStat, param.startHotkey,
+		param.logLevel, param.logFilter,
+		teo.config.trudpPrivateKey,
 
 		// Receive data callback
-		func(c *trudp.Channel, p *trudp.Packet, err error) {
+		// ch *tru.Channel, pac *tru.Packet, err error
+		func(c *tru.Channel, p *tru.Packet, err error) bool {
 			ch, ok := teo.channels.get(c)
 			if !ok {
 				if teo.auth != nil && c == teo.auth.c {
@@ -197,43 +208,46 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 			}
 
 			// Send packet and event to main teonet reader
+			// TODO: add return bool to reader func or not add :-)
 			reader(teo, ch, pac, e)
+			return true
 		},
 
 		// Connect to this server callback
-		func(c *trudp.Channel, err error) {
-			// Wait this trudp channel connected to teonet channel and delete
+		func(c *tru.Channel, err error) {
+			// Wait this tru channel connected to teonet channel and delete
 			// it if not connected during timeout
 			_, exists := teo.channels.get(c)
 			if exists {
 				return
 			}
-			go func(c *trudp.Channel) {
-				time.Sleep(trudp.ClientConnectTimeout)
+			go func(c *tru.Channel) {
+				// time.Sleep(tru.ClientConnectTimeout)
+				time.Sleep(5 * time.Second)
 				ch, exists := teo.channels.get(c)
 				if !exists {
-					if newch, ok := teo.channels.getByIP(c.String()); !ok {
-						teolog.Log(teolog.DEBUG, nMODULEteo, "remove dummy trudp channel:", c, ch)
-						c.ChannelDel(c)
+					if newch, ok := teo.channels.getByIP(c.Addr().String()); !ok {
+						log.Debug.Println(nMODULEteo, "remove dummy tru channel:", c, ch)
+						c.Close()
 					} else {
-						teolog.Log(teolog.DEBUGvv, nMODULEteo, "trudp channel was reconnected:", c.String(), newch)
+						log.Debugvv.Println(nMODULEteo, "tru channel was reconnected:", c.Addr().String(), newch)
 					}
 				} else if ch.IsNew() {
-					teolog.Log(teolog.DEBUG, nMODULEteo, "remove dummy(new) teonet channel:", c, ch)
+					log.Debug.Println(nMODULEteo, "remove dummy(new) teonet channel:", c, ch)
 					teo.channels.del(ch)
 				}
 			}(c)
 		},
 	)
 	if err != nil {
-		teolog.Log(teolog.ERROR, nMODULEteo, "can't initial trudp, error:", err)
+		log.Error.Println(nMODULEteo, "can't initial tru, error:", err)
 		return
 	}
 	teo.newChannels()
 	teo.newPuncher()
-	teolog.Log(teolog.CONNECT, nMODULEteo, "start listen teonet at port", teo.trudp.Port())
+	log.Connect.Println(nMODULEteo, "start listen teonet at port", teo.tru.LocalPort())
 
-	if param.showTrudp {
+	if param.showStat {
 		teo.ShowTrudp(true)
 	}
 
@@ -242,8 +256,8 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 
 type Teonet struct {
 	config        *config
-	trudp         *trudp.Trudp
-	log           *log.Logger
+	tru           *tru.Tru
+	log           *teolog.Teolog
 	clientReaders []Treceivecb
 	subscribers   *subscribers
 	channels      *channels
@@ -321,15 +335,19 @@ func (teo *Teonet) AddReader(reader TreceivecbShort) {
 		})
 }
 
-// ShowTrudp show/stop trudp statistic
+// ShowTrudp show/stop tru statistic
 func (teo Teonet) ShowTrudp(set bool) {
-	teo.trudp.SetShowStat(set)
+	if set {
+		teo.tru.StatisticPrint()
+	} else {
+		teo.tru.StatisticPrintStop()
+	}
 }
 
 var ErrPeerNotConnected = errors.New("peer does not connected")
 
 // Send data to peer
-func (teo *Teonet) SendTo(addr string, data []byte, attr ...interface{}) (id uint32, err error) {
+func (teo *Teonet) SendTo(addr string, data []byte, attr ...interface{}) (id int, err error) {
 	// Check address
 	c, ok := teo.channels.get(addr)
 	if !ok {
@@ -341,7 +359,7 @@ func (teo *Teonet) SendTo(addr string, data []byte, attr ...interface{}) (id uin
 		attr = append([]interface{}{teo}, attr...)
 	}
 	// Send to channel
-	return c.Send(data, attr...)
+	return c.c.WriteTo(data, attr...)
 }
 
 // Connected return true if peer with selected address is connected now
@@ -351,13 +369,13 @@ func (teo *Teonet) Connected(addr string) (ok bool) {
 }
 
 // Log get teonet log
-func (teo Teonet) Log() *log.Logger {
+func (teo Teonet) Log() *teolog.Teolog {
 	return teo.log
 }
 
 // Port get teonet local port
-func (teo Teonet) Port() uint32 {
-	return uint32(teo.trudp.Port())
+func (teo Teonet) Port() int {
+	return teo.tru.LocalPort()
 }
 
 // Get this app Address

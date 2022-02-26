@@ -1,10 +1,10 @@
 package teonet
 
-import "github.com/kirill-scherba/trudp"
+import "github.com/kirill-scherba/tru"
 
 // Packet is teonet Packet
 type Packet struct {
-	*trudp.Packet
+	*tru.Packet
 	from        string
 	commandMode bool
 }
@@ -15,16 +15,16 @@ func (p Packet) From() string {
 
 func (p Packet) Cmd() byte {
 	if p.commandMode {
-		return p.Packet.Data[0]
+		return p.Packet.Data()[0]
 	}
 	return 0
 }
 
 func (p Packet) Data() []byte {
 	if p.commandMode {
-		return p.Packet.Data[1:]
+		return p.Packet.Data()[1:]
 	}
-	return p.Packet.Data
+	return p.Packet.Data()
 }
 
 func (p Packet) RemoveTrailingZero(data []byte) []byte {

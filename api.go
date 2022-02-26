@@ -198,7 +198,7 @@ func (teo *Teonet) NewAPI(name, short, long, version string) (api *API) {
 	cmdApi = MakeAPI2().SetName("api").SetCmd(cmdAPI).SetShort("get api").SetReturn("<api APIDataAr>").
 		SetConnectMode(ServerMode).SetAnswerMode(CmdAnswer).
 		SetReader(func(c *Channel, p *Packet, data []byte) bool {
-			teo.Log().Println("got api request")
+			log.Debug.Println("got api request")
 			outData, _ := api.MarshalBinary()
 			_, answerMode := cmdApi.ExecMode()
 
@@ -235,7 +235,7 @@ func (a *API) SendAnswer(cmd APInterface, c *Channel, data []byte, p *Packet) (i
 	_, answerMode := cmd.ExecMode()
 	if answerMode&PacketIDAnswer > 0 {
 		id := make([]byte, 4)
-		binary.LittleEndian.PutUint32(id, p.ID())
+		binary.LittleEndian.PutUint32(id, uint32(p.ID()))
 		data = append(id, data...)
 	}
 
@@ -570,7 +570,7 @@ func (api *APIClient) WaitFrom(command interface{}, packetID ...interface{}) (da
 	return
 }
 
-func (api *APIClient) SendTo(command interface{}, data []byte, waits ...func(data []byte, err error)) (id uint32, err error) {
+func (api *APIClient) SendTo(command interface{}, data []byte, waits ...func(data []byte, err error)) (id int, err error) {
 	cmd, err := api.getCmd(command)
 	if err != nil {
 		return
@@ -658,13 +658,13 @@ func (api *APIClient) getApi() (err error) {
 	api.SendTo(cmdAPI, nil)
 	data, err := api.WaitFrom(cmdAPI)
 	if err != nil {
-		api.teo.Log().Println("can't get api data, err", err)
+		log.Error.Println("can't get api data, err", err)
 		return
 	}
 
 	err = api.APIDataAr.UnmarshalBinary(data)
 	if err != nil {
-		api.teo.Log().Println("can't unmarshal api data, err", err)
+		log.Error.Println("can't unmarshal api data, err", err)
 		return
 	}
 
