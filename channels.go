@@ -2,7 +2,6 @@ package teonet
 
 import (
 	"bytes"
-	"net"
 	"strings"
 	"sync"
 	"time"
@@ -110,8 +109,8 @@ func (c *channels) list() (n *nodes) {
 	n = new(nodes)
 	for _, v := range c.m_addr {
 		n.address = append(n.address, NodeAddr{
-			v.Channel().Addr().(*net.UDPAddr).IP.String(),
-			uint32(v.Channel().Addr().(*net.UDPAddr).Port),
+			v.Channel().IP().String(),
+			uint32(v.Channel().Port()),
 		})
 	}
 	return
