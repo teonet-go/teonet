@@ -20,7 +20,7 @@ const Version = "0.3.0"
 // nMODULEteo is current module name
 var nMODULEteo = "Teonet"
 
-var log = teolog.New()
+var log *teolog.Teolog
 
 // Log get teonet log to use it in application and inside teonet
 func Log() *teolog.Teolog {
@@ -150,9 +150,9 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 		param.logLevel = "NONE"
 	}
 	if param.log == nil {
-		param.log = Log()
+		param.log = teolog.New()
 	}
-	log := param.log
+	log = param.log
 
 	// Create new teonet holder
 	teo = new(Teonet)
@@ -222,8 +222,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 				return
 			}
 			go func(c *tru.Channel) {
-				// time.Sleep(tru.ClientConnectTimeout)
-				time.Sleep(5 * time.Second)
+				time.Sleep(tru.ClientConnectTimeout)
 				ch, exists := teo.channels.get(c)
 				if !exists {
 					if newch, ok := teo.channels.getByIP(c.Addr().String()); !ok {
@@ -246,10 +245,6 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	teo.newChannels()
 	teo.newPuncher()
 	log.Connect.Println(nMODULEteo, "start listen teonet at port", teo.tru.LocalPort())
-
-	if param.showStat {
-		teo.ShowTrudp(true)
-	}
 
 	return
 }

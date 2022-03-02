@@ -128,7 +128,7 @@ func (c *ConnectIpPort) getAddrFromHTTP(url string, excludeIPs ...string) (err e
 	}
 	c.IP = n.address[i].IP
 	c.Port = int(n.address[i].Port)
-	fmt.Printf("num nodes -> %d, i -> %d, connect to: %s:%d\n\n", l, i, c.IP, c.Port)
+	fmt.Printf("num nodes -> %d, i -> %d, connect to: %s:%d\n", l, i, c.IP, c.Port)
 	return
 }
 
@@ -140,7 +140,7 @@ func (c *ConnectIpPort) getAddrFromHTTP(url string, excludeIPs ...string) (err e
 // Connected (create teonet channel)
 func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
-	log.Connect.Println(nMODULEcon, "to remote teonet node")
+	teo.Log().Connect.Println(nMODULEcon, "to remote teonet node")
 
 	// Set default address if attr ommited
 	if len(attr) == 0 {
@@ -196,7 +196,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	// reader
 	subs = teo.subscribe(teo.auth, func(teo *Teonet, c *Channel, p *Packet, e *Event) bool {
 
-		// Disconnrct r-host processing
+		// Disconnect r-host processing
 		if e.Event == EventTeonetDisconnected {
 			log.Debug.Println("Connect reader", "got error from channel %s, error: %s", c, e.Err)
 			teo.Unsubscribe(subs)

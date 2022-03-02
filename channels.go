@@ -87,12 +87,12 @@ func (c *channels) get(attr interface{}) (ch *Channel, exists bool) {
 	return
 }
 
-// get channel by ip address
-func (c *channels) getByIP(ip string) (ch *Channel, exists bool) {
+// get channel by ip:port address
+func (c *channels) getByIP(ipport string) (ch *Channel, exists bool) {
 	c.RLock()
 	defer c.RUnlock()
 	for _, v := range c.m_addr {
-		if v.c.Addr().String() == ip {
+		if v.c.Addr().String() == ipport {
 			ch = v
 			exists = true
 			break
@@ -184,8 +184,8 @@ func (c Channel) Triptime() time.Duration {
 
 // Send data to channel
 func (c Channel) Send(data []byte, attr ...interface{}) (id int, err error) {
-	var delivered = c.checkSendAttr(attr...)
-	return c.c.WriteTo(data, delivered)
+	var delivery = c.checkSendAttr(attr...)
+	return c.c.WriteTo(data, delivery)
 }
 
 // SendNoWait (or SendDirect) send data to channel, it use inside readers when packet just read
@@ -195,16 +195,16 @@ func (c Channel) SendNoWait(data []byte, attr ...interface{}) (id int, err error
 }
 
 // checkSendAttr check Send function attributes:
-// return delevered calback 'func(p *tru.Packet)' and
+// return delevery calback 'func(p *tru.Packet, err error)' and make
 // subscribe to answer with callback 'func(c *Channel, p *Packet, e *Event) bool'
-func (c Channel) checkSendAttr(attr ...interface{}) (delivered func(p *tru.Packet)) {
+func (c Channel) checkSendAttr(attr ...interface{}) (delivery func(p *tru.Packet, err error)) {
 	var teo *Teonet
 	for i := range attr {
 		switch v := attr[i].(type) {
 
-		// Packet delivered callback
-		case func(p *tru.Packet):
-			delivered = v
+		// Packet delivery callback
+		case func(p *tru.Packet, err error):
+			delivery = v
 
 		// Teonet
 		case *Teonet:
