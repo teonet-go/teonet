@@ -67,7 +67,8 @@ func (c *channels) del(channel *Channel, delTrudps ...bool) {
 	defer c.Unlock()
 	delete(c.m_addr, channel.a)
 	delete(c.m_chan, channel.c)
-	if delTrudp {
+	// TODO: look why channel.c may be nil here
+	if delTrudp && channel.c != nil {
 		channel.c.Close()
 	}
 	c.teo.subscribers.del(channel)

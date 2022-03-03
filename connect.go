@@ -277,7 +277,6 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	if err != nil {
 		return
 	}
-	// teo.log.Println("send ConnectData to teoauth, id", id)
 
 	// Wait Connect answer data
 	select {

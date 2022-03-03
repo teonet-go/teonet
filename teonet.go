@@ -49,6 +49,7 @@ func LogoString(title, ver string) string {
 func reader(teo *Teonet, c *Channel, p *Packet, e *Event) {
 
 	// Delete channel on err after all other reader process this error
+	// TODO: Realy need this defer?
 	defer func() {
 		if e.Err != nil {
 			teo.channels.del(c)
