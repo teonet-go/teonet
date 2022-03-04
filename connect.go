@@ -140,7 +140,7 @@ func (c *ConnectIpPort) getAddrFromHTTP(url string, excludeIPs ...string) (err e
 // Connected (create teonet channel)
 func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
-	teo.Log().Connect.Println(nMODULEcon, "to remote teonet node")
+	teo.Log().Connect.Println(nMODULEcon, "to remote teonet node", attr)
 
 	// Set default address if attr ommited
 	if len(attr) == 0 {

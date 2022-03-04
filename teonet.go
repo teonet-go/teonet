@@ -78,8 +78,8 @@ func reader(teo *Teonet, c *Channel, p *Packet, e *Event) {
 }
 
 type LogFilter = teolog.Filter
-type ShowStat = tru.ShowStat
-type StartHotkey = tru.StartHotkey
+type Stat = tru.Stat
+type Hotkey = tru.Hotkey
 
 func Logfilter(str string) teolog.Filter { return teolog.Logfilter(str) }
 
@@ -97,15 +97,15 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 
 	// Parse attributes
 	var param struct {
-		port        int
-		showStat    tru.ShowStat
-		startHotkey tru.StartHotkey
-		logLevel    string
-		logFilter   LogFilter
-		log         *teolog.Teolog
-		reader      Treceivecb
-		api         ApiInterface
-		configDir   OsConfigDir
+		port      int
+		stat      tru.Stat
+		hotkey    tru.Hotkey
+		logLevel  string
+		logFilter LogFilter
+		log       *teolog.Teolog
+		reader    Treceivecb
+		api       ApiInterface
+		configDir OsConfigDir
 	}
 	for i := range attr {
 		switch d := attr[i].(type) {
@@ -119,11 +119,11 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 		case teolog.Filter:
 			param.logFilter = d
 		// Show tru statistic flag
-		case tru.ShowStat:
-			param.showStat = d
+		case tru.Stat:
+			param.stat = d
 		// Start hotkey menu
-		case tru.StartHotkey:
-			param.startHotkey = d
+		case tru.Hotkey:
+			param.hotkey = d
 		// Logger
 		case *teolog.Teolog:
 			param.log = d
@@ -173,7 +173,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	teo.addClientReader(param.reader)
 
 	// Init tru and start listen port to get messages
-	teo.tru, err = tru.New(param.port, teo.log, param.showStat, param.startHotkey,
+	teo.tru, err = tru.New(param.port, teo.log, param.stat, param.hotkey,
 		param.logLevel, param.logFilter,
 		teo.config.trudpPrivateKey,
 

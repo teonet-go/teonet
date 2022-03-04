@@ -287,7 +287,7 @@ func (teo Teonet) connectToConnectedPeer(c *Channel, p *Packet) (ok bool) {
 	if c.ServerMode() {
 		// Teonet address example:    z6uer55DZsqvY5pqXHjTD3oDFfsKmkfFJ65
 		// Teonet new(not connected): new-r55DZsqvY5pqXHjTD3oDFfsKmkfFJ65
-		if p.ID() == 2 && c.IsNew() && c.IsConn(p.Data()) {
+		if p.ID() == 0 && c.IsNew() && c.IsConn(p.Data()) {
 
 			// Unmarshal data
 			var con ConnectToData
@@ -321,7 +321,7 @@ func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
 	if c.ClientMode() {
 		// Teonet address example:    z6uer55DZsqvY5pqXHjTD3oDFfsKmkfFJ65
 		// Teonet new(not connected): new-r55DZsqvY5pqXHjTD3oDFfsKmkfFJ65
-		if p.ID() == 1 && c.IsNew() && c.IsConn(p.Data()) {
+		if p.ID() == 0 && c.IsNew() && c.IsConn(p.Data()) {
 
 			// Unmarshal data
 			var con ConnectToData
@@ -343,7 +343,6 @@ func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
 				teo.channels.del(c)
 				log.Error.Println("wrong request ID:", con.ID)
 			}
-
 			return true
 		}
 	}

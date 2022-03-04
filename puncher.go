@@ -25,7 +25,7 @@ const (
 	serverMode
 )
 
-// getIPs return string slice with local IP address of this host
+// getIPs return string slice with this host local IP address
 func (teo Teonet) getIPs() (ips []string, err error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -59,15 +59,18 @@ func (teo Teonet) getIPs() (ips []string, err error) {
 	return
 }
 
+// newPuncher create new puncher and set punch callback to tru
 func (teo *Teonet) newPuncher() {
 	if teo.tru == nil {
 		panic("trudp should be Init befor call to newPuncher()")
 	}
 	teo.puncher = &puncher{tru: teo.tru, m: make(map[string]*PuncherData)}
-	// TODO: Connect puncer to TRU
-	// teo.tru.SetPunchCb(func(data []byte, addr *net.UDPAddr) bool {
-	// 	return teo.puncher.callback(data, addr)
-	// })
+
+	// Connect puncer to TRU - set punch callback
+	teo.tru.SetPunchCb(func(addr net.Addr, data []byte) {
+		log.Connect.Println("got punch packet from ", addr.String(), string(data))
+		teo.puncher.callback(data, addr.(*net.UDPAddr))
+	})
 }
 
 type puncher struct {
@@ -89,6 +92,7 @@ type PuncherData struct {
 
 // type waitChan chan *net.UDPAddr
 
+// subscribe to puncher - add to map
 func (p *puncher) subscribe(key string, punch *PuncherData) {
 	p.Lock()
 	defer p.Unlock()
@@ -96,12 +100,14 @@ func (p *puncher) subscribe(key string, punch *PuncherData) {
 	// fmt.Println("puncher subscribe to:", key)
 }
 
+// unsubscribe from puncher - delete from map
 func (p *puncher) unsubscribe(key string) {
 	p.Lock()
 	defer p.Unlock()
 	delete(p.m, key)
 }
 
+// get key from map
 func (p *puncher) get(key string) (punch *PuncherData, ok bool) {
 	p.RLock()
 	defer p.RUnlock()
@@ -109,10 +115,11 @@ func (p *puncher) get(key string) (punch *PuncherData, ok bool) {
 	return
 }
 
+// callback process received puch packet
 func (p *puncher) callback(data []byte, addr *net.UDPAddr) (ok bool) {
 	key := string(data)
 	punch, ok := p.get(key)
-	// fmt.Println(">>>>>>>>>>> punch callback, key:", key, "from:", addr, "get-ok:", ok)
+	// fmt.Println(">>>>>>>>>>> punch callback, key:", key, "from:", addr, "ok:", ok, p.m)
 	if ok {
 		p.unsubscribe(key)
 		*punch.wait <- addr
@@ -120,12 +127,13 @@ func (p *puncher) callback(data []byte, addr *net.UDPAddr) (ok bool) {
 	return
 }
 
+// send puncher key to list of IP:Port
 func (p *puncher) send(key string, ips IPs) (err error) {
 
 	sendKey := func(ip string, port uint32) (err error) {
 		addr := ip + ":" + strconv.Itoa(int(port))
-		dst, err := p.tru.WriteTo([]byte(key), addr)
-		log.Debug.Printf("Puncher "+"send %s to %s\n", key, dst.String())
+		dst, err := p.tru.WriteToPunch([]byte(key), addr)
+		log.Debug.Printf("Puncher send %s to %s\n", key, dst.String())
 		return
 	}
 	for i := range ips.LocalIPs {
@@ -143,10 +151,10 @@ func (p *puncher) punch(key string, ips IPs, stop func() bool, mode connectModeT
 		if len(delays) > 0 {
 			time.Sleep(delays[0])
 		}
-		if mode == clientMode {
-			// key = trudp.PunchPrefix + key
-			key = "punch" + key
-		}
+		// if mode == clientMode {
+		// 	// key = trudp.PunchPrefix + key
+		// 	key = "punch" + key
+		// }
 		for i := 0; i < 15; i++ {
 			if stop() {
 				break
