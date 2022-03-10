@@ -35,20 +35,24 @@ type channels struct {
 	sync.RWMutex
 }
 
+// add new teonet channel
 func (c *channels) add(channel *Channel) {
 	// remove existing channel with same address
 	if ch, ok := c.get(channel.a); ok {
+		// TODO: check and remove this comment
 		// If new channel used the same tru channel as existing than does not
 		// delete tru channel. The c.del function delete tru channel by
 		// default
-		var delTrudp bool
-		if ch.c.Addr().String() != channel.c.Addr().String() {
-			delTrudp = true
-		}
-		c.del(ch, delTrudp)
+		// var delTrudp bool
+		// if ch.c.Addr().String() != channel.c.Addr().String() {
+		// 	delTrudp = true
+		// }
+		// c.del(ch, delTrudp)
+		c.del(ch, false)
 	}
 	c.Lock()
 	defer c.Unlock()
+
 	c.m_addr[channel.a] = channel
 	c.m_chan[channel.c] = channel
 
@@ -57,7 +61,8 @@ func (c *channels) add(channel *Channel) {
 	// go reader(c.teo, channel, nil, &Event{EventConnected, nil})
 }
 
-// del channel
+// del delete teonet channel if second parameter omitted or true, the tru
+// channel will also deleted
 func (c *channels) del(channel *Channel, delTrudps ...bool) {
 	var delTrudp = true
 	if len(delTrudps) > 0 {
@@ -65,6 +70,7 @@ func (c *channels) del(channel *Channel, delTrudps ...bool) {
 	}
 	c.Lock()
 	defer c.Unlock()
+
 	delete(c.m_addr, channel.a)
 	delete(c.m_chan, channel.c)
 	// TODO: look why channel.c may be nil here
