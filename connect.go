@@ -205,7 +205,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 			// Reconnect
 			go func() {
 				for {
-					log.Debug.Println("!!!")
+					log.Debug.Println("Reconnect to teonet")
 					err := teo.Connect(attr...)
 					if err == nil {
 						break
