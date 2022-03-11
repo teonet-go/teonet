@@ -50,8 +50,8 @@ func main() {
 	}
 
 	// Start teonet (client or server)
-	teo, err := teonet.New(p.appShort, p.port, teonet.ShowStat(p.stat),
-		teonet.StartHotkey(p.hotkey), p.logLevel, teonet.Logfilter(p.logFilter))
+	teo, err := teonet.New(p.appShort, p.port, teonet.Stat(p.stat),
+		teonet.Hotkey(p.hotkey), p.logLevel, teonet.Logfilter(p.logFilter))
 	if err != nil {
 		panic("can't init Teonet, error: " + err.Error())
 	}

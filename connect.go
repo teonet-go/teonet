@@ -198,13 +198,14 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 		// Disconnect r-host processing
 		if e.Event == EventTeonetDisconnected {
-			log.Debug.Printf("Connect reader"+"got error from channel %s, error: %s\n", c, e.Err)
+			log.Debug.Printf("Connect reader got error from channel %s, error: %s\n", c, e.Err)
 			teo.Unsubscribe(subs)
 			teo.auth = nil
-			log.Connect.Println("Disconnected", "from teonet")
+			log.Connect.Println("Disconnected from teonet")
 			// Reconnect
 			go func() {
 				for {
+					log.Debug.Println("!!!")
 					err := teo.Connect(attr...)
 					if err == nil {
 						break

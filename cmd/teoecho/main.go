@@ -16,7 +16,8 @@ const (
 	appVersion = "0.3.0"
 
 	// Teonet Monitor address
-	monitor = "nOhj2qRDKduN9sHIRoRmJ3LTjOfrKey8llq"
+	// monitor = "nOhj2qRDKduN9sHIRoRmJ3LTjOfrKey8llq"
+	monitor = "4rZhCNxhPMw2Qtf0jJ2Ug1WNQ73aSaS9aJk"
 )
 
 var appStartTime = time.Now()
@@ -73,8 +74,8 @@ func main() {
 	flag.Parse()
 
 	// Start teonet client
-	teo, err := teonet.New(p.appShort, p.port, reader, teonet.ShowStat(p.stat),
-		teonet.StartHotkey(p.hotkey), p.logLevel, teonet.Logfilter(p.logFilter),
+	teo, err := teonet.New(p.appShort, p.port, reader, teonet.Stat(p.stat),
+		teonet.Hotkey(p.hotkey), p.logLevel, teonet.Logfilter(p.logFilter),
 	)
 	if err != nil {
 		panic("can't init Teonet, error: " + err.Error())
@@ -88,7 +89,7 @@ func main() {
 
 connect:
 	// Connect to teonet
-	err = teo.Connect()
+	err = teo.Connect("http://localhost:10000/auth")
 	if err != nil {
 		teo.Log().Debug.Println("can't connect to Teonet, error:", err)
 		time.Sleep(1 * time.Second)

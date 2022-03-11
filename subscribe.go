@@ -41,6 +41,13 @@ func (teo Teonet) Unsubscribe(s *subscribeData) {
 	teo.subscribers.del(s)
 }
 
+type subscribers struct {
+	lst          list.List // list
+	idx          listIdx   // list index by *subscribeData
+	sync.RWMutex           // mutex
+}
+type listIdx map[*subscribeData]*list.Element
+
 type subscribeData struct {
 	channel *Channel
 	reader  Treceivecb
@@ -52,13 +59,6 @@ func (teo *Teonet) newSubscribers() {
 	s.idx = make(listIdx)
 	teo.subscribers = s
 }
-
-type subscribers struct {
-	lst          list.List // list
-	idx          listIdx   // list index by *subscribeData
-	sync.RWMutex           // mutex
-}
-type listIdx map[*subscribeData]*list.Element
 
 func (s *subscribers) add(channel *Channel, reader Treceivecb) (scr *subscribeData) {
 	s.Lock()
