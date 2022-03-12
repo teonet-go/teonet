@@ -261,7 +261,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	// Connect data
 	conIn := ConnectData{
 		PubliKey:      teo.config.getPublicKey(),      // []byte("PublicKey"),
-		Address:       []byte(teo.config.Address),     // []byte("Address"),
+		Address:       []byte(teo.Address()),          // []byte("Address"),
 		ServerKey:     teo.config.ServerPublicKeyData, // []byte("ServerKey"),
 		ServerAddress: nil,
 	}
@@ -311,8 +311,10 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 	// Update config file
 	addr := string(conOut.Address)
+	teo.config.m.Lock()
 	teo.config.ServerPublicKeyData = conOut.ServerKey
 	teo.config.Address = addr
+	teo.config.m.Unlock()
 	teo.config.save()
 
 	teo.SetConnected(teo.auth, string(conOut.ServerAddress))

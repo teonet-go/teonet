@@ -13,15 +13,18 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/kirill-scherba/tru"
 )
 
 var nMODULEconf = "Config"
 
+// newConfig create new config holder
 func (teo *Teonet) newConfig(appName string, osConfigDir string) (err error) {
-	// New config holder
+
 	teo.config = &config{appName: appName, osConfigDir: osConfigDir}
+	teo.config.m = new(sync.RWMutex)
 
 	// Check config file exists and create and save new config if does not exists
 	err = teo.config.exists()
@@ -52,6 +55,7 @@ type config struct {
 	trudpPrivateKey     *rsa.PrivateKey `json:"-"`
 	appName             string          `json:"-"`
 	osConfigDir         string          `json:"-"`
+	m                   *sync.RWMutex   `json:"-"`
 }
 
 type OsConfigDir string
@@ -272,6 +276,8 @@ func (c config) makeAddress(keyData []byte) (addr string, err error) {
 
 // Address get teonet address
 func (t Teonet) Address() (addr string) {
+	t.config.m.RLock()
+	defer t.config.m.RUnlock()
 	return t.config.Address
 }
 

@@ -355,8 +355,3 @@ func (teo Teonet) Log() *teolog.Teolog {
 func (teo Teonet) Port() int {
 	return teo.tru.LocalPort()
 }
-
-// Get this app Address
-func (teo Teonet) MyAddr() string {
-	return teo.config.Address
-}

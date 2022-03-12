@@ -52,7 +52,7 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	// Connect data
 	con := ConnectToData{
 		ID:        tru.RandomString(35),
-		FromAddr:  teo.MyAddr(),
+		FromAddr:  teo.Address(),
 		ToAddr:    addr,
 		LocalIPs:  ips,
 		LocalPort: uint32(port),
