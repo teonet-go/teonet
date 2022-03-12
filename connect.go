@@ -204,6 +204,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 			log.Connect.Println("Disconnected from teonet")
 			// Reconnect
 			go func() {
+				time.Sleep(100 * time.Millisecond)
 				for {
 					log.Debug.Println("Reconnect to teonet")
 					err := teo.Connect(attr...)
