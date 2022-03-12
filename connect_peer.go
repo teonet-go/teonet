@@ -108,7 +108,7 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 
 // WhenConnectedTo call faunction f when connected to peer by address
 func (teo *Teonet) WhenConnectedTo(address string, f func()) {
-	teo.AddReader(func(c *Channel, p *Packet, e *Event) (processed bool) {
+	teo.clientReaders.addShort(func(c *Channel, p *Packet, e *Event) (processed bool) {
 		if e.Event == EventConnected && c.Address() == address {
 			f()
 		}
@@ -119,7 +119,7 @@ func (teo *Teonet) WhenConnectedTo(address string, f func()) {
 // WhenConnectedDisconnected call faunction f when connected or disconnected
 // to any peer
 func (teo *Teonet) WhenConnectedDisconnected(f func()) {
-	teo.AddReader(func(c *Channel, p *Packet, ev *Event) (processed bool) {
+	teo.clientReaders.addShort(func(c *Channel, p *Packet, ev *Event) (processed bool) {
 		switch ev.Event {
 		case EventConnected, EventDisconnected:
 			f()

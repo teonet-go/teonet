@@ -68,13 +68,7 @@ func reader(teo *Teonet, c *Channel, p *Packet, e *Event) {
 	}
 
 	// Send to client readers (to reader from teonet.Init)
-	for i := range teo.clientReaders {
-		if teo.clientReaders[i] != nil {
-			if teo.clientReaders[i](teo, c, p, e) {
-				break
-			}
-		}
-	}
+	teo.clientReaders.send(teo, c, p, e)
 }
 
 type LogFilter = teolog.Filter
@@ -160,6 +154,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	teo.newSubscribers()
 	teo.newPeerRequests()
 	teo.newConnRequests()
+	teo.newClientReaders()
 	teo.log = log
 
 	// Create config holder and read config
@@ -170,7 +165,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 
 	// Add client readers
 	teo.addApiReader(param.api)
-	teo.addClientReader(param.reader)
+	teo.clientReaders.add(param.reader)
 
 	// Init tru and start listen port to get messages
 	teo.tru, err = tru.New(param.port, teo.log, param.stat, param.hotkey,
@@ -254,7 +249,7 @@ type Teonet struct {
 	config        *config
 	tru           *tru.Tru
 	log           *teolog.Teolog
-	clientReaders []Treceivecb
+	clientReaders *clientReaders
 	subscribers   *subscribers
 	channels      *channels
 	auth          *Channel
@@ -317,19 +312,6 @@ func (e Event) String() (str string) {
 }
 
 func (teo Teonet) Rhost() *Channel { return teo.auth }
-
-// addClientReader add teonet client reader
-func (teo *Teonet) addClientReader(reader Treceivecb) {
-	teo.clientReaders = append(teo.clientReaders, reader)
-}
-
-// AddReader add teonet client reader
-func (teo *Teonet) AddReader(reader TreceivecbShort) {
-	teo.clientReaders = append(teo.clientReaders,
-		func(teo *Teonet, c *Channel, p *Packet, e *Event) bool {
-			return reader(c, p, e)
-		})
-}
 
 // ShowTrudp show/stop tru statistic
 func (teo Teonet) ShowTrudp(set bool) {

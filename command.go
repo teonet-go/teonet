@@ -125,7 +125,7 @@ func (teo *Teonet) addApiReader(api ApiInterface) {
 	if api == nil {
 		return
 	}
-	teo.addClientReader(func(teo *Teonet, c *Channel, p *Packet, e *Event) (ret bool) {
+	teo.clientReaders.add(func(teo *Teonet, c *Channel, p *Packet, e *Event) (ret bool) {
 		// Process API commands
 		if e.Event == EventData {
 			api.ProcessPacket(p.setCommandMode())
