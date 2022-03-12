@@ -262,7 +262,7 @@ func (c CmdAPI) Exec(line string) (err error) {
 				case strings.Contains(ret, "string"):
 					fmt.Println("got answer:", string(data))
 				case strings.Contains(ret, "[]*Metric"):
-					var peers teomon.Peers
+					var peers = teomon.NewPeers()
 					err = peers.UnmarshalBinary(data)
 					if err != nil {
 						return
