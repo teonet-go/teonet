@@ -13,10 +13,9 @@ const (
 	appShort   = "teoapicli"
 	appName    = "Teonet api client sample application"
 	appVersion = "0.3.0"
-)
 
-const (
-	apis = "WXJfYLDEtg6Rkm1OHm9I9ud9rR6qPlMH6NE"
+	// apis = "WXJfYLDEtg6Rkm1OHm9I9ud9rR6qPlMH6NE"
+	apis = "LYfwf3tivLoJ5xH2GM4MeJu1GgiezdBj7Er"
 )
 
 func main() {
@@ -34,13 +33,13 @@ func main() {
 		logFilter string
 		connectTo string
 	}
-	flag.StringVar(&p.appShort, "app-short", appShort, "application short name")
+	flag.StringVar(&p.appShort, "name", appShort, "application short name")
 	flag.IntVar(&p.port, "p", 0, "local port")
 	flag.BoolVar(&p.stat, "stat", false, "show trudp statistic")
 	flag.BoolVar(&p.hotkey, "hotkey", false, "start hotkey menu")
 	flag.StringVar(&p.connectTo, "connect-to", apis, "connect to api server")
-	flag.StringVar(&p.logLevel, "log-level", "NONE", "log level")
-	flag.StringVar(&p.logFilter, "log-filter", "", "log filter")
+	flag.StringVar(&p.logLevel, "loglevel", "NONE", "log level")
+	flag.StringVar(&p.logFilter, "logfilter", "", "log filter")
 	flag.Parse()
 
 	if p.connectTo == "" {
@@ -59,7 +58,7 @@ func main() {
 	teo.Log().Debug.Println("Start")
 
 	// Connect to teonet
-	for teo.Connect() != nil {
+	for teo.Connect("http://localhost:10000/auth") != nil {
 		// teo.Log().Debug.Println("can't connect to Teonet, error:", err)
 		time.Sleep(1 * time.Second)
 	}
@@ -188,6 +187,7 @@ func main() {
 	})
 
 	time.Sleep(250 * time.Millisecond)
+	teo.Log().Debug.Println("All done, quit...")
 
 	// select {} // sleep forever
 }

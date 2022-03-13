@@ -17,7 +17,8 @@ const (
 	appLong    = ""
 
 	// Teonet Monitor address
-	monitor = "nOhj2qRDKduN9sHIRoRmJ3LTjOfrKey8llq"
+	// monitor = "nOhj2qRDKduN9sHIRoRmJ3LTjOfrKey8llq"
+	monitor = "4rZhCNxhPMw2Qtf0jJ2Ug1WNQ73aSaS9aJk"
 )
 
 var appStartTime = time.Now()
@@ -89,19 +90,18 @@ func main() {
 		logFilter string
 		connectTo string
 	}
-	flag.StringVar(&p.appShort, "app-short", appShort, "application short name")
+	flag.StringVar(&p.appShort, "name", appShort, "application short name")
 	flag.IntVar(&p.port, "p", 0, "local port")
 	flag.BoolVar(&p.stat, "stat", false, "show trudp statistic")
 	flag.BoolVar(&p.hotkey, "hotkey", false, "start hotkey menu")
 	flag.StringVar(&p.connectTo, "connect-to", "", "connect to api server")
-	flag.StringVar(&p.logLevel, "log-level", "NONE", "log level")
-	flag.StringVar(&p.logFilter, "log-filter", "", "log filter")
+	flag.StringVar(&p.logLevel, "loglevel", "NONE", "log level")
+	flag.StringVar(&p.logFilter, "logfilter", "", "log filter")
 	flag.Parse()
 
 	// Start teonet (client or server)
 	teo, err := teonet.New(p.appShort, p.port, teonet.Stat(p.stat),
-		teonet.Hotkey(p.hotkey),
-		p.logLevel, teonet.Logfilter(p.logFilter))
+		teonet.Hotkey(p.hotkey), p.logLevel, teonet.Logfilter(p.logFilter))
 	if err != nil {
 		panic("can't init Teonet, error: " + err.Error())
 	}
@@ -115,7 +115,7 @@ func main() {
 	fmt.Printf("API description:\n\n%s\n\n", api.Help())
 
 	// Connect to teonet
-	for teo.Connect() != nil {
+	for teo.Connect("http://localhost:10000/auth") != nil {
 		time.Sleep(1 * time.Second)
 	}
 
