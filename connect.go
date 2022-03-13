@@ -168,32 +168,30 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 			url = v
 		}
 	}
-	// Connect to auth https server and get auth ip:port to connect
-	if url != "" {
+
+	// Connect to rauth https server and get auth ip:port to connect
+	if len(url) > 0 {
 		err = con.getAddrFromHTTP(url, excl.IPs...)
 		if err != nil {
 			return
 		}
 	}
 
-	// Connect to trudp auth node
+	// Connect to tru auth node and create new teonet channel if connected
 	ch, err := teo.tru.Connect(fmt.Sprintf("%s:%d", con.IP, con.Port))
 	if err != nil {
 		return
 	}
+	teo.auth = teo.channels.new(ch)
 
-	var subs *subscribeData
-	defer func() {
-		if err != nil {
-			teo.Unsubscribe(subs)
-		}
-	}()
+	// Create channel to wait end of connection
 	var chanWait = make(chanWait)
 	defer close(chanWait)
-	teo.auth = teo.channels.new(ch)
+
 	// Subscribe to teo.auth channel to get and process messages from teonet
 	// server. Subscribers reader shound return true if packet processed by this
 	// reader
+	var subs *subscribeData
 	subs = teo.subscribe(teo.auth, func(teo *Teonet, c *Channel, p *Packet, e *Event) bool {
 
 		// Disconnect r-host processing
@@ -257,6 +255,11 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 		return true
 	})
+	defer func() {
+		if err != nil {
+			teo.Unsubscribe(subs)
+		}
+	}()
 
 	// Connect data
 	conIn := ConnectData{
@@ -269,10 +272,8 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	// Marshal data
 	data, err := conIn.MarshalBinary()
 	if err != nil {
-		// teo.log.Println("encode error:", err)
 		return
 	}
-	// teo.log.Println("encoded ConnectData:", data, len(data))
 
 	// Send to teoauth
 	_, err = teo.Command(CmdConnect, data).Send(teo.auth)
@@ -280,7 +281,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 		return
 	}
 
-	// Wait Connect answer data
+	// Wait Connect answer data processed in subscribe callback
 	select {
 	case data = <-chanWait:
 	case <-time.After(tru.ClientConnectTimeout):
@@ -292,10 +293,8 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	var conOut ConnectData
 	conOut.UnmarshalBinary(data)
 	if err != nil {
-		// teo.log.Println("decode error:", err)
 		return
 	}
-	// teo.log.Printf("decoded ConnectData: %s\n", conOut)
 
 	// Check server error
 	if len(conOut.Err) > 0 {
@@ -309,7 +308,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 		return
 	}
 
-	// Update config file
+	// Update config data and save config to file
 	addr := string(conOut.Address)
 	teo.config.m.Lock()
 	teo.config.ServerPublicKeyData = conOut.ServerKey
@@ -320,7 +319,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	teo.SetConnected(teo.auth, string(conOut.ServerAddress))
 
 	// Connected to teonet, show log message and send Event to main reader
-	log.Connect.Printf("Teonet "+"address: %s\n", conOut.Address)
+	log.Connect.Printf("Teonet address: %s\n", conOut.Address)
 	reader(teo, teo.auth, nil, &Event{EventTeonetConnected, nil})
 
 	return
