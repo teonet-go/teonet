@@ -3,7 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // Teonet v4
-
 package teonet
 
 import (
@@ -17,21 +16,40 @@ import (
 
 const Version = "0.3.0"
 
-// nMODULEteo is current module name
-var nMODULEteo = "Teonet"
+type Teonet struct {
+	config        *config
+	tru           *tru.Tru
+	log           *teolog.Teolog
+	clientReaders *clientReaders
+	subscribers   *subscribers
+	channels      *channels
+	auth          *Channel
+	peerRequests  *connectRequests
+	connRequests  *connectRequests
+	puncher       *puncher
+}
 
+type Treceivecb func(teo *Teonet, c *Channel, p *Packet, e *Event) bool
+type TreceivecbShort func(c *Channel, p *Packet, e *Event) bool
+type LogFilter = teolog.Filter
+type Stat = tru.Stat
+type Hotkey = tru.Hotkey
+
+// log is global pointer to teonet log based on go log
 var log *teolog.Teolog
 
 // Log get teonet log to use it in application and inside teonet
-func Log() *teolog.Teolog {
-	return log
-}
+func Log() *teolog.Teolog { return log }
+
+// Logfilter return string in teolog.Logfilter type
+func Logfilter(str string) teolog.Filter { return teolog.Logfilter(str) }
 
 // Logo print teonet logo
 func Logo(title, ver string) {
 	fmt.Println(LogoString(title, ver))
 }
 
+// LogoString return teonet logo in string
 func LogoString(title, ver string) string {
 	return fmt.Sprint("" +
 		" _____                     _   \n" +
@@ -70,12 +88,6 @@ func reader(teo *Teonet, c *Channel, p *Packet, e *Event) {
 	// Send to client readers (to reader from teonet.Init)
 	teo.clientReaders.send(teo, c, p, e)
 }
-
-type LogFilter = teolog.Filter
-type Stat = tru.Stat
-type Hotkey = tru.Hotkey
-
-func Logfilter(str string) teolog.Filter { return teolog.Logfilter(str) }
 
 // New create new teonet connection. The attr parameters:
 //   int             port number to teonet listen
@@ -224,50 +236,36 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 				ch, exists := teo.channels.get(c)
 				if !exists {
 					if newch, ok := teo.channels.getByIP(c.Addr().String()); !ok {
-						log.Debug.Println(nMODULEteo, "remove dummy tru channel:", c, ch)
+						log.Debug.Println("remove dummy tru channel:", c, ch)
 						c.Close()
 					} else {
-						log.Debugvv.Println(nMODULEteo, "tru channel was reconnected:", c.Addr().String(), newch)
+						log.Debugvv.Println("tru channel was reconnected:", c.Addr().String(), newch)
 					}
 				} else if ch.IsNew() {
-					log.Debug.Println(nMODULEteo, "remove dummy(new) teonet channel:", c, ch)
+					log.Debug.Println("remove dummy(new) teonet channel:", c, ch)
 					teo.channels.del(ch)
 				}
 			}(c)
 		},
 	)
 	if err != nil {
-		log.Error.Println(nMODULEteo, "can't initial tru, error:", err)
+		log.Error.Println("can't initial tru, error:", err)
 		return
 	}
 	teo.newChannels()
 	teo.newPuncher()
-	log.Connect.Println(nMODULEteo, "start listen teonet at port", teo.tru.LocalPort())
+	log.Connect.Println("start listen teonet at port", teo.tru.LocalPort())
 
 	return
 }
 
-type Teonet struct {
-	config        *config
-	tru           *tru.Tru
-	log           *teolog.Teolog
-	clientReaders *clientReaders
-	subscribers   *subscribers
-	channels      *channels
-	auth          *Channel
-	peerRequests  *connectRequests
-	connRequests  *connectRequests
-	puncher       *puncher
-}
-
-type Treceivecb func(teo *Teonet, c *Channel, p *Packet, e *Event) bool
-type TreceivecbShort func(c *Channel, p *Packet, e *Event) bool
-
+// Teonet event struct
 type Event struct {
 	Event TeonetEventType
 	Err   error
 }
 
+// Teonet event type
 type TeonetEventType byte
 
 // Teonet events
@@ -293,6 +291,7 @@ const (
 	EventData
 )
 
+// Event to string
 func (e Event) String() (str string) {
 	switch e.Event {
 	case EventNone:
@@ -313,6 +312,7 @@ func (e Event) String() (str string) {
 	return
 }
 
+// Rhost return current auth server
 func (teo Teonet) Rhost() *Channel { return teo.auth }
 
 // ShowTrudp show/stop tru statistic
