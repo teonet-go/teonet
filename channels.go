@@ -15,6 +15,15 @@ const (
 	addressLen          = 35
 )
 
+// channels holder
+type channels struct {
+	m_addr map[string]*Channel
+	m_chan map[*tru.Channel]*Channel
+	tru    *tru.Tru
+	teo    *Teonet
+	sync.RWMutex
+}
+
 func (teo *Teonet) newChannels() {
 	teo.channels = new(channels)
 	teo.channels.teo = teo
@@ -24,15 +33,6 @@ func (teo *Teonet) newChannels() {
 	}
 	teo.channels.m_addr = make(map[string]*Channel)
 	teo.channels.m_chan = make(map[*tru.Channel]*Channel)
-}
-
-// channels holder
-type channels struct {
-	m_addr map[string]*Channel
-	m_chan map[*tru.Channel]*Channel
-	tru    *tru.Tru
-	teo    *Teonet
-	sync.RWMutex
 }
 
 // add new teonet channel

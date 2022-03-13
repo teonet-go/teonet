@@ -84,16 +84,21 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	teo.Subscribe(addr, func(teo *Teonet, c *Channel, p *Packet, e *Event) (ret bool) {
 		// Peer disconnected event
 		if e.Event == EventDisconnected {
-			go func() {
-				log.Connect.Println(nMODULEconp, "reconnect:", c.Address())
-				for {
-					err := teo.ConnectTo(addr, readers...)
-					if err == nil {
-						break
+			select {
+			case <-teo.closing:
+				return
+			default:
+				go func() {
+					log.Connect.Println(nMODULEconp, "reconnect:", c.Address())
+					for {
+						err := teo.ConnectTo(addr, readers...)
+						if err == nil {
+							break
+						}
+						time.Sleep(peerReconnectAfter)
 					}
-					time.Sleep(peerReconnectAfter)
-				}
-			}()
+				}()
+			}
 		}
 		return
 	})

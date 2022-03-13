@@ -1,4 +1,4 @@
-// Copyright 2021 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Copyright 2021-22 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -27,6 +27,7 @@ type Teonet struct {
 	peerRequests  *connectRequests
 	connRequests  *connectRequests
 	puncher       *puncher
+	closing       chan interface{}
 }
 
 type Treceivecb func(teo *Teonet, c *Channel, p *Packet, e *Event) bool
@@ -166,6 +167,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 
 	// Create new teonet holder
 	teo = new(Teonet)
+	teo.closing = make(chan interface{}, 1)
 	teo.newSubscribers()
 	teo.newPeerRequests()
 	teo.newConnRequests()
@@ -259,57 +261,10 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	return
 }
 
-// Teonet event struct
-type Event struct {
-	Event TeonetEventType
-	Err   error
-}
-
-// Teonet event type
-type TeonetEventType byte
-
-// Teonet events
-const (
-	EventNone TeonetEventType = iota
-
-	// Event when Teonet client initialized and start listen, Err = nil
-	EventTeonetInit
-
-	// Event when Connect to teonet r-host, Err = nil
-	EventTeonetConnected
-
-	// Event when Disconnect from teonet r-host, Err = dosconnect error
-	EventTeonetDisconnected
-
-	// Event when Connect to peer, Err = nil
-	EventConnected
-
-	// Event when Disconnect from peer, Err = dosconnect error
-	EventDisconnected
-
-	// Event when Data Received, Err = nil
-	EventData
-)
-
-// Event to string
-func (e Event) String() (str string) {
-	switch e.Event {
-	case EventNone:
-		str = "EventNone"
-	case EventTeonetInit:
-		str = "EventTeonetInit"
-	case EventTeonetConnected:
-		str = "EventTeonetConnected"
-	case EventTeonetDisconnected:
-		str = "EventTeonetDisconnected"
-	case EventConnected:
-		str = "EventConnected"
-	case EventDisconnected:
-		str = "EventDisconnected"
-	case EventData:
-		str = "EventData"
-	}
-	return
+// Close all channels
+func (teo *Teonet) Close() {
+	close(teo.closing)
+	teo.tru.Close()
 }
 
 // Rhost return current auth server

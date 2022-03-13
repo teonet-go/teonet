@@ -186,7 +186,8 @@ func main() {
 		teo.Log().Debug.Printf("Got  cmd='%s' '%s'\n\n", cmdName2, data)
 	})
 
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
+	teo.Close()
 	teo.Log().Debug.Println("All done, quit...")
 
 	// select {} // sleep forever
