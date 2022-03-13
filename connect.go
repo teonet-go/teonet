@@ -310,10 +310,10 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 	// Update config data and save config to file
 	addr := string(conOut.Address)
-	teo.config.m.Lock()
+	// teo.config.m.Lock()
 	teo.config.ServerPublicKeyData = conOut.ServerKey
 	teo.config.Address = addr
-	teo.config.m.Unlock()
+	// teo.config.m.Unlock()
 	teo.config.save()
 
 	teo.SetConnected(teo.auth, string(conOut.ServerAddress))
