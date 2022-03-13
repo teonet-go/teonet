@@ -39,9 +39,6 @@ func (teo *Teonet) newConfig(appName string, osConfigDir string) (err error) {
 
 	// Read config file
 	err = teo.config.read()
-	if err != nil {
-		return
-	}
 
 	return
 }
@@ -187,7 +184,6 @@ func (c *config) read() (err error) {
 	if err != nil {
 		return
 	}
-	// c.log.Printf("teonet address: %s\n", c.Address)
 
 	return
 }
@@ -205,8 +201,7 @@ func (c *config) create() (err error) {
 		return
 	}
 
-	// Create new config holder
-	*c = config{appName: c.appName, osConfigDir: c.osConfigDir}
+	// Create config keys
 	err = c.createKeys()
 	if err != nil {
 		return
