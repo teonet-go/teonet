@@ -63,7 +63,7 @@ func main() {
 		logLevel    string
 		logFilter   string
 	}
-	flag.StringVar(&p.appShort, "app-short", appShort, "application short name")
+	flag.StringVar(&p.appShort, "name", appShort, "application short name")
 	flag.IntVar(&p.port, "p", 0, "local port")
 	flag.BoolVar(&p.stat, "stat", false, "show trudp statistic")
 	flag.BoolVar(&p.hotkey, "hotkey", false, "start hotkey menu")
@@ -96,18 +96,17 @@ connect:
 		goto connect
 	}
 
+	// Connect to monitor
+	teomon.Connect(teo, monitor, teomon.Metric{
+		AppName:      appName,
+		AppShort:     appShort,
+		AppVersion:   appVersion,
+		TeoVersion:   teonet.Version,
+		AppStartTime: appStartTime,
+	})
+
 	// Sleep forever if sendTo flag does not set (in server mode)
 	if p.sendTo == "" {
-
-		// Connect to monitor
-		teomon.Connect(teo, monitor, teomon.Metric{
-			AppName:      appName,
-			AppShort:     appShort,
-			AppVersion:   appVersion,
-			TeoVersion:   teonet.Version,
-			AppStartTime: appStartTime,
-		})
-
 		select {}
 	}
 
@@ -142,7 +141,7 @@ connectto:
 
 sendto:
 	// Send to Peer
-	time.Sleep(5 * time.Second)
+	// time.Sleep(5 * time.Second)
 	teo.Log().Debug.Println("send message to", p.sendTo)
 	if _, err := teo.SendTo(p.sendTo, []byte("Hello world!")); err != nil {
 		teo.Log().Debug.Println(err)
