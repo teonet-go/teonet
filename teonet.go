@@ -141,13 +141,16 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 			return
 		}
 	}
+
+	// Set log and loglevel
 	if param.logLevel == "" {
 		param.logLevel = "NONE"
 	}
-	if param.log == nil {
-		param.log = teolog.New()
+	if param.log != nil {
+		log = param.log
+	} else if log == nil {
+		log = teolog.New()
 	}
-	log = param.log
 
 	// Create new teonet holder
 	teo = new(Teonet)
@@ -163,17 +166,16 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 		return
 	}
 
-	// Add client readers
+	// Add api and client readers
 	teo.addApiReader(param.api)
 	teo.clientReaders.add(param.reader)
 
 	// Init tru and start listen port to get messages
-	teo.tru, err = tru.New(param.port, teo.log, param.stat, param.hotkey,
-		param.logLevel, param.logFilter,
+	teo.tru, err = tru.New(param.port, param.stat, param.hotkey,
+		teo.log, param.logLevel, param.logFilter,
 		teo.config.trudpPrivateKey,
 
 		// Receive data callback
-		// ch *tru.Channel, pac *tru.Packet, err error
 		func(c *tru.Channel, p *tru.Packet, err error) bool {
 			ch, ok := teo.channels.get(c)
 			if !ok {
