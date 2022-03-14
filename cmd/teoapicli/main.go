@@ -4,6 +4,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/kirill-scherba/teonet"
@@ -69,7 +70,7 @@ func main() {
 	// Connect to API server (selected in connect-to application flag) and receive
 	// packets in own reader. Use WXJfYLDEtg6Rkm1OHm9I9ud9rR6qPlMH6NE addres to
 	// connect to installed teoapi example.
-	var stopChannelReader bool
+	var stopChannelReader safeBool
 	for {
 		err := teo.ConnectTo(p.connectTo,
 			// Receive and process packets from this channel(address). Return
@@ -77,7 +78,7 @@ func main() {
 			// by other readers include main application reader (just comment
 			// 'processed = true' line and you'll see two 'got from ...' message)
 			func(c *teonet.Channel, p *teonet.Packet, e *teonet.Event) (processed bool) {
-				if e.Event == teonet.EventData && !stopChannelReader {
+				if e.Event == teonet.EventData && !stopChannelReader.get() {
 					// Print received message
 					// teo.Log().Debug.Printf("got(r) from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n\n",
 					// 	c, p.Data(), len(p.Data()), p.ID(), float64(c.Triptime().Microseconds())/1000.0,
@@ -111,7 +112,7 @@ func main() {
 	teo.Command(130, nil).SendTo(p.connectTo)
 
 	time.Sleep(250 * time.Millisecond)
-	stopChannelReader = true
+	stopChannelReader.set(true)
 
 	// Test #2: Create Teonet client API interface -----------------------------
 	apicli, _ := teo.NewAPIClient(p.connectTo)
@@ -191,4 +192,21 @@ func main() {
 	teo.Log().Debug.Println("All done, quit...")
 
 	// select {} // sleep forever
+}
+
+type safeBool struct {
+	bool
+	sync.RWMutex
+}
+
+func (b *safeBool) get() bool {
+	b.RLock()
+	defer b.RUnlock()
+	return b.bool
+}
+
+func (b *safeBool) set(val bool) {
+	b.Lock()
+	defer b.Unlock()
+	b.bool = val
 }
