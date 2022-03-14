@@ -27,6 +27,18 @@ type APInterface interface {
 	Reader2(data []byte, answer func(data []byte)) bool
 }
 
+// API teonet api receiver
+type API struct {
+	*Teonet
+	name    string        // API (application) name
+	short   string        // API short name
+	long    string        // API decription (or long name)
+	version string        // API version
+	cmds    []APInterface // API commands
+	cmd     byte          // API cmdApi command number
+	bslice.ByteSlice
+}
+
 // APIconnectMode connection type of received command:
 //
 //   Server: execute command if there is server connection;
@@ -128,18 +140,6 @@ func (teo *Teonet) NewAPI(name, short, long, version string) (api *API) {
 		})
 	api.Add(cmdApi)
 	return api
-}
-
-// API teonet api receiver
-type API struct {
-	*Teonet
-	name    string        // API (application) name
-	short   string        // API short name
-	long    string        // API decription (or long name)
-	version string        // API version
-	cmds    []APInterface // API commands
-	cmd     byte          // API cmdApi command number
-	bslice.ByteSlice
 }
 
 // Short get app short name

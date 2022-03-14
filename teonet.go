@@ -16,6 +16,7 @@ import (
 
 const Version = "0.3.0"
 
+// Teonet data structure and methods receiver
 type Teonet struct {
 	config        *config
 	tru           *tru.Tru
