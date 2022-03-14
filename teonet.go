@@ -77,9 +77,8 @@ func reader(teo *Teonet, c *Channel, p *Packet, e *Event) {
 		}
 	}()
 
-	// Check error and 'connect to peer connected' processing
-	// if e.Err == nil && (teo.connectToConnectedPeer(c, p) || teo.connectToConnectedClient(c, p)) {
-	if e.Event == EventData && (teo.connectToConnectedPeer(c, p) || teo.connectToConnectedClient(c, p)) {
+	// Process commect messages
+	if e.Event == EventData && (teo.connectToPeer(c, p) || teo.connectToClient(c, p)) {
 		return
 	}
 

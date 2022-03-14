@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Connect to peer module
+// Teonet connect to peer module
 
 package teonet
 
@@ -19,11 +19,9 @@ import (
 	"github.com/kirill-scherba/tru"
 )
 
-var nMODULEconp = "Connect to peer"
+var nMODULEconp = "connect to peer"
 
-const (
-	peerReconnectAfter = 1 * time.Second
-)
+const peerReconnectAfter = 1 * time.Second
 
 var ErrDoesNotConnectedToTeonet = errors.New("does not connected to teonet")
 
@@ -60,7 +58,7 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	data, _ := con.MarshalBinary()
 
 	// Send command to teonet
-	log.Debug.Println("Send CmdConnectTo=1 to teonet, Addr:", con.ToAddr, "ID:", con.ID)
+	log.Debug.Println(nMODULEconp, "send CmdConnectTo=1 to teonet, Addr:", con.ToAddr, "ID:", con.ID)
 	teo.Command(CmdConnectTo, data).Send(teo.auth)
 
 	chanW := make(chanWait)
@@ -133,7 +131,7 @@ func (teo *Teonet) WhenConnectedDisconnected(f func()) {
 	})
 }
 
-// processCmdConnectToPeer (3) peer got CmdConnectToPeer request from teonet
+// processCmdConnectToPeer process CmdConnectToPeer request from teonet
 // auth (peer prepare to connect from client and send answer with its IPs to
 // auth server)
 func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
@@ -142,7 +140,7 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 	var con ConnectToData
 	err = con.UnmarshalBinary(data)
 	if err != nil {
-		log.Error.Println("connectToPeer unmarshal error:", err)
+		log.Error.Println(nMODULEconp, "connectToPeer unmarshal error:", err)
 		return
 	}
 	log.Debug.Println(nMODULEconp,
@@ -187,7 +185,7 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 	return
 }
 
-// processCmdConnectTo check ConnectTo answer from auth server, connect to
+// processCmdConnectTo process ConnectTo answer from auth server, connect to
 // Peer and send clients teonet addres to it (client processed)
 func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 
@@ -197,10 +195,10 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 	var con ConnectToData
 	err = con.UnmarshalBinary(data)
 	if err != nil {
-		log.Error.Println("CmdConnectTo answer unmarshal error:", err.Error())
+		log.Error.Println(nMODULEconp, "CmdConnectTo answer unmarshal error:", err.Error())
 		return
 	}
-	log.Debug.Println("Got CmdConnectTo=1 answer from teonet,",
+	log.Debug.Println(nMODULEconp, "got CmdConnectTo=1 answer from teonet,",
 		"Addr:", con.FromAddr,
 		"ID:", con.ID,
 		"IP", con.IP+":"+strconv.Itoa(int(con.Port)),
@@ -210,7 +208,7 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 	req, ok := teo.connRequests.get(con.ID)
 	if !ok {
 		err = errors.New("got CmdConnectTo answer time out")
-		log.Error.Println(err.Error())
+		log.Error.Println(nMODULEconp, err.Error())
 		return
 	}
 
@@ -258,7 +256,7 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 		}
 
 		// Send client peer connect request to peer
-		log.Debug.Println("Send answer to peer, ID:", con.ID)
+		log.Debug.Println(nMODULEconp, "send answer to peer, ID:", con.ID)
 		_, err = c.WriteTo(data)
 		if err != nil {
 			log.Error.Println(nMODULEconp, cantConnectToPeer, err)
@@ -287,9 +285,9 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 	return
 }
 
-// connectToConnectedPeer check received message from client, set connected client
+// connectToPeer check received message from client, set connected client
 // address and send answer (peer processed)
-func (teo Teonet) connectToConnectedPeer(c *Channel, p *Packet) (ok bool) {
+func (teo Teonet) connectToPeer(c *Channel, p *Packet) (ok bool) {
 	if c.ServerMode() {
 		// Teonet address example:    z6uer55DZsqvY5pqXHjTD3oDFfsKmkfFJ65
 		// Teonet new(not connected): new-r55DZsqvY5pqXHjTD3oDFfsKmkfFJ65
@@ -299,21 +297,21 @@ func (teo Teonet) connectToConnectedPeer(c *Channel, p *Packet) (ok bool) {
 			var con ConnectToData
 			err := con.UnmarshalBinary(p.Data()[len(newConnectionPrefix):])
 			if err != nil {
-				log.Error.Println("CmdConnectToPeer unmarshal error:", err)
+				log.Error.Println(nMODULEconp, "CmdConnectToPeer unmarshal error:", err)
 				return
 			}
-			log.Debug.Println(nMODULEconp, "Got answer from new client, ID:", con.ID)
+			log.Debug.Println(nMODULEconp, "got answer from new client, ID:", con.ID)
 
 			if res, ok := teo.peerRequests.get(con.ID); ok {
 				// Set channel connected
 				teo.SetConnected(c, res.FromAddr)
 				// Close peerRequests and send answer to client
 				teo.peerRequests.del(con.ID)
-				log.Debug.Println("Send answer to client, ID:", con.ID)
+				log.Debug.Println(nMODULEconp, "send answer to client, ID:", con.ID)
 				c.SendNoWait(p.Data())
 			} else {
 				teo.channels.del(c)
-				log.Error.Println("wrong request ID:", con.ID)
+				log.Error.Println(nMODULEconp, "wrong request ID:", con.ID)
 			}
 			return true
 		}
@@ -321,9 +319,9 @@ func (teo Teonet) connectToConnectedPeer(c *Channel, p *Packet) (ok bool) {
 	return
 }
 
-// connectToConnectedClient check received message and set connected peer
+// connectToClient check received message and set connected peer
 // address (client processed)
-func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
+func (teo Teonet) connectToClient(c *Channel, p *Packet) (ok bool) {
 	if c.ClientMode() {
 		// Teonet address example:    z6uer55DZsqvY5pqXHjTD3oDFfsKmkfFJ65
 		// Teonet new(not connected): new-r55DZsqvY5pqXHjTD3oDFfsKmkfFJ65
@@ -333,10 +331,10 @@ func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
 			var con ConnectToData
 			err := con.UnmarshalBinary(p.Data()[len(newConnectionPrefix):])
 			if err != nil {
-				log.Error.Println("connectToConnectedClient unmarshal error:", err)
+				log.Error.Println(nMODULEconp, "connectToConnectedClient unmarshal error:", err)
 				return
 			}
-			log.Debug.Println(nMODULEconp, "Got answer from new peer, ID:", con.ID)
+			log.Debug.Println(nMODULEconp, "got answer from new peer, ID:", con.ID)
 
 			if req, ok := teo.connRequests.get(con.ID); ok {
 				// Set channel connected
@@ -347,7 +345,7 @@ func (teo Teonet) connectToConnectedClient(c *Channel, p *Packet) (ok bool) {
 				}
 			} else {
 				teo.channels.del(c)
-				log.Error.Println("wrong request ID:", con.ID)
+				log.Error.Println(nMODULEconp, "wrong request ID:", con.ID)
 			}
 			return true
 		}
@@ -364,11 +362,12 @@ type ConnectToData struct {
 	Port      uint32   // Peer external port (sets by teonet auth)
 	LocalIPs  []string // List of local IPs (set by client or peer)
 	LocalPort uint32   // Local port (set by client or peer)
-	Err       []byte   // Error of connect data processing
+	Err       []byte   // Error of connectTo processing
 	Resend    bool     // Resend flag
 	bslice.ByteSlice
 }
 
+// MarshalBinary binary marshal ConnectToData structure
 func (c ConnectToData) MarshalBinary() (data []byte, err error) {
 	buf := new(bytes.Buffer)
 
@@ -386,6 +385,7 @@ func (c ConnectToData) MarshalBinary() (data []byte, err error) {
 	return
 }
 
+// UnmarshalBinary binary unmarshal ConnectToData structure
 func (c *ConnectToData) UnmarshalBinary(data []byte) (err error) {
 	var buf = bytes.NewBuffer(data)
 

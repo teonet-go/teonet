@@ -1,4 +1,4 @@
-// Copyright 2021 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Copyright 2021-22 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -19,11 +19,10 @@ import (
 )
 
 // nMODULEcon is current module name
-var nMODULEcon = "Connect"
+var nMODULEcon = "connect"
 
-const (
-	teonetReconnectAfter = 1 * time.Second
-)
+// Reconnect teonet at error after 1 second
+const teonetReconnectAfter = 1 * time.Second
 
 // Teoauth commands
 const (
@@ -52,9 +51,17 @@ const (
 	CmdGetIP
 )
 
+// Connet error
+var (
+	ErrIncorrectServerKey = errors.New("incorrect server key received")
+	ErrIncorrectPublicKey = errors.New("incorrect public key received")
+	ErrTimeout            = errors.New("timeout")
+)
+
 // AuthCmd auth command type
 type AuthCmd byte
 
+// String return string with command name
 func (c AuthCmd) String() string {
 	switch c {
 	case CmdConnect:
@@ -73,16 +80,13 @@ func (c AuthCmd) String() string {
 	return "not defined"
 }
 
-// Connet errors
-var ErrIncorrectServerKey = errors.New("incorrect server key received")
-var ErrIncorrectPublicKey = errors.New("incorrect public key received")
-var ErrTimeout = errors.New("timeout")
-
+// ConnectIpPort
 type ConnectIpPort struct {
 	IP   string
 	Port int
 }
 
+// ExcludeIPs
 type ExcludeIPs struct {
 	IPs []string
 }
@@ -102,11 +106,12 @@ func (c ConnectIpPort) exclude(nodesin []NodeAddr, excludeIPs ...string) (nodes 
 	return
 }
 
+// getAddrFromHTTP get connection nodes by URL, remove excludeIPs and random
+// select one node
 func (c *ConnectIpPort) getAddrFromHTTP(url string, excludeIPs ...string) (err error) {
 	// Get connection nodes by URL
 	n, err := Nodes(url)
 	if err != nil {
-		// log.Fatalf("can't get nodes from %s, error: %s\n", url, err)
 		return
 	}
 
@@ -132,12 +137,10 @@ func (c *ConnectIpPort) getAddrFromHTTP(url string, excludeIPs ...string) (err e
 	return
 }
 
-// Connect to errors
-
 // Connect to teonet (client send request to teonet auth server):
-// Client call Connect (and wait answer inside Connect function) -> Server call
-// ConnectProcess -> Client got answer (inside Connect function) and set teonet
-// Connected (create teonet channel)
+//   - Client call Connect (and wait answer inside Connect function)
+//   - Server call ConnectProcess
+//   - Client got answer (inside Connect function) and create teonet channel
 func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 	teo.Log().Connect.Println(nMODULEcon, "to remote teonet node", attr)
@@ -325,8 +328,8 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	return
 }
 
-// SetConnected set address to channel, add channel to channels list and send event
-// SetConnected to main teonet reader
+// SetConnected set address to channel, add channel to channels list and send
+// event to main teonet reader
 func (teo *Teonet) SetConnected(c *Channel, addr string) {
 	c.a = addr
 	teo.channels.add(c)
@@ -343,6 +346,7 @@ type ConnectData struct {
 	bslice.ByteSlice
 }
 
+// MarshalBinary binary marshal ConnectData
 func (c ConnectData) MarshalBinary() (data []byte, err error) {
 	buf := new(bytes.Buffer)
 
@@ -356,6 +360,7 @@ func (c ConnectData) MarshalBinary() (data []byte, err error) {
 	return
 }
 
+// UnmarshalBinary binary unmarshal ConnectData
 func (c *ConnectData) UnmarshalBinary(data []byte) (err error) {
 
 	buf := bytes.NewBuffer(data)
@@ -381,6 +386,7 @@ func (c *ConnectData) UnmarshalBinary(data []byte) (err error) {
 	return
 }
 
+// String return string with ConnectData
 func (c ConnectData) String() string {
 	return fmt.Sprintf("len: %d\nkey: %x\naddress: %s\nserver key: %x\nserver address: %s\nerror: %s",
 		len(c.PubliKey)+len(c.Address)+len(c.ServerKey)+len(c.ServerAddress)+len(c.Err),
