@@ -36,6 +36,9 @@ type LogFilter = teolog.Filter
 type Stat = tru.Stat
 type Hotkey = tru.Hotkey
 
+// Error peer does not connected
+var ErrPeerNotConnected = errors.New("peer does not connected")
+
 // log is global pointer to teonet log based on go log
 var log *teolog.Teolog
 
@@ -46,9 +49,7 @@ func Log() *teolog.Teolog { return log }
 func Logfilter(str string) teolog.Filter { return teolog.Logfilter(str) }
 
 // Logo print teonet logo
-func Logo(title, ver string) {
-	fmt.Println(LogoString(title, ver))
-}
+func Logo(title, ver string) { fmt.Println(LogoString(title, ver)) }
 
 // LogoString return teonet logo in string
 func LogoString(title, ver string) string {
@@ -267,8 +268,8 @@ func (teo *Teonet) Close() {
 	teo.tru.Close()
 }
 
-// Rhost return current auth server
-func (teo Teonet) Rhost() *Channel { return teo.auth }
+// RHost return current auth server
+func (teo Teonet) RHost() *Channel { return teo.auth }
 
 // ShowTrudp show/stop tru statistic
 func (teo Teonet) ShowTrudp(set bool) {
@@ -278,8 +279,6 @@ func (teo Teonet) ShowTrudp(set bool) {
 		teo.tru.StatisticPrintStop()
 	}
 }
-
-var ErrPeerNotConnected = errors.New("peer does not connected")
 
 // Send data to peer
 func (teo *Teonet) SendTo(addr string, data []byte, attr ...interface{}) (id int, err error) {
