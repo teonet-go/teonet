@@ -100,7 +100,7 @@ func main() {
 	teo.Log().Debug.Printf("Connected to API sample server: %s\n\n", p.connectTo)
 
 	// Test #1: Send Teonet Commands -------------------------------------------
-	teo.Log().Debug.Printf("===> Test #1: Send commands to API server with Teonet Command Send and Get answer in Connect Reader\n\n")
+	teo.Log().Debug.Printf("\n\n===> Test #1: Send commands to API server with Teonet Command Send and Get answer in Connect Reader\n\n")
 
 	// Send command 129('hello')
 	data := []byte("Kirill")
