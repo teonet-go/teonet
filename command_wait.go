@@ -1,4 +1,4 @@
-// Copyright 2029-2021 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Copyright 2021-22 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -53,6 +53,7 @@ func (teo *Teonet) WaitReaderAnswer(wait chan WaitData, timeout time.Duration) (
 	return
 }
 
+// WaitReader contain create reader, wait channel and timeout
 type WaitReader struct {
 	wait    chan WaitData
 	reader  func(c *Channel, p *Packet, e *Event) (processed bool)
@@ -169,36 +170,52 @@ func (teo *Teonet) MakeWaitReader(attr ...interface{}) (wr *WaitReader) {
 	return
 }
 
+// Wait data from wait channel
 func (wr WaitReader) Wait() chan WaitData { return wr.wait }
+
+// Reader call wait reader
 func (wr WaitReader) Reader() func(c *Channel, p *Packet, e *Event) (processed bool) {
 	return wr.reader
 }
+
+// Timeout get timeout
 func (wr WaitReader) Timeout() time.Duration { return wr.timeout }
 
+// MakeWaitAttr make wait attribute
 func (teo *Teonet) MakeWaitAttr() *WaitAttr {
 	return new(WaitAttr)
 }
 
+// WaitAttr wait attribute
 type WaitAttr struct {
 	attr []interface{}
 }
 
+// Cmd append command to wait attribute
 func (w *WaitAttr) Cmd(cmd byte) *WaitAttr {
 	w.attr = append(w.attr, cmd)
 	return w
 }
+
+// ID append id to wait attribute
 func (w *WaitAttr) ID(id uint32) *WaitAttr {
 	w.attr = append(w.attr, id)
 	return w
 }
+
+// Func append func to wait attribute
 func (w *WaitAttr) Func(f func([]byte) bool) *WaitAttr {
 	w.attr = append(w.attr, f)
 	return w
 }
+
+// Timeout append timeout to wait attribute
 func (w *WaitAttr) Timeout(t time.Duration) *WaitAttr {
 	w.attr = append(w.attr, t)
 	return w
 }
+
+// GetAttr return wait attribute
 func (w *WaitAttr) GetAttr() []interface{} {
 	return w.attr
 }
