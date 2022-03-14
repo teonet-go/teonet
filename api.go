@@ -14,6 +14,25 @@ import (
 	"github.com/kirill-scherba/bslice"
 )
 
+// ApiInterface
+type ApiInterface interface {
+	ProcessPacket(p interface{})
+}
+
+// addApiReader sets teonet reader. This reader process received API commands
+func (teo *Teonet) addApiReader(api ApiInterface) {
+	if api == nil {
+		return
+	}
+	teo.clientReaders.add(func(teo *Teonet, c *Channel, p *Packet, e *Event) (ret bool) {
+		// Process API commands
+		if e.Event == EventData {
+			api.ProcessPacket(p.setCommandMode())
+		}
+		return
+	})
+}
+
 // APInterface is teonet api interface
 type APInterface interface {
 	Name() string
