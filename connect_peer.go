@@ -87,8 +87,8 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 				return
 			default:
 				go func() {
-					log.Connect.Println(nMODULEconp, "reconnect:", c.Address())
 					for {
+						log.Connect.Println(nMODULEconp, "reconnect:", c.Address())
 						err := teo.ConnectTo(addr, readers...)
 						if err == nil {
 							break

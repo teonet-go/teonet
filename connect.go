@@ -208,6 +208,9 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 			default:
 				// Reconnect
 				go func() {
+					// wait while exit when closing
+					time.Sleep(20 * time.Millisecond)
+					// reconnect while connected
 					for {
 						log.Debug.Println("reconnect to teonet")
 						err := teo.Connect(attr...)
