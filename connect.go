@@ -199,22 +199,25 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 		// Disconnect r-host processing
 		if e.Event == EventTeonetDisconnected {
-			log.Debug.Printf("Connect reader got error from channel %s, error: %s\n", c, e.Err)
+			log.Connect.Println("disconnected from teonet")
 			teo.Unsubscribe(subs)
 			teo.auth = nil
-			log.Connect.Println("Disconnected from teonet")
-			// Reconnect
-			go func() {
-				time.Sleep(100 * time.Millisecond)
-				for {
-					log.Debug.Println("Reconnect to teonet")
-					err := teo.Connect(attr...)
-					if err == nil {
-						break
+			select {
+			case <-teo.closing:
+				return true
+			default:
+				// Reconnect
+				go func() {
+					for {
+						log.Debug.Println("reconnect to teonet")
+						err := teo.Connect(attr...)
+						if err == nil {
+							break
+						}
+						time.Sleep(teonetReconnectAfter)
 					}
-					time.Sleep(teonetReconnectAfter)
-				}
-			}()
+				}()
+			}
 			return true
 		}
 

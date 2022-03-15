@@ -55,8 +55,7 @@ func (c *channels) add(channel *Channel) {
 	c.m_chan[channel.c] = channel
 
 	// Connected - show log message and send Event to main reader
-	log.Connect.Println("Peer", "connected:", channel.a)
-	// go reader(c.teo, channel, nil, &Event{EventConnected, nil})
+	log.Connect.Println("peer connected:", channel.a)
 }
 
 // del delete teonet channel if second parameter omitted or true, the tru
@@ -76,7 +75,7 @@ func (c *channels) del(channel *Channel, delTrudps ...bool) {
 		channel.c.Close()
 	}
 	c.teo.subscribers.del(channel)
-	log.Connect.Println("Peer", "disconnec:", channel.a)
+	log.Connect.Println("peer disconnected:", channel.a)
 }
 
 // get channel by teonet address or by tru channel

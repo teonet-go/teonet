@@ -63,6 +63,7 @@ func main() {
 		// teo.Log().Debug.Println("can't connect to Teonet, error:", err)
 		time.Sleep(1 * time.Second)
 	}
+	defer teo.Close()
 
 	// Teonet address
 	fmt.Printf("Teonet addres: %s\n\n", teo.Address())
@@ -188,7 +189,6 @@ func main() {
 	})
 
 	time.Sleep(500 * time.Millisecond)
-	teo.Close()
 	teo.Log().Debug.Println("All done, quit...")
 
 	// select {} // sleep forever

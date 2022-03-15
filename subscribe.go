@@ -1,3 +1,9 @@
+// Copyright 2021-22 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Teonet subscribe to receive packets module
+
 package teonet
 
 import (
@@ -5,6 +11,20 @@ import (
 	"fmt"
 	"sync"
 )
+
+// List of subscribers with idex by subscribeData and methods receiver
+type subscribers struct {
+	lst          list.List // list
+	idx          listIdx   // list index by *subscribeData
+	sync.RWMutex           // mutex
+}
+type listIdx map[*subscribeData]*list.Element
+
+// subscribeData contain subscribe data
+type subscribeData struct {
+	channel *Channel
+	reader  Treceivecb
+}
 
 // Subscribe to receive packets from address. The reader attribute may be
 // teonet.Treceivecb or teonet.TreceivecbShort type
@@ -41,18 +61,6 @@ func (teo Teonet) Unsubscribe(s *subscribeData) {
 	teo.subscribers.del(s)
 }
 
-type subscribers struct {
-	lst          list.List // list
-	idx          listIdx   // list index by *subscribeData
-	sync.RWMutex           // mutex
-}
-type listIdx map[*subscribeData]*list.Element
-
-type subscribeData struct {
-	channel *Channel
-	reader  Treceivecb
-}
-
 // newSubscribers create new subscribers (subscribersData)
 func (teo *Teonet) newSubscribers() {
 	s := new(subscribers)
@@ -60,6 +68,7 @@ func (teo *Teonet) newSubscribers() {
 	teo.subscribers = s
 }
 
+// add subscriber
 func (s *subscribers) add(channel *Channel, reader Treceivecb) (scr *subscribeData) {
 	s.Lock()
 	defer s.Unlock()
@@ -69,6 +78,7 @@ func (s *subscribers) add(channel *Channel, reader Treceivecb) (scr *subscribeDa
 	return
 }
 
+// del subscriber
 func (s *subscribers) del(subs interface{}) {
 	s.Lock()
 	defer s.Unlock()
@@ -93,6 +103,7 @@ func (s *subscribers) del(subs interface{}) {
 	}
 }
 
+// send packet to all subscribers
 func (s *subscribers) send(teo *Teonet, c *Channel, p *Packet, e *Event) bool {
 	s.RLock()
 
