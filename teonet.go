@@ -24,7 +24,6 @@ type Teonet struct {
 	clientReaders *clientReaders
 	subscribers   *subscribers
 	channels      *channels
-	auth          *Channel
 	peerRequests  *connectRequests
 	connRequests  *connectRequests
 	puncher       *puncher
@@ -194,9 +193,10 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 		func(c *tru.Channel, p *tru.Packet, err error) bool {
 			ch, ok := teo.channels.get(c)
 			if !ok {
-				if teo.auth != nil && c == teo.auth.c {
+				auth := teo.getAuth()
+				if auth != nil && c == auth.c {
 					// There is Auth channel
-					ch = teo.auth
+					ch = auth
 				} else {
 					// Create new channel for not error packets
 					if err != nil {
@@ -216,7 +216,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 			e := new(Event)
 			if err != nil {
 				e.Err = err
-				if ch == teo.auth {
+				if ch == teo.getAuth() {
 					e.Event = EventTeonetDisconnected
 				} else {
 					e.Event = EventDisconnected
@@ -244,8 +244,10 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 				ch, exists := teo.channels.get(c)
 				if !exists {
 					if newch, ok := teo.channels.getByIP(c.Addr().String()); !ok {
-						log.Debug.Println("remove dummy tru channel:", c, ch)
-						c.Close()
+						if !c.Destroyed() {
+							log.Debug.Println("remove dummy tru channel:", c, ch)
+							c.Close()
+						}
 					} else {
 						log.Debugvv.Println("tru channel was reconnected:", c.Addr().String(), newch)
 					}
@@ -274,7 +276,7 @@ func (teo *Teonet) Close() {
 }
 
 // RHost return current auth server
-func (teo Teonet) RHost() *Channel { return teo.auth }
+func (teo Teonet) RHost() *Channel { return teo.getAuth() }
 
 // ShowTrudp show/stop tru statistic
 func (teo Teonet) ShowTrudp(set bool) {

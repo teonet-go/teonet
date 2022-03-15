@@ -185,7 +185,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	if err != nil {
 		return
 	}
-	teo.auth = teo.channels.new(ch)
+	teo.setAuth(teo.channels.new(ch))
 
 	// Create channel to wait end of connection
 	var chanWait = make(chanWait)
@@ -195,13 +195,13 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	// server. Subscribers reader shound return true if packet processed by this
 	// reader
 	var subs *subscribeData
-	subs = teo.subscribe(teo.auth, func(teo *Teonet, c *Channel, p *Packet, e *Event) bool {
+	subs = teo.subscribe(teo.getAuth(), func(teo *Teonet, c *Channel, p *Packet, e *Event) bool {
 
 		// Disconnect r-host processing
 		if e.Event == EventTeonetDisconnected {
 			log.Connect.Println("disconnected from teonet")
 			teo.Unsubscribe(subs)
-			teo.auth = nil
+			teo.setAuth(nil)
 			select {
 			case <-teo.closing:
 				return true
@@ -285,7 +285,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	}
 
 	// Send to teoauth
-	_, err = teo.Command(CmdConnect, data).Send(teo.auth)
+	_, err = teo.Command(CmdConnect, data).Send(teo.getAuth())
 	if err != nil {
 		return
 	}
@@ -319,17 +319,16 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 	// Update config data and save config to file
 	addr := string(conOut.Address)
-	// teo.config.m.Lock()
 	teo.config.ServerPublicKeyData = conOut.ServerKey
-	teo.config.Address = addr
-	// teo.config.m.Unlock()
+	// teo.config.Address = addr
+	teo.setAddress(addr)
 	teo.config.save()
 
-	teo.SetConnected(teo.auth, string(conOut.ServerAddress))
+	teo.SetConnected(teo.getAuth(), string(conOut.ServerAddress))
 
 	// Connected to teonet, show log message and send Event to main reader
 	log.Connect.Printf("Teonet address: %s\n", conOut.Address)
-	reader(teo, teo.auth, nil, &Event{EventTeonetConnected, nil})
+	reader(teo, teo.getAuth(), nil, &Event{EventTeonetConnected, nil})
 
 	return
 }

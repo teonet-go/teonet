@@ -44,7 +44,7 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 
 	// Check teonet connected
 	// TODO: move this code to function
-	if teo.auth == nil || /* !func() bool { _, ok := teo.channels.get(teo.auth); return ok }() || */ teo.auth.IsNew() {
+	if teo.getAuth() == nil || /* !func() bool { _, ok := teo.channels.get(teo.getAuth()); return ok }() || */ teo.getAuth().IsNew() {
 		err = ErrDoesNotConnectedToTeonet
 		return
 	}
@@ -65,7 +65,7 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 
 	// Send command to teonet
 	log.Debug.Println(nMODULEconp, "send CmdConnectTo=1 to teonet, Addr:", con.ToAddr, "ID:", con.ID)
-	teo.Command(CmdConnectTo, data).Send(teo.auth)
+	teo.Command(CmdConnectTo, data).Send(teo.getAuth())
 
 	chanW := make(chanWait)
 	defer close(chanW)
@@ -192,7 +192,7 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 	data, _ = conPeer.MarshalBinary()
 
 	// Send command to teonet
-	teo.Command(CmdConnectToPeer, data).Send(teo.auth)
+	teo.Command(CmdConnectToPeer, data).Send(teo.getAuth())
 
 	// Punch firewall (from server to client - server mode)
 	// TODO: calculat punch start delay here: 1) triptime from client to auth +
