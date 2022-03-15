@@ -16,6 +16,7 @@ import (
 type channels struct {
 	m_addr map[string]*Channel
 	m_chan map[*tru.Channel]*Channel
+	auth   *Channel
 	tru    *tru.Tru
 	teo    *Teonet
 	sync.RWMutex
@@ -151,4 +152,20 @@ func (teo Teonet) Nodes(attr ...NodeAddr) (n *nodes) {
 // NumPeers return number of connected peers
 func (teo Teonet) NumPeers() int {
 	return len(teo.Peers())
+}
+
+// setAuth set Auth channel
+func (teo *Teonet) setAuth(ch *Channel) {
+	teo.channels.Lock()
+	defer teo.channels.Unlock()
+
+	teo.channels.auth = ch
+}
+
+// getAuth get Auth channel
+func (teo Teonet) getAuth() (ch *Channel) {
+	teo.channels.RLock()
+	defer teo.channels.RUnlock()
+
+	return teo.channels.auth
 }

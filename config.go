@@ -19,6 +19,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/kirill-scherba/tru"
 )
@@ -40,6 +41,7 @@ type config struct {
 	trudpPrivateKey     *rsa.PrivateKey `json:"-"`
 	appName             string          `json:"-"`
 	osConfigDir         string          `json:"-"`
+	m                   *sync.RWMutex   `json:"-"`
 }
 
 // OsConfigDir used in teonet.New parameter to define os config directory
@@ -49,6 +51,7 @@ type OsConfigDir string
 func (teo *Teonet) newConfig(appName string, osConfigDir string) (err error) {
 
 	teo.config = &config{appName: appName, osConfigDir: osConfigDir}
+	teo.config.m = new(sync.RWMutex)
 
 	// Check config file exists and create and save new config if does not exists
 	if !teo.config.exists() {
@@ -268,7 +271,16 @@ func (c config) makeAddress(keyData []byte) (addr string, err error) {
 
 // Address get teonet address
 func (t Teonet) Address() (addr string) {
+	t.config.m.RLock()
+	defer t.config.m.RUnlock()
 	return t.config.Address
+}
+
+// setAddress set teonet address
+func (t Teonet) setAddress(addr string) {
+	t.config.m.Lock()
+	defer t.config.m.Unlock()
+	t.config.Address = addr
 }
 
 // MakeAddress make teonet address from key
