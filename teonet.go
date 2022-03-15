@@ -195,8 +195,13 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 			ch, ok := teo.channels.get(c)
 			if !ok {
 				if teo.auth != nil && c == teo.auth.c {
+					// There is Auth channel
 					ch = teo.auth
 				} else {
+					// Create new channel for not error packets
+					if err != nil {
+						return false
+					}
 					ch = teo.channels.new(c)
 				}
 			}

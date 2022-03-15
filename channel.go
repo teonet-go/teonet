@@ -22,14 +22,15 @@ const (
 
 // Channel stract and method receiver
 type Channel struct {
-	a string       // Teonet address
-	c *tru.Channel // Tru channel
+	a       string       // Teonet address
+	c       *tru.Channel // TRU channel
+	closing bool         // Channel closed by CloseTo function
 }
 
 // new create new teonet channel
 func (c *channels) new(channel *tru.Channel) *Channel {
 	address := newChannelPrefix + tru.RandomString(addressLen-len(newChannelPrefix))
-	return &Channel{address, channel}
+	return &Channel{address, channel, false}
 }
 
 // Channel get teonet channel by address

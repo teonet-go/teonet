@@ -96,6 +96,7 @@ func main() {
 		teo.Log().Debug.Println("can't connect to API server, error:", err)
 		time.Sleep(1 * time.Second)
 	}
+	defer teo.CloseTo(p.connectTo)
 
 	// Connect message
 	teo.Log().Debug.Printf("Connected to API sample server: %s\n\n", p.connectTo)
@@ -188,8 +189,10 @@ func main() {
 		teo.Log().Debug.Printf("Got  cmd='%s' '%s'\n\n", cmdName2, data)
 	})
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 	teo.Log().Debug.Println("All done, quit...")
+
+	time.Sleep(2000 * time.Millisecond)
 
 	// select {} // sleep forever
 }

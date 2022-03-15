@@ -24,14 +24,20 @@ var nMODULEconp = "connect to peer"
 const peerReconnectAfter = 1 * time.Second
 
 var ErrDoesNotConnectedToTeonet = errors.New("does not connected to teonet")
+var ErrPeerDoesNotExists = errors.New("peer does not exists")
 
-// ConnectTo (1) connect to any teonet Peer(client or server) by address (client
+// ConnectTo connect to any teonet Peer(client or server) by address (client
 // sent request to teonet auth server):
-// Client call ConnectTo wich send request to teonet auth server and wait
-// function connectToAnswerProcess called -> Server call ConnectToProcess send
-// infor to Peer and send answer to client (connectToAnswerProcess func called
-// on client side when answer received) -> Client connect to Peer and send
-// clients teonet address to it, Peer check it in connectToConnected func
+//
+//   - Client call ConnectTo wich send request to teonet auth server and wait
+//   function connectToAnswerProcess called
+//
+//   - Server call ConnectToProcess send infor to Peer and send answer to
+//   client (connectToAnswerProcess func called on client side when answer
+//   received)
+//
+//   - Client connect to Peer and send clients teonet address to it, Peer check
+//   it in connectToConnected func
 func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	// TODO: check local connection exists
 	log.Connect.Println(nMODULEconp, addr)
@@ -83,9 +89,15 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 		// Peer disconnected event
 		if e.Event == EventDisconnected {
 			select {
+			// Return if teonet closing
 			case <-teo.closing:
 				return
 			default:
+				// Return if channel closing
+				if c.closing {
+					return
+				}
+				// Reconnect to disconnected peer
 				go func() {
 					for {
 						log.Connect.Println(nMODULEconp, "reconnect:", c.Address())
@@ -106,6 +118,19 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 		teo.Subscribe(addr, readers[i])
 	}
 
+	return
+}
+
+// CloseTo close connection to peere previously opened by ConnecTo
+func (teo Teonet) CloseTo(addr string) (err error) {
+	log.Debug.Println("close connection to peer", addr)
+	ch, ok := teo.channels.get(addr)
+	if !ok {
+		err = ErrPeerDoesNotExists
+		return
+	}
+	ch.closing = true
+	ch.c.Close()
 	return
 }
 
