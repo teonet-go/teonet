@@ -1,8 +1,8 @@
-// Copyright 2021 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Copyright 2021-22 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Connect to peer IPs and Puncer module
+// Teonet Get IPs and Puncher module
 
 package teonet
 
@@ -16,16 +16,39 @@ import (
 	"github.com/kirill-scherba/tru"
 )
 
-const IPv6Allow = false
+// Allow IPv6 connection between peers
+const IPv6Allow = true
 
+// Connection mode type may be client or server
 type connectModeT byte
 
+// Connection mode constants
 const (
 	clientMode connectModeT = iota
 	serverMode
 )
 
-// getIPs return string slice with this host local IP address
+// puncher struct and methods receiver
+type puncher struct {
+	tru *tru.Tru
+	m   map[string]*PuncherData
+	sync.RWMutex
+}
+
+// PuncherData is puncher data struct
+type PuncherData struct {
+	wait *chan *net.UDPAddr
+}
+
+// IPs struct contain peers local and global IPs and ports
+type IPs struct {
+	LocalIPs  []string
+	LocalPort uint32
+	IP        string
+	Port      uint32
+}
+
+// getIPs return string slice with this host local IPs address
 func (teo Teonet) getIPs() (ips []string, err error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -45,7 +68,7 @@ func (teo Teonet) getIPs() (ips []string, err error) {
 				ip = v.IP
 			}
 			a := ip.String()
-			// Check ipv6 address add [] if ipv6 allowed and
+			// Check ipv6 address, add [ ... ] if ipv6 allowed and
 			// skip this address if ipv6 not allowed
 			if strings.IndexByte(a, ':') >= 0 {
 				if !IPv6Allow {
@@ -68,36 +91,16 @@ func (teo *Teonet) newPuncher() {
 
 	// Connect puncer to TRU - set punch callback
 	teo.tru.SetPunchCb(func(addr net.Addr, data []byte) {
-		log.Connect.Println("got punch packet from ", addr.String(), string(data))
+		log.Connect.Println("puncher get packet from ", addr.String(), string(data))
 		teo.puncher.callback(data, addr.(*net.UDPAddr))
 	})
 }
-
-type puncher struct {
-	tru *tru.Tru
-	m   map[string]*PuncherData
-	sync.RWMutex
-}
-
-type IPs struct {
-	LocalIPs  []string
-	LocalPort uint32
-	IP        string
-	Port      uint32
-}
-
-type PuncherData struct {
-	wait *chan *net.UDPAddr
-}
-
-// type waitChan chan *net.UDPAddr
 
 // subscribe to puncher - add to map
 func (p *puncher) subscribe(key string, punch *PuncherData) {
 	p.Lock()
 	defer p.Unlock()
 	p.m[key] = punch
-	// fmt.Println("puncher subscribe to:", key)
 }
 
 // unsubscribe from puncher - delete from map
@@ -133,7 +136,7 @@ func (p *puncher) send(key string, ips IPs) (err error) {
 	sendKey := func(ip string, port uint32) (err error) {
 		addr := ip + ":" + strconv.Itoa(int(port))
 		dst, err := p.tru.WriteToPunch([]byte(key), addr)
-		log.Debug.Printf("Puncher send %s to %s\n", key, dst.String())
+		log.Debug.Printf("puncher send %s to %s\n", key, dst.String())
 		return
 	}
 	for i := range ips.LocalIPs {
@@ -145,7 +148,9 @@ func (p *puncher) send(key string, ips IPs) (err error) {
 }
 
 // Punch client ip:ports (send udp packets to received IPs)
-// mode: true - server to client mode; false - client to server mode
+//   mode parameter:
+//     true - server to client mode;
+//     false - client to server mode
 func (p *puncher) punch(key string, ips IPs, stop func() bool, mode connectModeT, delays ...time.Duration) {
 	go func() {
 		if len(delays) > 0 {
