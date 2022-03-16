@@ -115,7 +115,7 @@ func main() {
 	fmt.Printf("API description:\n\n%s\n\n", api.Help())
 
 	// Connect to teonet
-	for teo.Connect("http://localhost:10000/auth") != nil {
+	for teo.Connect("http://dev.myteo.net:10000/auth") != nil {
 		time.Sleep(1 * time.Second)
 	}
 
