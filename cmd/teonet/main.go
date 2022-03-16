@@ -15,7 +15,7 @@ import (
 const (
 	appShort   = "teonet"
 	appName    = "Teonet CLI application"
-	appVersion = "0.2.3"
+	appVersion = "0.3.0"
 )
 
 func main() {
@@ -32,7 +32,7 @@ func main() {
 	fmt.Println("teonet address", teo.Address())
 
 	// Connect to teonet
-	err = teo.Connect()
+	err = teo.Connect("http://localhost:10000/auth")
 	if err != nil {
 		fmt.Println("can't connect to Teonet, error:", err)
 		return

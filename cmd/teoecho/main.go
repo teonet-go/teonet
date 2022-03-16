@@ -6,17 +6,18 @@ import (
 	"os"
 	"time"
 
-	"github.com/kirill-scherba/teomon/teomon"
+	"github.com/kirill-scherba/teomon"
 	"github.com/kirill-scherba/teonet"
 )
 
 const (
 	appName    = "Teonet echo client/server sample application"
 	appShort   = "teoecho"
-	appVersion = "0.2.9"
+	appVersion = "0.3.0"
 
 	// Teonet Monitor address
-	monitor = "nOhj2qRDKduN9sHIRoRmJ3LTjOfrKey8llq"
+	// monitor = "nOhj2qRDKduN9sHIRoRmJ3LTjOfrKey8llq"
+	monitor = "4rZhCNxhPMw2Qtf0jJ2Ug1WNQ73aSaS9aJk"
 )
 
 var appStartTime = time.Now()
@@ -33,7 +34,7 @@ func reader(teo *teonet.Teonet, c *teonet.Channel, p *teonet.Packet, e *teonet.E
 	if c.ServerMode() {
 
 		// Print received message
-		teo.Log().Printf("got from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n",
+		teo.Log().Debug.Printf("got from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n",
 			c, p.Data(), len(p.Data()), p.ID(),
 			float64(c.Triptime().Microseconds())/1000.0,
 		)
@@ -52,67 +53,67 @@ func main() {
 	teonet.Logo(appName, appVersion)
 
 	// Parse applications flags
-	var params struct {
+	var p struct {
 		appShort    string
 		port        int
-		showTrudp   bool
+		stat        bool
+		hotkey      bool
 		showPrivate bool
 		sendTo      string
 		logLevel    string
 		logFilter   string
 	}
-	flag.StringVar(&params.appShort, "app-short", appShort, "application short name")
-	flag.IntVar(&params.port, "p", 0, "local port")
-	flag.BoolVar(&params.showTrudp, "u", false, "show trudp statistic")
-	flag.BoolVar(&params.showPrivate, "show-private", false, "show private key")
-	flag.StringVar(&params.sendTo, "send-to", "", "send messages to address")
-	flag.StringVar(&params.logLevel, "log-level", "NONE", "log level")
-	flag.StringVar(&params.logFilter, "log-filter", "", "log filter")
+	flag.StringVar(&p.appShort, "name", appShort, "application short name")
+	flag.IntVar(&p.port, "p", 0, "local port")
+	flag.BoolVar(&p.stat, "stat", false, "show trudp statistic")
+	flag.BoolVar(&p.hotkey, "hotkey", false, "start hotkey menu")
+	flag.BoolVar(&p.showPrivate, "show-private", false, "show private key")
+	flag.StringVar(&p.sendTo, "send-to", "", "send messages to address")
+	flag.StringVar(&p.logLevel, "loglevel", "NONE", "log level")
+	flag.StringVar(&p.logFilter, "logfilter", "", "log filter")
 	flag.Parse()
 
 	// Start teonet client
-	teo, err := teonet.New(params.appShort, params.port, reader, teonet.Log(), "NONE",
-		params.showTrudp, params.logLevel, teonet.LogFilterT(params.logFilter),
+	teo, err := teonet.New(p.appShort, p.port, reader, teonet.Stat(p.stat),
+		teonet.Hotkey(p.hotkey), p.logLevel, teonet.Logfilter(p.logFilter),
 	)
 	if err != nil {
-		teo.Log().Println("can't init Teonet, error:", err)
-		return
+		panic("can't init Teonet, error: " + err.Error())
 	}
 
 	// Show this application private key
-	if params.showPrivate {
-		teo.Log().Printf("%x\n", teo.GetPrivateKey())
+	if p.showPrivate {
+		teo.Log().Debug.Printf("%x\n", teo.GetPrivateKey())
 		os.Exit(0)
 	}
 
 connect:
 	// Connect to teonet
-	err = teo.Connect()
+	err = teo.Connect("http://localhost:10000/auth")
 	if err != nil {
-		teo.Log().Println("can't connect to Teonet, error:", err)
+		teo.Log().Debug.Println("can't connect to Teonet, error:", err)
 		time.Sleep(1 * time.Second)
 		goto connect
 	}
 
+	// Connect to monitor
+	teomon.Connect(teo, monitor, teomon.Metric{
+		AppName:      appName,
+		AppShort:     appShort,
+		AppVersion:   appVersion,
+		TeoVersion:   teonet.Version,
+		AppStartTime: appStartTime,
+	})
+
 	// Sleep forever if sendTo flag does not set (in server mode)
-	if params.sendTo == "" {
-
-		// Connect to monitor
-		teomon.Connect(teo, monitor, teomon.Metric{
-			AppName:      appName,
-			AppShort:     appShort,
-			AppVersion:   appVersion,
-			TeoVersion:   teonet.Version,
-			AppStartTime: appStartTime,
-		})
-
+	if p.sendTo == "" {
 		select {}
 	}
 
 connectto:
 	// Connect to Peer (selected in send-to application flag) and receive
 	// packets in own reader
-	if err := teo.ConnectTo(params.sendTo,
+	if err := teo.ConnectTo(p.sendTo,
 		// Receive and process packets from this channel(address). Return
 		// true if packet processed. If return false package will processed
 		// by other readers include main application reader (just comment
@@ -125,7 +126,7 @@ connectto:
 			}
 
 			// Print received message
-			teo.Log().Printf("got(r) from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n\n",
+			teo.Log().Debug.Printf("got(r) from %s, \"%s\", len: %d, id: %d, tt: %6.3fms\n\n",
 				c, p.Data(), len(p.Data()), p.ID(), float64(c.Triptime().Microseconds())/1000.0,
 			)
 			processed = true
@@ -133,17 +134,17 @@ connectto:
 			return
 		},
 	); err != nil {
-		teo.Log().Println("can't connect to Peer, error:", err)
+		teo.Log().Debug.Println("can't connect to Peer, error:", err)
 		time.Sleep(1 * time.Second)
 		goto connectto
 	}
 
 sendto:
 	// Send to Peer
-	time.Sleep(5 * time.Second)
-	teo.Log().Println("send message to", params.sendTo)
-	if _, err := teo.SendTo(params.sendTo, []byte("Hello world!")); err != nil {
-		teo.Log().Println(err)
+	// time.Sleep(5 * time.Second)
+	teo.Log().Debug.Println("send message to", p.sendTo)
+	if _, err := teo.SendTo(p.sendTo, []byte("Hello world!")); err != nil {
+		teo.Log().Debug.Println(err)
 	}
 	goto sendto
 }

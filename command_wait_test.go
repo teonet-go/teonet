@@ -2,12 +2,16 @@ package teonet
 
 import (
 	"fmt"
-	"log"
 	"testing"
 	"time"
+
+	"github.com/kirill-scherba/tru/teolog"
 )
 
 func TestWaitAnswer(t *testing.T) {
+
+	log := teolog.New()
+	log.SetLevel(teolog.Debug)
 
 	// Init teonet
 	teo, err := New("TestWaitAnswer")
@@ -49,7 +53,7 @@ func TestWaitAnswer(t *testing.T) {
 	t.Run("WaitFromData", func(t *testing.T) {
 
 		msg := "Hello!"
-		log.Println("send data:", msg)
+		log.Debug.Println("send data:", msg)
 		_, err = teo.SendTo(echo, []byte(msg))
 		if err != nil {
 			t.Error(err)
@@ -59,7 +63,7 @@ func TestWaitAnswer(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		log.Println("got answer:", string(data))
+		log.Debug.Println("got answer:", string(data))
 
 	})
 
@@ -74,7 +78,7 @@ func TestWaitAnswer(t *testing.T) {
 
 		cmd := 129
 		name := "Kirill!"
-		log.Println("send cmd", cmd, "data:", name)
+		log.Debug.Println("send cmd", cmd, "data:", name)
 
 		_, err = teo.Command(cmd, []byte(name)).SendTo(apis)
 		if err != nil {
@@ -90,7 +94,7 @@ func TestWaitAnswer(t *testing.T) {
 			return
 		}
 
-		log.Println("got answer:", string(data))
+		log.Debug.Println("got answer:", string(data))
 	})
 
 	// Create reader with MakeReader. Created reader understand command, id, data
@@ -100,13 +104,13 @@ func TestWaitAnswer(t *testing.T) {
 
 		cmd := 129
 		name := "Kirill!"
-		log.Println("send cmd", cmd, "data:", name)
+		log.Debug.Println("send cmd", cmd, "data:", name)
 
 		wait := make(chan interface{})
 
 		if _, err = teo.Command(cmd, []byte(name)).
 			SendTo(apis, teo.MakeWaitReader(func(data []byte) bool {
-				log.Println("got answer:", string(data))
+				log.Debug.Println("got answer:", string(data))
 				wait <- struct{}{}
 				return true
 			}).Reader()); err != nil {

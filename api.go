@@ -1,4 +1,4 @@
-// Copyright 2021 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Copyright 2021-22 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -9,11 +9,29 @@ package teonet
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 
 	"github.com/kirill-scherba/bslice"
 )
+
+// ApiInterface
+type ApiInterface interface {
+	ProcessPacket(p interface{})
+}
+
+// addApiReader sets teonet reader. This reader process received API commands
+func (teo *Teonet) addApiReader(api ApiInterface) {
+	if api == nil {
+		return
+	}
+	teo.clientReaders.add(func(teo *Teonet, c *Channel, p *Packet, e *Event) (ret bool) {
+		// Process API commands
+		if e.Event == EventData {
+			api.ProcessPacket(p.setCommandMode())
+		}
+		return
+	})
+}
 
 // APInterface is teonet api interface
 type APInterface interface {
@@ -26,6 +44,18 @@ type APInterface interface {
 	ExecMode() (APIconnectMode, APIanswerMode)
 	Reader(c *Channel, p *Packet, data []byte) bool
 	Reader2(data []byte, answer func(data []byte)) bool
+}
+
+// API teonet api receiver
+type API struct {
+	*Teonet
+	name    string        // API (application) name
+	short   string        // API short name
+	long    string        // API decription (or long name)
+	version string        // API version
+	cmds    []APInterface // API commands
+	cmd     byte          // API cmdApi command number
+	bslice.ByteSlice
 }
 
 // APIconnectMode connection type of received command:
@@ -91,21 +121,7 @@ func MakeAPI(name, short, long, usage, ret string, cmd byte,
 	return apiData
 }
 
-// APIData is teonet API interface builder data
-type APIData struct {
-	name        string
-	short       string
-	long        string
-	usage       string
-	ret         string
-	cmd         byte
-	connectMode APIconnectMode
-	answerMode  APIanswerMode
-	reader      func(c *Channel, p *Packet, data []byte) bool
-	reader2     func(data []byte, answer func(data []byte)) bool
-	bslice.ByteSlice
-}
-
+// MakeAPI2 is second teonet API interface builder
 func MakeAPI2() *APIData {
 	return &APIData{
 		connectMode: ServerMode,
@@ -117,72 +133,6 @@ func MakeAPI2() *APIData {
 			return true
 		},
 	}
-}
-
-func (a *APIData) SetName(name string) *APIData {
-	a.name = name
-	return a
-}
-
-func (a *APIData) SetShort(short string) *APIData {
-	a.short = short
-	return a
-}
-
-func (a *APIData) SetLong(long string) *APIData {
-	a.long = long
-	return a
-}
-
-func (a *APIData) SetUsage(usage string) *APIData {
-	a.usage = usage
-	return a
-}
-
-func (a *APIData) SetReturn(ret string) *APIData {
-	a.ret = ret
-	return a
-}
-
-func (a *APIData) SetCmd(cmd byte) *APIData {
-	a.cmd = cmd
-	return a
-}
-
-func (a *APIData) SetConnectMode(connectMode APIconnectMode) *APIData {
-	a.connectMode = connectMode
-	return a
-}
-
-func (a *APIData) SetAnswerMode(answerMode APIanswerMode) *APIData {
-	a.answerMode = answerMode
-	return a
-}
-
-func (a *APIData) SetReader(reader func(c *Channel, p *Packet, data []byte) bool) *APIData {
-	a.reader = reader
-	return a
-}
-
-func (a *APIData) SetReader2(reader2 func(data []byte, answer func(data []byte)) bool) *APIData {
-	a.reader2 = reader2
-	return a
-}
-
-func (a APIData) Name() string  { return a.name }
-func (a APIData) Short() string { return a.short }
-func (a APIData) Long() string  { return a.long }
-func (a APIData) Usage() string { return a.usage }
-func (a APIData) Ret() string   { return a.ret }
-func (a APIData) Cmd() byte     { return a.cmd }
-func (a APIData) ExecMode() (APIconnectMode, APIanswerMode) {
-	return a.connectMode, a.answerMode
-}
-func (a APIData) Reader(c *Channel, p *Packet, data []byte) bool {
-	return a.reader(c, p, data)
-}
-func (a APIData) Reader2(data []byte, answer func(data []byte)) bool {
-	return a.reader2(data, answer)
 }
 
 // NewAPI create new teonet api
@@ -198,7 +148,7 @@ func (teo *Teonet) NewAPI(name, short, long, version string) (api *API) {
 	cmdApi = MakeAPI2().SetName("api").SetCmd(cmdAPI).SetShort("get api").SetReturn("<api APIDataAr>").
 		SetConnectMode(ServerMode).SetAnswerMode(CmdAnswer).
 		SetReader(func(c *Channel, p *Packet, data []byte) bool {
-			teo.Log().Println("got api request")
+			log.Debug.Println("got api request")
 			outData, _ := api.MarshalBinary()
 			_, answerMode := cmdApi.ExecMode()
 
@@ -209,18 +159,6 @@ func (teo *Teonet) NewAPI(name, short, long, version string) (api *API) {
 		})
 	api.Add(cmdApi)
 	return api
-}
-
-// API teonet api receiver
-type API struct {
-	*Teonet
-	name    string        // API (application) name
-	short   string        // API short name
-	long    string        // API decription (or long name)
-	version string        // API version
-	cmds    []APInterface // API commands
-	cmd     byte          // API cmdApi command number
-	bslice.ByteSlice
 }
 
 // Short get app short name
@@ -235,7 +173,7 @@ func (a *API) SendAnswer(cmd APInterface, c *Channel, data []byte, p *Packet) (i
 	_, answerMode := cmd.ExecMode()
 	if answerMode&PacketIDAnswer > 0 {
 		id := make([]byte, 4)
-		binary.LittleEndian.PutUint32(id, p.ID())
+		binary.LittleEndian.PutUint32(id, uint32(p.ID()))
 		data = append(id, data...)
 	}
 
@@ -368,6 +306,7 @@ func (a API) Help(shorts ...bool) (str string) {
 	return
 }
 
+// String is API stringlify, it return help text in string
 func (a API) String() (str string) {
 	return a.Help()
 }
@@ -386,6 +325,7 @@ func (a API) canExecute(api APInterface, c *Channel) bool {
 	return false
 }
 
+// makeAPIData make APIData struct
 func (a API) makeAPIData(in APInterface) (ret *APIData) {
 	connectMode, answerMode := in.ExecMode()
 	ret = &APIData{
@@ -401,53 +341,7 @@ func (a API) makeAPIData(in APInterface) (ret *APIData) {
 	return
 }
 
-func (a APIData) MarshalBinary() (data []byte, err error) {
-	buf := new(bytes.Buffer)
-
-	a.WriteSlice(buf, []byte(a.name))
-	a.WriteSlice(buf, []byte(a.short))
-	a.WriteSlice(buf, []byte(a.long))
-	a.WriteSlice(buf, []byte(a.usage))
-	a.WriteSlice(buf, []byte(a.ret))
-	binary.Write(buf, binary.LittleEndian, a.cmd)
-	binary.Write(buf, binary.LittleEndian, a.connectMode)
-	binary.Write(buf, binary.LittleEndian, a.answerMode)
-
-	data = buf.Bytes()
-	return
-}
-
-func (a *APIData) UnmarshalBinary(buf *bytes.Buffer /*data []byte*/) (err error) {
-	// var buf = bytes.NewBuffer(data)
-
-	if a.name, err = a.ReadString(buf); err != nil {
-		return
-	}
-	if a.short, err = a.ReadString(buf); err != nil {
-		return
-	}
-	if a.long, err = a.ReadString(buf); err != nil {
-		return
-	}
-	if a.usage, err = a.ReadString(buf); err != nil {
-		return
-	}
-	if a.ret, err = a.ReadString(buf); err != nil {
-		return
-	}
-	if err = binary.Read(buf, binary.LittleEndian, &a.cmd); err != nil {
-		return
-	}
-	if err = binary.Read(buf, binary.LittleEndian, &a.connectMode); err != nil {
-		return
-	}
-	if err = binary.Read(buf, binary.LittleEndian, &a.answerMode); err != nil {
-		return
-	}
-
-	return
-}
-
+// MarshalBinary binary marshal API
 func (a API) MarshalBinary() (data []byte, err error) {
 	buf := new(bytes.Buffer)
 
@@ -474,6 +368,7 @@ type APIDataAr struct {
 	bslice.ByteSlice
 }
 
+// UnmarshalBinary binary unmarshal APIDataAr
 func (a *APIDataAr) UnmarshalBinary(data []byte) (err error) {
 	var buf = bytes.NewBuffer(data)
 
@@ -503,225 +398,3 @@ func (a *APIDataAr) UnmarshalBinary(data []byte) (err error) {
 
 	return
 }
-
-func (teo *Teonet) NewAPIClient(address string) (apicli *APIClient, err error) {
-	apicli = new(APIClient)
-	apicli.teo = teo
-	apicli.address = address
-	if err != nil {
-		return
-	}
-	err = apicli.getApi()
-	return
-}
-
-type APIClient struct {
-	APIDataAr
-	address string
-	teo     *Teonet
-}
-
-const (
-	// Get server api command
-	cmdAPI = 255
-)
-
-// WaitFrom wait receiving data from peer. The third function parameter is
-// timeout. It may be omitted or contain timeout time of time. Duration type.
-// If timeout parameter is omitted than default timeout value sets to 2 second.
-// Next parameter is checkDataFunc func([]byte) bool. This function calls to
-// check packet data and returns true if packet data valid. This parameter may
-// be ommited too.
-func (api *APIClient) WaitFrom(command interface{}, packetID ...interface{}) (data []byte, err error) {
-
-	// Get command number
-	cmd, err := api.getCmd(command)
-	if err != nil {
-		return
-	}
-
-	// Get answer mode
-	var answerMode APIanswerMode
-	// When we execute cmdAPI=255 the APIcommands is not loaded yet. The cmdAPI
-	// always return: <cmdAPI byte><api APIDataAr>
-	// So check cmdAPI first, than get answer mode
-	if cmd == cmdAPI {
-		answerMode = CmdAnswer
-	} else {
-		a, ok := api.AnswerMode(cmd)
-		if !ok {
-			err = errors.New("wrong command")
-			return
-		}
-		answerMode = a
-	}
-
-	// Set WaitFrom attributes depend of answer mode
-	var attr []interface{}
-	if answerMode&CmdAnswer > 0 {
-		attr = append(attr, cmd)
-	}
-	if answerMode&PacketIDAnswer > 0 {
-		attr = append(attr, packetID...)
-	}
-
-	// Wait result
-	data, err = api.teo.WaitFrom(api.address, attr...)
-	return
-}
-
-func (api *APIClient) SendTo(command interface{}, data []byte, waits ...func(data []byte, err error)) (id uint32, err error) {
-	cmd, err := api.getCmd(command)
-	if err != nil {
-		return
-	}
-	id, err = api.teo.Command(cmd, data).SendTo(api.address)
-	// TODO: i can't understand what does this code do :-)
-	// May be we need just call:
-	// api.teo.Command(cmd, data).SendTo(api.address, waits...)
-	// or in this case wee can lost cmd and id?
-	// Shure this code exactly than got answer with cmd and id in its data!!!
-	if len(waits) > 0 {
-		go func() { waits[0](api.WaitFrom(cmd, id)) }()
-	}
-	return
-}
-
-// Cmd get command number by name
-func (api *APIClient) Cmd(name string) (cmd byte, ok bool) {
-	for i := range api.Apis {
-		if api.Apis[i].name == name {
-			cmd = api.Apis[i].cmd
-			ok = true
-			return
-		}
-	}
-	return
-}
-
-// Return get return parameter by cmd number or name
-func (api *APIClient) Return(command interface{}) (ret string, ok bool) {
-	a, ok := api.apiData(command)
-	if ok {
-		ret = a.ret
-	}
-	return
-}
-
-// AnswerMode get answer mode parameter by cmd number or name
-func (api *APIClient) AnswerMode(command interface{}) (ret APIanswerMode, ok bool) {
-	a, ok := api.apiData(command)
-	if ok {
-		ret = a.answerMode
-	}
-	return
-}
-
-// apiData get return pointer to APIData by cmd number or name
-func (api *APIClient) apiData(command interface{}) (ret *APIData, ok bool) {
-	cmd, err := api.getCmd(command)
-	if err != nil {
-		return
-	}
-	for i := range api.Apis {
-		if api.Apis[i].cmd == cmd {
-			ret = &api.Apis[i]
-			ok = true
-			return
-		}
-	}
-	return
-}
-
-// getCmd check command type and return command number
-func (api *APIClient) getCmd(command interface{}) (cmd byte, err error) {
-	switch v := command.(type) {
-	case byte:
-		cmd = v
-	case int:
-		cmd = byte(v)
-	case string:
-		var ok bool
-		cmd, ok = api.Cmd(v)
-		if !ok {
-			err = fmt.Errorf("command '%s' not found", v)
-			return
-		}
-	default:
-		panic("wrong type of 'command' argument")
-	}
-	return
-}
-
-// getApi send cmdAPI command and get answer with APIDataAr: all API definition
-func (api *APIClient) getApi() (err error) {
-	api.SendTo(cmdAPI, nil)
-	data, err := api.WaitFrom(cmdAPI)
-	if err != nil {
-		api.teo.Log().Println("can't get api data, err", err)
-		return
-	}
-
-	err = api.APIDataAr.UnmarshalBinary(data)
-	if err != nil {
-		api.teo.Log().Println("can't unmarshal api data, err", err)
-		return
-	}
-
-	return
-}
-
-// String stringlify APIClient
-func (api APIClient) String() (str string) {
-	str += api.Help(false)
-	return
-}
-
-func (api APIClient) Help(short bool) (str string) {
-
-	// Name version and description
-	str += fmt.Sprintf("%s, ver %s\n", api.name, api.version)
-	str += fmt.Sprintf("(short name: %s)\n\n", api.short)
-	if api.long != "" {
-		str += api.long + "\n\n"
-	}
-
-	// Calculate name lenngth
-	var max int
-	for i := range api.Apis {
-		if l := len(api.Apis[i].Name()); l > max {
-			max = l
-		}
-	}
-	max += 2
-	// Commands
-	// TODO: make common function to get commands here and in api server print
-	str += "API commands:\n\n"
-	for i, a := range api.Apis {
-		if i > 0 {
-			str += "\n"
-		}
-		if short {
-			str += fmt.Sprintf("%-*s %3d - %s", max, a.Name(), a.Cmd(), a.Short())
-			continue
-		}
-
-		str += fmt.Sprintf("%-*s %s\n", max, a.Name(), a.Short())
-		str += fmt.Sprintf("%*s cmd:    %d\n", max, "", a.Cmd())
-		str += fmt.Sprintf("%*s usage:  %s\n", max, "", a.Name()+" "+a.Usage())
-		var answer string
-		if a.answerMode&CmdAnswer > 0 {
-			answer += "<cmd byte>"
-		}
-		if a.answerMode&PacketIDAnswer > 0 {
-			answer += "<packet_id uint32>"
-		}
-		answer += a.Ret()
-		if answer != "" {
-			str += fmt.Sprintf("%*s return: %s\n", max, "", answer)
-		}
-	}
-	return
-}
-
-func (api APIClient) Address() string { return api.address }

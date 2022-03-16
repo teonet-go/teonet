@@ -1,16 +1,22 @@
 module github.com/kirill-scherba/teonet
 
-// replace github.com/kirill-scherba/trudp => ../trudp
-// replace github.com/kirill-scherba/teomon/teomon => ../teomon/teomon
+replace github.com/kirill-scherba/tru => ../tru
+
+replace github.com/kirill-scherba/teomon => ../teomon
 
 go 1.17
 
 require (
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/kirill-scherba/bslice v0.0.1
-	github.com/kirill-scherba/teomon/teomon v0.0.0-20210817194118-0dd95a7d0ef9
-	github.com/kirill-scherba/teonet-go v0.0.0-20211010220905-9885a72eb7eb
-	github.com/kirill-scherba/trudp v0.1.1
+	github.com/kirill-scherba/teomon v0.0.0-00010101000000-000000000000
+	github.com/kirill-scherba/tru v0.0.1
 )
 
-require github.com/ahmetalpbalkan/go-cursor v0.0.0-20131010032410-8136607ea412 // indirect
+require (
+	github.com/chzyer/logex v1.2.0 // indirect
+	github.com/chzyer/test v0.0.0-20210722231415-061457976a23 // indirect
+	github.com/google/uuid v1.3.0 // indirect
+	github.com/kirill-scherba/stable v0.0.8 // indirect
+	golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5 // indirect
+)

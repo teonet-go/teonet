@@ -1,3 +1,9 @@
+// Copyright 2021-22 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Teonet config module
+
 package teonet
 
 import (
@@ -10,54 +16,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path"
 	"strings"
+	"sync"
 
-	"github.com/kirill-scherba/teonet-go/teolog/teolog"
-	"github.com/kirill-scherba/trudp"
+	"github.com/kirill-scherba/tru"
 )
 
 var nMODULEconf = "Config"
-
-func (teo *Teonet) newConfig(appName string, log *log.Logger, osConfigDir string) (err error) {
-	// New config holder
-	teo.config = &config{appName: appName, log: log, osConfigDir: osConfigDir}
-
-	// Check config file exists and create and save new config if does not exists
-	err = teo.config.exists()
-	if err != nil {
-		teolog.Log(teolog.ERROR, nMODULEconf, err)
-		err = teo.config.create()
-		if err != nil {
-			return
-		}
-		teolog.Log(teolog.DEBUG, nMODULEconf, "new keys and config file created")
-	}
-
-	// Read config file
-	err = teo.config.read()
-	if err != nil {
-		return
-	}
-
-	return
-}
-
-// config teonet
-type config struct {
-	TrudpPrivateKeyData []byte          `json:"trudp_private_key"`
-	PrivateKeyData      []byte          `json:"private_key"`
-	ServerPublicKeyData []byte          `json:"server_key"`
-	Address             string          `json:"address"`
-	trudpPrivateKey     *rsa.PrivateKey `json:"-"`
-	appName             string          `json:"-"`
-	log                 *log.Logger     `json:"-"`
-	osConfigDir         string          `json:"-"`
-}
-
-type OsConfigDir string
 
 const (
 	ConfigDir        = "teonet"
@@ -65,6 +32,43 @@ const (
 	configBufferSize = 2048
 )
 
+// config teonet config struct and methods receiver
+type config struct {
+	TrudpPrivateKeyData []byte          `json:"trudp_private_key"`
+	PrivateKeyData      []byte          `json:"private_key"`
+	ServerPublicKeyData []byte          `json:"server_key"`
+	Address             string          `json:"address"`
+	trudpPrivateKey     *rsa.PrivateKey `json:"-"`
+	appName             string          `json:"-"`
+	osConfigDir         string          `json:"-"`
+	m                   *sync.RWMutex   `json:"-"`
+}
+
+// OsConfigDir used in teonet.New parameter to define os config directory
+type OsConfigDir string
+
+// newConfig create new config holder
+func (teo *Teonet) newConfig(appName string, osConfigDir string) (err error) {
+
+	teo.config = &config{appName: appName, osConfigDir: osConfigDir}
+	teo.config.m = new(sync.RWMutex)
+
+	// Check config file exists and create and save new config if does not exists
+	if !teo.config.exists() {
+		log.Error.Println(nMODULEconf, err)
+		err = teo.config.create()
+		if err != nil {
+			return
+		}
+		log.Error.Println(nMODULEconf, "new keys and config file created")
+	}
+
+	// Read config file
+	err = teo.config.read()
+	return
+}
+
+// marshal config
 func (c config) marshal() (data []byte, err error) {
 	data, err = json.MarshalIndent(c, "", " ")
 	if err != nil {
@@ -73,11 +77,12 @@ func (c config) marshal() (data []byte, err error) {
 	return
 }
 
+// unmarshal config
 func (c *config) unmarshal(data []byte) error {
 	return json.Unmarshal(data, c)
 }
 
-// file get file name
+// file return file name or error
 func (c config) file() (res string, err error) {
 	return c.configFile(c.appName, configFile)
 }
@@ -85,7 +90,7 @@ func (c config) file() (res string, err error) {
 // configFile return config file full name (path + name)
 // TODO: if os.UserConfigDir() return err - do something right
 func (c config) configFile(appName string, file string) (res string, err error) {
-	if c.osConfigDir != "" {
+	if len(c.osConfigDir) > 0 {
 		res = c.osConfigDir
 	} else {
 		res, err = os.UserConfigDir()
@@ -102,6 +107,7 @@ func (teo Teonet) ConfigFile(appName string, file string) (res string, err error
 	return teo.config.configFile(appName, file)
 }
 
+// save config to file
 func (c config) save() (err error) {
 
 	file, err := c.file()
@@ -122,25 +128,17 @@ func (c config) save() (err error) {
 	_, err = f.Write(data)
 
 	return
-
-	// var prettyJSON bytes.Buffer
-	// error := json.Indent(&prettyJSON, body, "", "\t")
-	// if error != nil {
-	//     log.Println("JSON parse error: ", error)
-	//     App.BadRequest(w)
-	//     return
-	// }
 }
 
-// exists return nil if config file exists
-func (c config) exists() (err error) {
+// exists return true if config file exists
+func (c config) exists() bool {
 	file, err := c.file()
 	if err != nil {
-		return
+		return false
 	}
 
 	_, err = os.Stat(file)
-	return
+	return err == nil
 }
 
 // read config file and parse private keys
@@ -186,7 +184,6 @@ func (c *config) read() (err error) {
 	if err != nil {
 		return
 	}
-	// c.log.Printf("teonet address: %s\n", c.Address)
 
 	return
 }
@@ -204,8 +201,7 @@ func (c *config) create() (err error) {
 		return
 	}
 
-	// Create new config holder
-	*c = config{appName: c.appName, log: c.log, osConfigDir: c.osConfigDir}
+	// Create config keys
 	err = c.createKeys()
 	if err != nil {
 		return
@@ -218,7 +214,7 @@ func (c *config) create() (err error) {
 func (c *config) createKeys() (err error) {
 
 	// Create trudp rsa private key
-	c.trudpPrivateKey, err = trudp.GeneratePrivateKey()
+	c.trudpPrivateKey, err = tru.GeneratePrivateKey()
 	if err != nil {
 		return
 	}
@@ -275,7 +271,16 @@ func (c config) makeAddress(keyData []byte) (addr string, err error) {
 
 // Address get teonet address
 func (t Teonet) Address() (addr string) {
+	t.config.m.RLock()
+	defer t.config.m.RUnlock()
 	return t.config.Address
+}
+
+// setAddress set teonet address
+func (t Teonet) setAddress(addr string) {
+	t.config.m.Lock()
+	defer t.config.m.Unlock()
+	t.config.Address = addr
 }
 
 // MakeAddress make teonet address from key

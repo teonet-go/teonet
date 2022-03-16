@@ -1,4 +1,4 @@
-// Copyright 2021 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Copyright 2021-22 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -15,16 +15,14 @@ import (
 	"time"
 
 	"github.com/kirill-scherba/bslice"
-	"github.com/kirill-scherba/teonet-go/teolog/teolog"
-	"github.com/kirill-scherba/trudp"
+	"github.com/kirill-scherba/tru"
 )
 
 // nMODULEcon is current module name
-var nMODULEcon = "Connect"
+var nMODULEcon = "connect"
 
-const (
-	teonetReconnectAfter = 1 * time.Second
-)
+// Reconnect teonet at error after 1 second
+const teonetReconnectAfter = 1 * time.Second
 
 // Teoauth commands
 const (
@@ -53,9 +51,17 @@ const (
 	CmdGetIP
 )
 
+// Connet error
+var (
+	ErrIncorrectServerKey = errors.New("incorrect server key received")
+	ErrIncorrectPublicKey = errors.New("incorrect public key received")
+	ErrTimeout            = errors.New("timeout")
+)
+
 // AuthCmd auth command type
 type AuthCmd byte
 
+// String return string with command name
 func (c AuthCmd) String() string {
 	switch c {
 	case CmdConnect:
@@ -74,16 +80,13 @@ func (c AuthCmd) String() string {
 	return "not defined"
 }
 
-// Connet errors
-var ErrIncorrectServerKey = errors.New("incorrect server key received")
-var ErrIncorrectPublicKey = errors.New("incorrect public key received")
-var ErrTimeout = errors.New("timeout")
-
+// ConnectIpPort
 type ConnectIpPort struct {
 	IP   string
 	Port int
 }
 
+// ExcludeIPs
 type ExcludeIPs struct {
 	IPs []string
 }
@@ -103,11 +106,12 @@ func (c ConnectIpPort) exclude(nodesin []NodeAddr, excludeIPs ...string) (nodes 
 	return
 }
 
+// getAddrFromHTTP get connection nodes by URL, remove excludeIPs and random
+// select one node
 func (c *ConnectIpPort) getAddrFromHTTP(url string, excludeIPs ...string) (err error) {
 	// Get connection nodes by URL
 	n, err := Nodes(url)
 	if err != nil {
-		// log.Fatalf("can't get nodes from %s, error: %s\n", url, err)
 		return
 	}
 
@@ -129,19 +133,17 @@ func (c *ConnectIpPort) getAddrFromHTTP(url string, excludeIPs ...string) (err e
 	}
 	c.IP = n.address[i].IP
 	c.Port = int(n.address[i].Port)
-	fmt.Printf("num nodes -> %d, i -> %d, connect to: %s:%d\n\n", l, i, c.IP, c.Port)
+	fmt.Printf("num nodes -> %d, i -> %d, connect to: %s:%d\n", l, i, c.IP, c.Port)
 	return
 }
 
-// Connect to errors
-
 // Connect to teonet (client send request to teonet auth server):
-// Client call Connect (and wait answer inside Connect function) -> Server call
-// ConnectProcess -> Client got answer (inside Connect function) and set teonet
-// Connected (create teonet channel)
+//   - Client call Connect (and wait answer inside Connect function)
+//   - Server call ConnectProcess
+//   - Client got answer (inside Connect function) and create teonet channel
 func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
-	teolog.Log(teolog.CONNECT, nMODULEcon, "to remote teonet node")
+	teo.Log().Connect.Println(nMODULEcon, "to remote teonet node", attr)
 
 	// Set default address if attr ommited
 	if len(attr) == 0 {
@@ -169,50 +171,56 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 			url = v
 		}
 	}
-	// Connect to auth https server and get auth ip:port to connect
-	if url != "" {
+
+	// Connect to rauth https server and get auth ip:port to connect
+	if len(url) > 0 {
 		err = con.getAddrFromHTTP(url, excl.IPs...)
 		if err != nil {
 			return
 		}
 	}
 
-	// Connect to trudp auth node
-	ch, err := teo.trudp.Connect(con.IP, con.Port)
+	// Connect to tru auth node and create new teonet channel if connected
+	ch, err := teo.tru.Connect(fmt.Sprintf("%s:%d", con.IP, con.Port))
 	if err != nil {
 		return
 	}
+	teo.setAuth(teo.channels.new(ch))
 
-	var subs *subscribeData
-	defer func() {
-		if err != nil {
-			teo.Unsubscribe(subs)
-		}
-	}()
+	// Create channel to wait end of connection
 	var chanWait = make(chanWait)
 	defer close(chanWait)
-	teo.auth = teo.channels.new(ch)
+
 	// Subscribe to teo.auth channel to get and process messages from teonet
 	// server. Subscribers reader shound return true if packet processed by this
 	// reader
-	subs = teo.subscribe(teo.auth, func(teo *Teonet, c *Channel, p *Packet, e *Event) bool {
+	var subs *subscribeData
+	subs = teo.subscribe(teo.getAuth(), func(teo *Teonet, c *Channel, p *Packet, e *Event) bool {
 
-		// Disconnrct r-host processing
+		// Disconnect r-host processing
 		if e.Event == EventTeonetDisconnected {
-			teolog.Logf(teolog.DEBUG, "Connect reader", "got error from channel %s, error: %s", c, e.Err)
+			log.Connect.Println("disconnected from teonet")
 			teo.Unsubscribe(subs)
-			teo.auth = nil
-			teolog.Logf(teolog.CONNECT, "Disconnected", "from teonet")
-			// Reconnect
-			go func() {
-				for {
-					err := teo.Connect(attr...)
-					if err == nil {
-						break
+			teo.setAuth(nil)
+			select {
+			case <-teo.closing:
+				return true
+			default:
+				// Reconnect
+				go func() {
+					// wait while exit when closing
+					time.Sleep(20 * time.Millisecond)
+					// reconnect while connected
+					for {
+						log.Debug.Println("reconnect to teonet")
+						err := teo.Connect(attr...)
+						if err == nil {
+							break
+						}
+						time.Sleep(teonetReconnectAfter)
 					}
-					time.Sleep(teonetReconnectAfter)
-				}
-			}()
+				}()
+			}
 			return true
 		}
 
@@ -250,17 +258,22 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 		// Not defined commands
 		default:
-			teolog.Log(teolog.ERROR, "Got not defined command", cmd.Cmd)
+			log.Error.Println("Got not defined command", cmd.Cmd)
 			return false
 		}
 
 		return true
 	})
+	defer func() {
+		if err != nil {
+			teo.Unsubscribe(subs)
+		}
+	}()
 
 	// Connect data
 	conIn := ConnectData{
 		PubliKey:      teo.config.getPublicKey(),      // []byte("PublicKey"),
-		Address:       []byte(teo.config.Address),     // []byte("Address"),
+		Address:       []byte(teo.Address()),          // []byte("Address"),
 		ServerKey:     teo.config.ServerPublicKeyData, // []byte("ServerKey"),
 		ServerAddress: nil,
 	}
@@ -268,22 +281,19 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	// Marshal data
 	data, err := conIn.MarshalBinary()
 	if err != nil {
-		// teo.log.Println("encode error:", err)
 		return
 	}
-	// teo.log.Println("encoded ConnectData:", data, len(data))
 
 	// Send to teoauth
-	_, err = teo.Command(CmdConnect, data).Send(teo.auth)
+	_, err = teo.Command(CmdConnect, data).Send(teo.getAuth())
 	if err != nil {
 		return
 	}
-	// teo.log.Println("send ConnectData to teoauth, id", id)
 
-	// Wait Connect answer data
+	// Wait Connect answer data processed in subscribe callback
 	select {
 	case data = <-chanWait:
-	case <-time.After(trudp.ClientConnectTimeout):
+	case <-time.After(tru.ClientConnectTimeout):
 		err = ErrTimeout
 		return
 	}
@@ -292,10 +302,8 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	var conOut ConnectData
 	conOut.UnmarshalBinary(data)
 	if err != nil {
-		// teo.log.Println("decode error:", err)
 		return
 	}
-	// teo.log.Printf("decoded ConnectData: %s\n", conOut)
 
 	// Check server error
 	if len(conOut.Err) > 0 {
@@ -309,23 +317,24 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 		return
 	}
 
-	// Update config file
+	// Update config data and save config to file
 	addr := string(conOut.Address)
 	teo.config.ServerPublicKeyData = conOut.ServerKey
-	teo.config.Address = addr
+	// teo.config.Address = addr
+	teo.setAddress(addr)
 	teo.config.save()
 
-	teo.SetConnected(teo.auth, string(conOut.ServerAddress))
+	teo.SetConnected(teo.getAuth(), string(conOut.ServerAddress))
 
 	// Connected to teonet, show log message and send Event to main reader
-	teolog.Logf(teolog.CONNECT, "Teonet", "address: %s\n", conOut.Address)
-	reader(teo, teo.auth, nil, &Event{EventTeonetConnected, nil})
+	log.Connect.Printf("Teonet address: %s\n", conOut.Address)
+	reader(teo, teo.getAuth(), nil, &Event{EventTeonetConnected, nil})
 
 	return
 }
 
-// SetConnected set address to channel, add channel to channels list and send event
-// SetConnected to main teonet reader
+// SetConnected set address to channel, add channel to channels list and send
+// event to main teonet reader
 func (teo *Teonet) SetConnected(c *Channel, addr string) {
 	c.a = addr
 	teo.channels.add(c)
@@ -342,6 +351,7 @@ type ConnectData struct {
 	bslice.ByteSlice
 }
 
+// MarshalBinary binary marshal ConnectData
 func (c ConnectData) MarshalBinary() (data []byte, err error) {
 	buf := new(bytes.Buffer)
 
@@ -355,6 +365,7 @@ func (c ConnectData) MarshalBinary() (data []byte, err error) {
 	return
 }
 
+// UnmarshalBinary binary unmarshal ConnectData
 func (c *ConnectData) UnmarshalBinary(data []byte) (err error) {
 
 	buf := bytes.NewBuffer(data)
@@ -380,6 +391,7 @@ func (c *ConnectData) UnmarshalBinary(data []byte) (err error) {
 	return
 }
 
+// String return string with ConnectData
 func (c ConnectData) String() string {
 	return fmt.Sprintf("len: %d\nkey: %x\naddress: %s\nserver key: %x\nserver address: %s\nerror: %s",
 		len(c.PubliKey)+len(c.Address)+len(c.ServerKey)+len(c.ServerAddress)+len(c.Err),

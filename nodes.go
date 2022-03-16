@@ -1,3 +1,9 @@
+// Copyright 2021-22 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Teonet nodes module
+
 package teonet
 
 import (
@@ -9,28 +15,39 @@ import (
 	"net/http"
 
 	"github.com/kirill-scherba/bslice"
-	"github.com/kirill-scherba/teonet-go/teolog/teolog"
 )
+
+// nodes contain node address slice and is methods recever
+type nodes struct {
+	address []NodeAddr
+	bslice.ByteSlice
+}
+
+// NodeAddr is node address struct contained nodes IP and Port
+type NodeAddr struct {
+	IP   string
+	Port uint32
+}
 
 // Nodes get auth nodes by URL
 func Nodes(url string) (ret *nodes, err error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		teolog.Log(teolog.ERROR, "HTTP", "server", err)
+		log.Error.Println("HTTP", "server", err)
 		return
 	}
 	// log.Println(resp)
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		teolog.Log(teolog.ERROR, "HTTP", "server", err)
+		log.Error.Println("HTTP", "server", err)
 		return
 	}
 
 	dst := make([]byte, hex.DecodedLen(len(body)))
 	n, err := hex.Decode(dst, body)
 	if err != nil {
-		teolog.Log(teolog.ERROR, "HTTP", "server can't decode answer, error:", err)
+		log.Error.Println("HTTP", "server can't decode answer, error:", err)
 		return
 	}
 
@@ -39,16 +56,7 @@ func Nodes(url string) (ret *nodes, err error) {
 	return
 }
 
-type nodes struct {
-	bslice.ByteSlice
-	address []NodeAddr
-}
-
-type NodeAddr struct {
-	IP   string
-	Port uint32
-}
-
+// MarshalBinary binary marshal nodes
 func (r nodes) MarshalBinary() (data []byte, err error) {
 	buf := new(bytes.Buffer)
 
@@ -63,6 +71,7 @@ func (r nodes) MarshalBinary() (data []byte, err error) {
 	return
 }
 
+// UnmarshalBinary binary unmarshal nodes
 func (r *nodes) UnmarshalBinary(data []byte) (err error) {
 	buf := bytes.NewBuffer(data)
 
@@ -83,6 +92,7 @@ func (r *nodes) UnmarshalBinary(data []byte) (err error) {
 	return
 }
 
+// String return string with list of nodes
 func (r nodes) String() (s string) {
 	for i := range r.address {
 		if i != 0 {
@@ -93,7 +103,7 @@ func (r nodes) String() (s string) {
 	return
 }
 
-// Slice return nodes address slice
+// Slice return node address slice
 func (r nodes) Slice() []NodeAddr {
 	return r.address
 }
