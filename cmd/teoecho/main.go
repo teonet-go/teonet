@@ -60,6 +60,7 @@ func main() {
 		hotkey      bool
 		showPrivate bool
 		sendTo      string
+		sendDelay   int
 		logLevel    string
 		logFilter   string
 	}
@@ -69,6 +70,7 @@ func main() {
 	flag.BoolVar(&p.hotkey, "hotkey", false, "start hotkey menu")
 	flag.BoolVar(&p.showPrivate, "show-private", false, "show private key")
 	flag.StringVar(&p.sendTo, "send-to", "", "send messages to address")
+	flag.IntVar(&p.sendDelay, "send-delay", 0, "delay between send message in milleseconds")
 	flag.StringVar(&p.logLevel, "loglevel", "NONE", "log level")
 	flag.StringVar(&p.logFilter, "logfilter", "", "log filter")
 	flag.Parse()
@@ -141,7 +143,9 @@ connectto:
 
 sendto:
 	// Send to Peer
-	// time.Sleep(5 * time.Second)
+	if p.sendDelay > 0 {
+		time.Sleep(time.Duration(p.sendDelay) * time.Millisecond)
+	}
 	teo.Log().Debug.Println("send message to", p.sendTo)
 	if _, err := teo.SendTo(p.sendTo, []byte("Hello world!")); err != nil {
 		teo.Log().Debug.Println(err)
