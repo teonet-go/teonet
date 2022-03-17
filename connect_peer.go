@@ -342,8 +342,10 @@ func (teo Teonet) connectToPeer(c *Channel, p *Packet) (ok bool) {
 				log.Debug.Println(nMODULEconp, "send answer to client, ID:", con.ID)
 				c.SendNoWait(p.Data())
 			} else {
-				teo.channels.del(c)
-				log.Error.Println(nMODULEconp, "wrong request ID:", con.ID)
+				log.Error.Println(nMODULEconp, "!!! wrong request ID:", con.ID)
+				// TODO: we can't delete channel here becaus deadlock will be
+				// Check if we need delete, and what hapend if we does not delete
+				// teo.channels.del(c)
 			}
 			return true
 		}
@@ -376,8 +378,9 @@ func (teo Teonet) connectToClient(c *Channel, p *Packet) (ok bool) {
 					*req.chanWait <- nil
 				}
 			} else {
-				teo.channels.del(c)
-				log.Error.Println(nMODULEconp, "wrong request ID:", con.ID)
+				log.Error.Println(nMODULEconp, "!!! wrong request ID:", con.ID)
+				// TODO: thr same question as in previuse func 
+				// teo.channels.del(c)
 			}
 			return true
 		}
