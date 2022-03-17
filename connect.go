@@ -124,7 +124,6 @@ func (c *ConnectIpPort) getAddrFromHTTP(url string, excludeIPs ...string) (err e
 		err = errors.New("empty list of nodes returned")
 		return
 	}
-	fmt.Println(n)
 
 	// Get random node
 	i := 0
@@ -133,7 +132,8 @@ func (c *ConnectIpPort) getAddrFromHTTP(url string, excludeIPs ...string) (err e
 	}
 	c.IP = n.address[i].IP
 	c.Port = int(n.address[i].Port)
-	fmt.Printf("num nodes -> %d, i -> %d, connect to: %s:%d\n", l, i, c.IP, c.Port)
+	log.Debug.Printf("\n%s\nnum nodes -> %d, i -> %d, connect to: %s:%d\n",
+		n.String(), l, i, c.IP, c.Port)
 	return
 }
 
