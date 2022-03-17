@@ -245,11 +245,11 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 		// Client got answer to cmdConnectTo(connect to peer)
 		case CmdConnectTo:
-			go teo.processCmdConnectTo(cmd.Data)
+			teo.processCmdConnectTo(cmd.Data)
 
 		// Peer got CmdConnectToPeer command
 		case CmdConnectToPeer:
-			go teo.processCmdConnectToPeer(cmd.Data)
+			teo.processCmdConnectToPeer(cmd.Data)
 
 		// This commands (and empty body) added to remove "not defined" error
 		// from default case

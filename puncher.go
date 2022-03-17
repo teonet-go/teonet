@@ -19,15 +19,6 @@ import (
 // Allow IPv6 connection between peers
 const IPv6Allow = true
 
-// Connection mode type may be client or server
-type connectModeT byte
-
-// Connection mode constants
-const (
-	clientMode connectModeT = iota
-	serverMode
-)
-
 // puncher struct and methods receiver
 type puncher struct {
 	tru *tru.Tru
@@ -91,7 +82,7 @@ func (teo *Teonet) newPuncher() {
 
 	// Connect puncer to TRU - set punch callback
 	teo.tru.SetPunchCb(func(addr net.Addr, data []byte) {
-		log.Connect.Println("puncher get packet from ", addr.String(), string(data))
+		log.Debug.Printf("puncher get %s from %s\n", string(data), addr.String())
 		teo.puncher.callback(data, addr.(*net.UDPAddr))
 	})
 }
@@ -122,7 +113,6 @@ func (p *puncher) get(key string) (punch *PuncherData, ok bool) {
 func (p *puncher) callback(data []byte, addr *net.UDPAddr) (ok bool) {
 	key := string(data)
 	punch, ok := p.get(key)
-	// fmt.Println(">>>>>>>>>>> punch callback, key:", key, "from:", addr, "ok:", ok, p.m)
 	if ok {
 		p.unsubscribe(key)
 		*punch.wait <- addr
@@ -148,19 +138,13 @@ func (p *puncher) send(key string, ips IPs) (err error) {
 }
 
 // Punch client ip:ports (send udp packets to received IPs)
-//   mode parameter:
-//     true - server to client mode;
-//     false - client to server mode
-func (p *puncher) punch(key string, ips IPs, stop func() bool, mode connectModeT, delays ...time.Duration) {
+//   delays parameter is start punch delay
+func (p *puncher) punch(key string, ips IPs, stop func() bool, delays ...time.Duration) {
 	go func() {
 		if len(delays) > 0 {
 			time.Sleep(delays[0])
 		}
-		// if mode == clientMode {
-		// 	// key = trudp.PunchPrefix + key
-		// 	key = "punch" + key
-		// }
-		for i := 0; i < 15; i++ {
+		for i := 0; i < 5; /* 15 */ i++ {
 			if stop() {
 				break
 			}
