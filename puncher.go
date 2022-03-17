@@ -94,27 +94,31 @@ func (p *puncher) subscribe(key string, punch *PuncherData) {
 	p.m[key] = punch
 }
 
-// unsubscribe from puncher - delete from map
-func (p *puncher) unsubscribe(key string) {
+// unsubscribe from puncher - delete from map, return ok = true and PuncherData
+// if subscribe exists
+func (p *puncher) unsubscribe(key string) (punch *PuncherData, ok bool) {
 	p.Lock()
 	defer p.Unlock()
-	delete(p.m, key)
-}
-
-// get key from map
-func (p *puncher) get(key string) (punch *PuncherData, ok bool) {
-	p.RLock()
-	defer p.RUnlock()
 	punch, ok = p.m[key]
+	if ok {
+		delete(p.m, key)
+	}
 	return
 }
+
+// get key from map *** NOY USED NOW ***
+// func (p *puncher) get(key string) (punch *PuncherData, ok bool) {
+// 	p.RLock()
+// 	defer p.RUnlock()
+// 	punch, ok = p.m[key]
+// 	return
+// }
 
 // callback process received puch packet
 func (p *puncher) callback(data []byte, addr *net.UDPAddr) (ok bool) {
 	key := string(data)
-	punch, ok := p.get(key)
+	punch, ok := p.unsubscribe(key)
 	if ok {
-		p.unsubscribe(key)
 		*punch.wait <- addr
 	}
 	return

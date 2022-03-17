@@ -335,11 +335,10 @@ func (teo Teonet) connectToPeer(c *Channel, p *Packet) (ok bool) {
 			}
 			log.Debug.Println(nMODULEconp, "got answer from new client, ID:", con.ID)
 
-			if res, ok := teo.peerRequests.get(con.ID); ok {
+			if res, ok := teo.peerRequests.del(con.ID); ok {
 				// Set channel connected
 				teo.SetConnected(c, res.FromAddr)
-				// Close peerRequests and send answer to client
-				teo.peerRequests.del(con.ID)
+				// Send answer to client
 				log.Debug.Println(nMODULEconp, "send answer to client, ID:", con.ID)
 				c.SendNoWait(p.Data())
 			} else {

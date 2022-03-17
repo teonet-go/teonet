@@ -68,11 +68,16 @@ func (p *connectRequests) add(con *ConnectToData, waits ...*chanWait) {
 	p.m[con.ID] = &connectRequestsData{con, wait, time.Now()}
 }
 
-// del connect request by id
-func (p *connectRequests) del(id string) {
+// del connect request by id and return ok true and connectRequestsData if 
+// request exists
+func (p *connectRequests) del(id string) (res *connectRequestsData, ok bool) {
 	p.Lock()
 	defer p.Unlock()
-	delete(p.m, id)
+	res, ok = p.m[id]
+	if ok {
+		delete(p.m, id)
+	}
+	return
 }
 
 // get connect request by id
