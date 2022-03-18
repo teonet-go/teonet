@@ -61,15 +61,25 @@ func (teo Teonet) getIPs() (ips []string, err error) {
 			a := ip.String()
 			// Check ipv6 address, add [ ... ] if ipv6 allowed and
 			// skip this address if ipv6 not allowed
-			if strings.IndexByte(a, ':') >= 0 {
-				if !IPv6Allow {
-					continue
-				}
-				a = "[" + a + "]"
+			a,ok := teo.safeIPv6(a)
+			if !IPv6Allow && ok {
+				continue
 			}
-			ips = append(ips, a)
 		}
 	}
+	return
+}
+
+// safeIPv6 check ipv6 address and add [ ... ] to it, set ok to true if adress
+// is IPv6
+func (teo Teonet) safeIPv6(ipin string) (ipout string, ok bool) {
+	if strings.IndexByte(ipin, ':') >= 0 {
+		ok = true
+		ipout = "[" + ipin + "]"
+	} else {
+		ipout = ipin
+	}
+
 	return
 }
 

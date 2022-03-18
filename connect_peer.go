@@ -272,6 +272,7 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 			}
 
 			// Connect to peer
+			ip, _ = teo.safeIPv6(ip)
 			c, err := teo.tru.Connect(fmt.Sprintf("%s:%d", ip, port))
 			if err != nil {
 				log.Error.Println(nMODULEconp, cantConnectToPeer, err)
