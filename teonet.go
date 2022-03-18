@@ -191,9 +191,9 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 
 		// Receive data callback
 		func(c *tru.Channel, p *tru.Packet, err error) bool {
+			auth := teo.getAuth()
 			ch, ok := teo.channels.get(c)
-			if !ok {
-				auth := teo.getAuth()
+			if !ok {				
 				if auth != nil && c == auth.c {
 					// There is Auth channel
 					ch = auth
@@ -216,7 +216,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 			e := new(Event)
 			if err != nil {
 				e.Err = err
-				if ch == teo.getAuth() {
+				if ch == auth {
 					e.Event = EventTeonetDisconnected
 				} else {
 					e.Event = EventDisconnected

@@ -43,8 +43,8 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	log.Connect.Println(nMODULEconp, addr)
 
 	// Check teonet connected
-	// TODO: move this code to function
-	if teo.getAuth() == nil || /* !func() bool { _, ok := teo.channels.get(teo.getAuth()); return ok }() || */ teo.getAuth().IsNew() {
+	var auth = teo.getAuth()
+	if auth == nil || auth.IsNew() {
 		err = ErrDoesNotConnectedToTeonet
 		return
 	}
@@ -65,7 +65,7 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 
 	// Send command to teonet
 	log.Debug.Println(nMODULEconp, "send CmdConnectTo=1 to teonet, Addr:", con.ToAddr, "ID:", con.ID)
-	teo.Command(CmdConnectTo, data).Send(teo.getAuth())
+	teo.Command(CmdConnectTo, data).Send(auth)
 
 	chanW := make(chanWait)
 	defer close(chanW)
@@ -161,6 +161,13 @@ func (teo *Teonet) WhenConnectedDisconnected(f func()) {
 // auth server)
 func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 
+	// Check teonet connected
+	var auth = teo.getAuth()
+	if auth == nil || auth.IsNew() {
+		err = ErrDoesNotConnectedToTeonet
+		return
+	}
+
 	// Unmarshal data
 	var con ConnectToData
 	err = con.UnmarshalBinary(data)
@@ -192,7 +199,7 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 	data, _ = conPeer.MarshalBinary()
 
 	// Send command to teonet
-	teo.Command(CmdConnectToPeer, data).Send(teo.getAuth())
+	teo.Command(CmdConnectToPeer, data).Send(auth)
 
 	// Punch firewall
 	go func() {
@@ -379,7 +386,7 @@ func (teo Teonet) connectToClient(c *Channel, p *Packet) (ok bool) {
 				}
 			} else {
 				log.Error.Println(nMODULEconp, "!!! wrong request ID:", con.ID)
-				// TODO: thr same question as in previuse func 
+				// TODO: thr same question as in previuse func
 				// teo.channels.del(c)
 			}
 			return true
