@@ -59,7 +59,7 @@ func main() {
 	teo.Log().Debug.Println("Start")
 
 	// Connect to teonet
-	for teo.Connect("http://dev.myteo.net:10000/auth") != nil {
+	for teo.Connect("http://dev.myteo.net:10000/v5/auth") != nil {
 		// teo.Log().Debug.Println("can't connect to Teonet, error:", err)
 		time.Sleep(1 * time.Second)
 	}
