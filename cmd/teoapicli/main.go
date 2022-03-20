@@ -16,7 +16,7 @@ const (
 	appVersion = "0.3.0"
 
 	// apis = "WXJfYLDEtg6Rkm1OHm9I9ud9rR6qPlMH6NE"
-	apis = "LYfwf3tivLoJ5xH2GM4MeJu1GgiezdBj7Er"
+	// apis = "LYfwf3tivLoJ5xH2GM4MeJu1GgiezdBj7Er"
 )
 
 func main() {
@@ -38,13 +38,13 @@ func main() {
 	flag.IntVar(&p.port, "p", 0, "local port")
 	flag.BoolVar(&p.stat, "stat", false, "show trudp statistic")
 	flag.BoolVar(&p.hotkey, "hotkey", false, "start hotkey menu")
-	flag.StringVar(&p.connectTo, "connect-to", apis, "connect to api server")
+	flag.StringVar(&p.connectTo, "connect-to", "", "connect to api server")
 	flag.StringVar(&p.logLevel, "loglevel", "NONE", "log level")
 	flag.StringVar(&p.logFilter, "logfilter", "", "log filter")
 	flag.Parse()
 
 	if p.connectTo == "" {
-		fmt.Println("Flag -log-level should be set")
+		fmt.Println("Flag -connect-to should be set")
 		flag.Usage()
 		return
 	}

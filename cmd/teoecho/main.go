@@ -17,7 +17,7 @@ const (
 
 	// Teonet Monitor address
 	// monitor = "nOhj2qRDKduN9sHIRoRmJ3LTjOfrKey8llq"
-	monitor = "4rZhCNxhPMw2Qtf0jJ2Ug1WNQ73aSaS9aJk"
+	// monitor = "4rZhCNxhPMw2Qtf0jJ2Ug1WNQ73aSaS9aJk"
 )
 
 var appStartTime = time.Now()
@@ -63,6 +63,7 @@ func main() {
 		sendDelay   int
 		logLevel    string
 		logFilter   string
+		monitor     string
 	}
 	flag.StringVar(&p.appShort, "name", appShort, "application short name")
 	flag.IntVar(&p.port, "p", 0, "local port")
@@ -73,6 +74,7 @@ func main() {
 	flag.IntVar(&p.sendDelay, "send-delay", 0, "delay between send message in milleseconds")
 	flag.StringVar(&p.logLevel, "loglevel", "NONE", "log level")
 	flag.StringVar(&p.logFilter, "logfilter", "", "log filter")
+	flag.StringVar(&p.monitor, "monitor", "", "monitor address")
 	flag.Parse()
 
 	// Start teonet client
@@ -99,13 +101,15 @@ connect:
 	}
 
 	// Connect to monitor
-	teomon.Connect(teo, monitor, teomon.Metric{
-		AppName:      appName,
-		AppShort:     appShort,
-		AppVersion:   appVersion,
-		TeoVersion:   teonet.Version,
-		AppStartTime: appStartTime,
-	})
+	if len(p.monitor) > 0 {
+		teomon.Connect(teo, p.monitor, teomon.Metric{
+			AppName:      appName,
+			AppShort:     appShort,
+			AppVersion:   appVersion,
+			TeoVersion:   teonet.Version,
+			AppStartTime: appStartTime,
+		})
+	}
 
 	// Sleep forever if sendTo flag does not set (in server mode)
 	if p.sendTo == "" {

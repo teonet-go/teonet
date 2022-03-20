@@ -60,7 +60,7 @@ func LogoString(title, ver string) string {
 		"  | |  __/ (_) | | | |  __/ |_ \n" +
 		"  |_|\\___|\\___/|_| |_|\\___|\\__|\n" +
 		"\n" +
-		title + " ver " + ver + ", based on Teonet v4 ver " + Version +
+		title + " ver " + ver + ", based on Teonet v5 ver " + Version +
 		"\n",
 	)
 }
@@ -193,7 +193,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 		func(c *tru.Channel, p *tru.Packet, err error) bool {
 			auth := teo.getAuth()
 			ch, ok := teo.channels.get(c)
-			if !ok {				
+			if !ok {
 				if auth != nil && c == auth.c {
 					// There is Auth channel
 					ch = auth

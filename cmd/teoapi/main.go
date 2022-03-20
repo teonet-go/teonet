@@ -18,7 +18,7 @@ const (
 
 	// Teonet Monitor address
 	// monitor = "nOhj2qRDKduN9sHIRoRmJ3LTjOfrKey8llq"
-	monitor = "4rZhCNxhPMw2Qtf0jJ2Ug1WNQ73aSaS9aJk"
+	// monitor = "4rZhCNxhPMw2Qtf0jJ2Ug1WNQ73aSaS9aJk"
 )
 
 var appStartTime = time.Now()
@@ -83,25 +83,27 @@ func main() {
 	// Parse applications flags
 	var p struct {
 		appShort  string
-		port      int
-		stat      bool
-		hotkey    bool
-		logLevel  string
-		logFilter string
+		loglevel  string
+		logfilter string
+		monitor   string
 		connectTo string
+		hotkey    bool
+		stat      bool
+		port      int
 	}
 	flag.StringVar(&p.appShort, "name", appShort, "application short name")
 	flag.IntVar(&p.port, "p", 0, "local port")
 	flag.BoolVar(&p.stat, "stat", false, "show trudp statistic")
 	flag.BoolVar(&p.hotkey, "hotkey", false, "start hotkey menu")
 	flag.StringVar(&p.connectTo, "connect-to", "", "connect to api server")
-	flag.StringVar(&p.logLevel, "loglevel", "NONE", "log level")
-	flag.StringVar(&p.logFilter, "logfilter", "", "log filter")
+	flag.StringVar(&p.loglevel, "loglevel", "NONE", "log level")
+	flag.StringVar(&p.logfilter, "logfilter", "", "log filter")
+	flag.StringVar(&p.monitor, "monitor", "", "monitor address")
 	flag.Parse()
 
 	// Start teonet (client or server)
 	teo, err := teonet.New(p.appShort, p.port, teonet.Stat(p.stat),
-		teonet.Hotkey(p.hotkey), p.logLevel, teonet.Logfilter(p.logFilter))
+		teonet.Hotkey(p.hotkey), p.loglevel, teonet.Logfilter(p.logfilter))
 	if err != nil {
 		panic("can't init Teonet, error: " + err.Error())
 	}
@@ -123,13 +125,15 @@ func main() {
 	fmt.Printf("Teonet addres: %s\n\n", teo.Address())
 
 	// Connect to monitor
-	teomon.Connect(teo, monitor, teomon.Metric{
-		AppName:      appName,
-		AppShort:     appShort,
-		AppVersion:   appVersion,
-		TeoVersion:   teonet.Version,
-		AppStartTime: appStartTime,
-	})
+	if len(p.monitor) > 0 {
+		teomon.Connect(teo, p.monitor, teomon.Metric{
+			AppName:      appName,
+			AppShort:     appShort,
+			AppVersion:   appVersion,
+			TeoVersion:   teonet.Version,
+			AppStartTime: appStartTime,
+		})
+	}
 
 	select {} // sleep forever
 }

@@ -1,3 +1,3 @@
-# Teonet v4
+# Teonet v5
 
 [![Go](https://github.com/kirill-scherba/teonet/actions/workflows/go.yml/badge.svg)](https://github.com/kirill-scherba/teonet/actions/workflows/go.yml) [![Docker Image CI](https://github.com/kirill-scherba/teonet/actions/workflows/docker-image.yml/badge.svg)](https://github.com/kirill-scherba/teonet/actions/workflows/docker-image.yml)
