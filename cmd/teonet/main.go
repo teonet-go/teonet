@@ -32,7 +32,7 @@ func main() {
 	fmt.Println("teonet address", teo.Address())
 
 	// Connect to teonet
-	err = teo.Connect("http://dev.myteo.net:10000/v5/auth")
+	err = teo.Connect()
 	if err != nil {
 		fmt.Println("can't connect to Teonet, error:", err)
 		return

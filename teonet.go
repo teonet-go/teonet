@@ -24,6 +24,7 @@ type Teonet struct {
 	clientReaders *clientReaders
 	subscribers   *subscribers
 	channels      *channels
+	connectURL    *connectURL
 	peerRequests  *connectRequests
 	connRequests  *connectRequests
 	puncher       *puncher
@@ -168,6 +169,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	// Create new teonet holder
 	teo = new(Teonet)
 	teo.closing = make(chan interface{}, 1)
+	teo.newConnectURL()
 	teo.newSubscribers()
 	teo.newPeerRequests()
 	teo.newConnRequests()

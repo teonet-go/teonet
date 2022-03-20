@@ -147,7 +147,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 	// Set default address if attr ommited
 	if len(attr) == 0 {
-		attr = append(attr, "https://teonet.cloud/auth")
+		attr = append(attr, teo.connectURL.authURL)
 	}
 
 	// Parse attr, it may be:
@@ -168,7 +168,14 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 		case ConnectIpPort:
 			con = v
 		case string:
-			url = v
+			switch {
+			case v == teo.connectURL.rauthPage:
+				url = teo.connectURL.rauthURL
+			case len(v) > 0:
+				url = v
+			default:
+				url = teo.connectURL.authURL
+			}
 		}
 	}
 
