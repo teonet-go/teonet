@@ -42,3 +42,8 @@ func (p *Packet) setCommandMode() *Packet {
 	p.commandMode = true
 	return p
 }
+
+// RemoveTrailingZero used for compatibility with teoapi.Packet from teonet-go
+func (p *Packet) RemoveTrailingZero(data []byte) []byte {
+	return data
+}

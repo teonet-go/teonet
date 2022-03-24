@@ -73,7 +73,7 @@ ENV github_personal_token=$github_personal_token
 RUN go env -w GOPRIVATE=\
 github.com/kirill-scherba/teonet,\
 github.com/kirill-scherba/teomon,\
-github.com/kirill-scherba/trudp
+github.com/kirill-scherba/tru
 
 # Change github url
 RUN git config \

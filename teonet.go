@@ -14,7 +14,7 @@ import (
 	"github.com/kirill-scherba/tru/teolog"
 )
 
-const Version = "0.5.0"
+const Version = "0.5.1"
 
 // Teonet data structure and methods receiver
 type Teonet struct {
@@ -56,7 +56,7 @@ func Logo(title, ver string) { fmt.Println(LogoString(title, ver)) }
 func LogoString(title, ver string) string {
 	return fmt.Sprint("" +
 		" _____                     _   \n" +
-		"|_   _|__  ___  _ __   ___| |_  v4\n" +
+		"|_   _|__  ___  _ __   ___| |_  v5\n" +
 		"  | |/ _ \\/ _ \\| '_ \\ / _ \\ __|\n" +
 		"  | |  __/ (_) | | | |  __/ |_ \n" +
 		"  |_|\\___|\\___/|_| |_|\\___|\\__|\n" +
