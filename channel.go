@@ -91,6 +91,9 @@ func (c Channel) checkSendAttr(attr ...interface{}) (delivery func(p *tru.Packet
 			if teo != nil {
 				c.subscribeToAnswer(teo, v)
 			}
+
+		default:
+			log.Error.Printf("wrong type in send attribute: %T\n", v)
 		}
 	}
 	return

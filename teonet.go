@@ -297,12 +297,12 @@ func (teo *Teonet) SendTo(addr string, data []byte, attr ...interface{}) (id int
 		err = ErrPeerNotConnected
 		return
 	}
-	// Add teo to attr, it need for subscribe to answer
+	// Add teo to attr, it need for subscribe to answer func
 	if len(attr) > 0 {
 		attr = append([]interface{}{teo}, attr...)
 	}
-	// Send to channel
-	return c.c.WriteTo(data, attr...)
+	// Send data to channel
+	return c.Send(data, attr...)
 }
 
 // Connected return true if peer with selected address is connected now

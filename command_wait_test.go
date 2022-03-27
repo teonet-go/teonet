@@ -106,18 +106,19 @@ func TestWaitAnswer(t *testing.T) {
 		name := "Kirill!"
 		log.Debug.Println("send cmd", cmd, "data:", name)
 
-		wait := make(chan interface{})
+		wait := make(chan []byte)
 
 		if _, err = teo.Command(cmd, []byte(name)).
 			SendTo(apis, teo.MakeWaitReader(func(data []byte) bool {
-				log.Debug.Println("got answer:", string(data))
-				wait <- struct{}{}
+				wait <- data
 				return true
 			}).Reader()); err != nil {
 
 			t.Error(err)
+			return
 		}
 
-		<-wait
+		data := <-wait
+		log.Debug.Println("got answer:", string(data))
 	})
 }
