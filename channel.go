@@ -67,7 +67,7 @@ func (c Channel) Send(data []byte, attr ...interface{}) (id int, err error) {
 // SendNoWait (or SendDirect) send data to channel, it use inside readers when packet just read
 // and resend in quck time. If you send from routine use Send function
 func (c Channel) SendNoWait(data []byte, attr ...interface{}) (id int, err error) {
-	return c.Send(data, attr)
+	return c.Send(data, attr...)
 }
 
 // checkSendAttr check Send function attributes:
