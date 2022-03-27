@@ -90,7 +90,7 @@ func (api *APIClient) SendTo(command interface{}, data []byte, waits ...func(dat
 	// or in this case wee can lost cmd and id?
 	// Shure this code exactly than got answer with cmd and id in its data!!!
 	if len(waits) > 0 {
-		go func() { waits[0](api.WaitFrom(cmd, id)) }()
+		go func() { waits[0](api.WaitFrom(cmd, uint32(id))) }()
 	}
 	return
 }
