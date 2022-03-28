@@ -1,6 +1,6 @@
 module github.com/kirill-scherba/teonet
 
-// replace github.com/kirill-scherba/tru => ../tru
+replace github.com/kirill-scherba/tru => ../tru
 
 // replace github.com/kirill-scherba/teomon => ../teomon
 
@@ -10,7 +10,7 @@ require (
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/kirill-scherba/bslice v0.0.1
 	github.com/kirill-scherba/teomon v0.5.0
-	github.com/kirill-scherba/tru v0.0.3
+	github.com/kirill-scherba/tru v0.0.4
 )
 
 require (
