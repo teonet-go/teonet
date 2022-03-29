@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/kirill-scherba/tru"
+	"github.com/kirill-scherba/tru/hotkey"
 	"github.com/kirill-scherba/tru/teolog"
 )
 
@@ -279,6 +280,10 @@ func (teo *Teonet) Close() {
 
 // RHost return current auth server
 func (teo Teonet) RHost() *Channel { return teo.getAuth() }
+
+// Hotkey return pointer to hotkey menu used in tru or nil if hotkey menu does 
+// not start
+func (teo Teonet) Hotkey() *hotkey.Hotkey { return teo.tru.Hotkey() }
 
 // ShowTrudp show/stop tru statistic
 func (teo Teonet) ShowTrudp(set bool) {
