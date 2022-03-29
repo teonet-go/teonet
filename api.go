@@ -178,15 +178,11 @@ func (a *API) SendAnswer(cmd APInterface, c *Channel, data []byte, p *Packet) (i
 		data = append(id, data...)
 	}
 
-	// Use SendNoWait function when you answer to just received
-	// command. If processing of you command get lot of time (read
-	// data from data base or read file etc.) do it in goroutine
-	// and use Send() function. If you don't shure which to use
-	// than use Send() function :)
+	// Send answer
 	if answerMode&CmdAnswer > 0 {
-		a.Command(cmd.Cmd(), data).SendNoWait(c)
+		a.Command(cmd.Cmd(), data).Send(c)
 	} else {
-		c.SendNoWait(data)
+		c.Send(data)
 	}
 
 	return

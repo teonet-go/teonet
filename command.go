@@ -80,17 +80,12 @@ func (c Command) Send(channel *Channel, attr ...interface{}) (id int, err error)
 	return channel.Send(c.Bytes(), attr...)
 }
 
-// SendNoWait **DEPRECATED** use Send instead it's the same
-func (c Command) SendNoWait(channel *Channel, attr ...interface{}) (id int, err error) {
+// SendTo send command to channel by address
+func (c Command) SendTo(addr string, attr ...interface{}) (id int, err error) {
 	// Add teo to attr, it need for subscribe to answer
 	if len(attr) > 0 {
 		attr = append([]interface{}{c.teo}, attr...)
 	}
-	return channel.SendNoWait(c.Bytes(), attr...)
-}
-
-// SendTo send command to channel by address
-func (c Command) SendTo(addr string, attr ...interface{}) (id int, err error) {
 	return c.teo.SendTo(addr, c.Bytes(), attr...)
 }
 

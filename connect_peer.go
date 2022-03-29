@@ -348,7 +348,7 @@ func (teo Teonet) connectToPeer(c *Channel, p *Packet) (ok bool) {
 				teo.SetConnected(c, res.FromAddr)
 				// Send answer to client
 				log.Debug.Println(nMODULEconp, "send answer to client, ID:", con.ID)
-				c.SendNoWait(p.Data())
+				c.Send(p.Data())
 			} else {
 				log.Error.Println(nMODULEconp, "!!! wrong request ID:", con.ID)
 				// TODO: we can't delete channel here becaus deadlock will be

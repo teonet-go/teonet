@@ -14,9 +14,6 @@ const (
 	appShort   = "teoapicli"
 	appName    = "Teonet api client sample application"
 	appVersion = "0.5.0"
-
-	// apis = "WXJfYLDEtg6Rkm1OHm9I9ud9rR6qPlMH6NE"
-	// apis = "LYfwf3tivLoJ5xH2GM4MeJu1GgiezdBj7Er"
 )
 
 func main() {

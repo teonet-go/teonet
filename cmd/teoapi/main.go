@@ -13,12 +13,8 @@ import (
 const (
 	appName    = "Teonet api server sample application"
 	appShort   = "teoapi"
-	appVersion = "0.5.0"
+	appVersion = "0.5.1"
 	appLong    = ""
-
-	// Teonet Monitor address
-	// monitor = "nOhj2qRDKduN9sHIRoRmJ3LTjOfrKey8llq"
-	// monitor = "4rZhCNxhPMw2Qtf0jJ2Ug1WNQ73aSaS9aJk"
 )
 
 var appStartTime = time.Now()
