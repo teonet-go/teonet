@@ -102,10 +102,10 @@ func (m *Menu) Run() (err error) {
 		line = space.ReplaceAllString(line, " ")
 
 		// Process line
-		switch {
-		case line == "":
+		switch line {
+		case "":
 			continue
-		case line == "exit", line == "quit":
+		case "exit", "quit":
 			return
 		default:
 			if err = m.ExecuteCommand(line); err != nil {

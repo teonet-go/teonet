@@ -1,9 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/kirill-scherba/teomon"
@@ -191,12 +195,6 @@ func (c CmdAPI) Exec(line string) (err error) {
 	}
 	args := flags.Args()
 
-	// Check help
-	if len(args) > 0 && args[0] == cmdHelp {
-		flags.Usage()
-		return
-	}
-
 	// Check -list flag
 	if list {
 		apis := c.api.list(c.alias)
@@ -210,6 +208,12 @@ func (c CmdAPI) Exec(line string) (err error) {
 	if len(args) == 0 {
 		flags.Usage()
 		err = errors.New("wrong number of arguments")
+		return
+	}
+
+	// Check help
+	if args[0] == cmdHelp {
+		flags.Usage()
 		return
 	}
 
@@ -252,6 +256,8 @@ func (c CmdAPI) Exec(line string) (err error) {
 		return
 	}
 	// Send command and wait answer
+	var editmode int32
+	var editparam = string(data)
 	wait := make(chan interface{})
 	_, err = api.SendTo(command, data, func(data []byte, err error) {
 		if err != nil {
@@ -261,6 +267,10 @@ func (c CmdAPI) Exec(line string) (err error) {
 				switch {
 				case strings.Contains(ret, "string"):
 					fmt.Println("got answer:", string(data))
+					err = c.edit(api, data, editparam, &editmode)
+					if err != nil {
+						fmt.Println("editor, error:", err)
+					}
 				case strings.Contains(ret, "[]*Metric"):
 					var peers = teomon.NewPeers()
 					err = peers.UnmarshalBinary(data)
@@ -279,9 +289,14 @@ func (c CmdAPI) Exec(line string) (err error) {
 		fmt.Printf("can't send api command %s, error: %s\n", command, err)
 		return nil
 	}
+Wait:
 	select {
 	case <-wait:
 	case <-time.After(time.Duration(10 * time.Second)):
+		// Wait forever in edit mode or print timeout error and exit
+		if atomic.LoadInt32(&editmode) > 0 {
+			goto Wait
+		}
 		fmt.Println("can't got answer, error: timeout")
 	}
 
@@ -289,6 +304,98 @@ func (c CmdAPI) Exec(line string) (err error) {
 }
 func (c CmdAPI) Compliter() (cmpl []menu.Compliter) {
 	return c.menu.MakeCompliterFromString([]string{"-list"})
+}
+
+// edit received data in os editor and save it back if edit mode enable
+func (c CmdAPI) edit(api *teonet.APIClient, req []byte, saveparam string, editmode *int32) (err error) {
+
+	// Unmarshal input data
+	var v struct {
+		Res     interface{} `json:"res"`
+		Edit    bool        `json:"edit"`
+		SaveCmd string      `json:"savecmd"`
+		Err     string      `json:"err"`
+	}
+	err = json.Unmarshal(req, &v)
+	if err != nil {
+		return
+	}
+	if v.Edit {
+		// Set edit mode. We use atomic to safe race when editmode check in
+		// another goroutine
+		atomic.StoreInt32(editmode, 1)
+	} else {
+		return
+	}
+	var vv interface{}
+	resstr := fmt.Sprintf("%v", v.Res)
+	err = json.Unmarshal([]byte(resstr), &vv)
+	if err != nil {
+		return
+	}
+
+	// Make prety json to edit in editor
+	data, err := json.MarshalIndent(vv, "", " ")
+	if err != nil {
+		return
+	}
+
+	// Create temp file
+	dir := os.TempDir()
+	file, err := os.CreateTemp(dir, "*.json")
+	if err != nil {
+		return
+	}
+	filename := file.Name()
+	defer os.Remove(filename)
+
+	// Write data to temp file
+	file.Write(data)
+	file.Close()
+
+	// Edit temp file with editor with editor saved in $EDITOR variable
+	editor := os.Getenv("EDITOR")
+	if len(editor) == 0 {
+		fmt.Println("the EDITOR environment varialle does not set, " +
+			"please set it and continue edit")
+		return
+	}
+	fmt.Println("run editor:", editor, filename)
+	cmd := exec.Command(editor, filename)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	err = cmd.Run()
+	if err != nil {
+		return
+	}
+
+	// Read temp file chsnged in editor
+	buf := make([]byte, 1024)
+	file, err = os.Open(filename)
+	if err != nil {
+		return
+	}
+	n, err := file.Read(buf)
+	buf = buf[:n]
+
+	// Compact json
+	err = json.Unmarshal([]byte(buf), &vv)
+	if err != nil {
+		return
+	}
+	data, err = json.Marshal(vv)
+	fmt.Println("edited json:", string(data))
+
+	// Send command to save edited file
+	fmt.Printf("save command: %s %s,%s\n", v.SaveCmd, saveparam, string(data))
+	data = []byte(fmt.Sprintf("%s,%s", saveparam, string(data)))
+	_, err = api.SendTo(v.SaveCmd, data)
+	if err != nil {
+		fmt.Printf("can't send api command %s, error: %s\n", v.SaveCmd, err)
+		err = nil
+	}
+
+	return
 }
 
 // Create CmdSendTo commands
