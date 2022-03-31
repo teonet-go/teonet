@@ -175,7 +175,7 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 		log.Error.Println(nMODULEconp, "connectToPeer unmarshal error:", err)
 		return
 	}
-	log.Debug.Println(nMODULEconp,
+	log.Debugv.Println(nMODULEconp,
 		"got CmdConnectToPeer=2 from teonet",
 		"Addr:", con.FromAddr,
 		"ID:", con.ID,
@@ -341,13 +341,13 @@ func (teo Teonet) connectToPeer(c *Channel, p *Packet) (ok bool) {
 				log.Error.Println(nMODULEconp, "CmdConnectToPeer unmarshal error:", err)
 				return
 			}
-			log.Debug.Println(nMODULEconp, "got answer from new client, ID:", con.ID)
+			log.Debugv.Println(nMODULEconp, "got answer from new client, ID:", con.ID)
 
 			if res, ok := teo.peerRequests.del(con.ID); ok {
 				// Set channel connected
 				teo.SetConnected(c, res.FromAddr)
 				// Send answer to client
-				log.Debug.Println(nMODULEconp, "send answer to client, ID:", con.ID)
+				log.Debugv.Println(nMODULEconp, "send answer to client, ID:", con.ID)
 				c.Send(p.Data())
 			} else {
 				log.Error.Println(nMODULEconp, "!!! wrong request ID:", con.ID)

@@ -152,8 +152,7 @@ func (teo *Teonet) NewAPI(name, short, long, version string, cmdAPIs ...byte) (a
 	cmdApi = MakeAPI2().SetName("api").SetCmd(cmd).SetShort("get api").SetReturn("<api APIDataAr>").
 		SetConnectMode(AnyMode).SetAnswerMode(CmdAnswer).
 		SetReader(func(c *Channel, p *Packet, data []byte) bool {
-			_, answerMode := cmdApi.ExecMode()
-			log.Debug.Println("got api request, cmd:", cmdApi.Cmd(), p.From(), cmd,"answerMode:", answerMode)
+			log.Debug.Println("got api request, cmd:", cmdApi.Cmd(), p.From())
 			outData, _ := api.MarshalBinary()
 			api.SendAnswer(cmdApi, c, outData, p)
 			return true
