@@ -93,7 +93,7 @@ func (teo *Teonet) newPuncher() {
 
 	// Connect puncer to TRU - set punch callback
 	teo.tru.SetPunchCb(func(addr net.Addr, data []byte) {
-		log.Debug.Printf("puncher get %s from %s\n", string(data), addr.String())
+		log.Debugv.Printf("puncher get %s from %s\n", string(data), addr.String())
 		teo.puncher.callback(data, addr.(*net.UDPAddr))
 	})
 }
@@ -141,7 +141,7 @@ func (p *puncher) send(key string, ips IPs) (err error) {
 	sendKey := func(ip string, port uint32) (err error) {
 		addr := ip + ":" + strconv.Itoa(int(port))
 		dst, err := p.tru.WriteToPunch([]byte(key), addr)
-		log.Debug.Printf("puncher send %s to %s\n", key, dst.String())
+		log.Debugv.Printf("puncher send %s to %s\n", key, dst.String())
 		return
 	}
 	for i := range ips.LocalIPs {

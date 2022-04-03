@@ -136,7 +136,7 @@ func MakeAPI2() *APIData {
 }
 
 // NewAPI create new teonet api
-func (teo *Teonet) NewAPI(name, short, long, version string) (api *API) {
+func (teo *Teonet) NewAPI(name, short, long, version string, cmdAPIs ...byte) (api *API) {
 	api = &API{
 		Teonet:  teo,
 		name:    name,
@@ -145,16 +145,16 @@ func (teo *Teonet) NewAPI(name, short, long, version string) (api *API) {
 		version: version,
 	}
 	var cmdApi APInterface
-	cmdApi = MakeAPI2().SetName("api").SetCmd(cmdAPI).SetShort("get api").SetReturn("<api APIDataAr>").
-		SetConnectMode(ServerMode).SetAnswerMode(CmdAnswer).
+	var cmd byte = CmdServerAPI
+	if len(cmdAPIs) > 0 {
+		cmd = cmdAPIs[0]
+	}
+	cmdApi = MakeAPI2().SetName("api").SetCmd(cmd).SetShort("get api").SetReturn("<api APIDataAr>").
+		SetConnectMode(AnyMode).SetAnswerMode(CmdAnswer).
 		SetReader(func(c *Channel, p *Packet, data []byte) bool {
-			log.Debug.Println("got api request")
+			log.Debug.Println("got api request, cmd:", cmdApi.Cmd(), p.From())
 			outData, _ := api.MarshalBinary()
-			_, answerMode := cmdApi.ExecMode()
-
-			fmt.Println("answerMode:", answerMode)
 			api.SendAnswer(cmdApi, c, outData, p)
-
 			return true
 		})
 	api.Add(cmdApi)
@@ -177,15 +177,11 @@ func (a *API) SendAnswer(cmd APInterface, c *Channel, data []byte, p *Packet) (i
 		data = append(id, data...)
 	}
 
-	// Use SendNoWait function when you answer to just received
-	// command. If processing of you command get lot of time (read
-	// data from data base or read file etc.) do it in goroutine
-	// and use Send() function. If you don't shure which to use
-	// than use Send() function :)
+	// Send answer
 	if answerMode&CmdAnswer > 0 {
-		a.Command(cmd.Cmd(), data).SendNoWait(c)
+		a.Command(cmd.Cmd(), data).Send(c)
 	} else {
-		c.SendNoWait(data)
+		c.Send(data)
 	}
 
 	return

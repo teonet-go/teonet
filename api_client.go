@@ -14,21 +14,26 @@ import (
 type APIClient struct {
 	APIDataAr
 	address string
+	cmdAPI  byte
 	teo     *Teonet
 }
 
 const (
 	// Get server api command
-	cmdAPI = 255
+	CmdServerAPI = 255
+	// Get server api command
+	CmdClientAPI = 254
 )
 
 // NewAPIClient create new APIClient
-func (teo *Teonet) NewAPIClient(address string) (apicli *APIClient, err error) {
+func (teo *Teonet) NewAPIClient(address string, cmdAPIs ...byte) (apicli *APIClient, err error) {
 	apicli = new(APIClient)
 	apicli.teo = teo
 	apicli.address = address
-	if err != nil {
-		return
+	if len(cmdAPIs) > 0 {
+		apicli.cmdAPI = cmdAPIs[0]
+	} else {
+		apicli.cmdAPI = CmdServerAPI
 	}
 	err = apicli.getApi()
 	return
@@ -53,7 +58,7 @@ func (api *APIClient) WaitFrom(command interface{}, packetID ...interface{}) (da
 	// When we execute cmdAPI=255 the APIcommands is not loaded yet. The cmdAPI
 	// always return: <cmdAPI byte><api APIDataAr>
 	// So check cmdAPI first, than get answer mode
-	if cmd == cmdAPI {
+	if cmd == api.cmdAPI {
 		answerMode = CmdAnswer
 	} else {
 		a, ok := api.AnswerMode(cmd)
@@ -163,8 +168,8 @@ func (api *APIClient) getCmd(command interface{}) (cmd byte, err error) {
 
 // getApi send cmdAPI command and get answer with APIDataAr: all API definition
 func (api *APIClient) getApi() (err error) {
-	api.SendTo(cmdAPI, nil)
-	data, err := api.WaitFrom(cmdAPI)
+	api.SendTo(api.cmdAPI, nil)
+	data, err := api.WaitFrom(api.cmdAPI)
 	if err != nil {
 		log.Error.Println("can't get api data, err", err)
 		return
