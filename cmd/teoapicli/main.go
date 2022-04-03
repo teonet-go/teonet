@@ -13,7 +13,7 @@ import (
 const (
 	appShort   = "teoapicli"
 	appName    = "Teonet api client sample application"
-	appVersion = "0.5.0"
+	appVersion = "0.5.1"
 )
 
 func main() {
