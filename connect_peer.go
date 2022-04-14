@@ -146,11 +146,11 @@ func (teo *Teonet) WhenConnectedTo(address string, f func()) {
 
 // WhenConnectedDisconnected call faunction f when connected or disconnected
 // to any peer
-func (teo *Teonet) WhenConnectedDisconnected(f func(e TeonetEventType)) {
+func (teo *Teonet) WhenConnectedDisconnected(f func(e byte)) {
 	teo.clientReaders.addShort(func(c *Channel, p *Packet, ev *Event) (processed bool) {
 		switch ev.Event {
 		case EventConnected, EventDisconnected:
-			f(ev.Event)
+			f(byte(ev.Event))
 		}
 		return
 	})
