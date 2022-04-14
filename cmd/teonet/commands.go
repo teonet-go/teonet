@@ -369,17 +369,28 @@ func (c CmdAPI) edit(api *teonet.APIClient, req []byte, saveparam string, editmo
 		return
 	}
 
-	// Read temp file chsnged in editor
-	buf := make([]byte, 1024)
+	// Read temp file changed in editor
+	var b []byte
+	const bufSize = 1024
+	buf := make([]byte, bufSize)
 	file, err = os.Open(filename)
 	if err != nil {
 		return
 	}
-	n, err := file.Read(buf)
-	buf = buf[:n]
+	for {
+		n, err := file.Read(buf)
+		if err != nil || n == 0 {
+			break
+		}
+		b = append(b, buf[:n]...)
+		if n < bufSize {
+			break
+		}
+	}
+	file.Close()
 
 	// Compact json
-	err = json.Unmarshal([]byte(buf), &vv)
+	err = json.Unmarshal(b, &vv)
 	if err != nil {
 		return
 	}
