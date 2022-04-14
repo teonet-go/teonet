@@ -15,7 +15,7 @@ import (
 	"github.com/kirill-scherba/tru/teolog"
 )
 
-const Version = "0.5.3"
+const Version = "0.5.5"
 
 // Teonet data structure and methods receiver
 type Teonet struct {
@@ -281,7 +281,7 @@ func (teo *Teonet) Close() {
 // RHost return current auth server
 func (teo Teonet) RHost() *Channel { return teo.getAuth() }
 
-// Hotkey return pointer to hotkey menu used in tru or nil if hotkey menu does 
+// Hotkey return pointer to hotkey menu used in tru or nil if hotkey menu does
 // not start
 func (teo Teonet) Hotkey() *hotkey.Hotkey { return teo.tru.Hotkey() }
 
