@@ -15,7 +15,7 @@ import (
 	"github.com/kirill-scherba/tru/teolog"
 )
 
-const Version = "0.5.9"
+const Version = "0.5.10"
 
 // Teonet data structure and methods receiver
 type Teonet struct {
