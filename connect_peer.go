@@ -39,13 +39,18 @@ var ErrPeerDoesNotExists = errors.New("peer does not exists")
 //   - Client connect to Peer and send clients teonet address to it, Peer check
 //   it in connectToConnected func
 func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
-	// TODO: check local connection exists
 	log.Connect.Println(nMODULEconp, addr)
 
 	// Check teonet connected
 	var auth = teo.getAuth()
 	if auth == nil || auth.IsNew() {
 		err = ErrDoesNotConnectedToTeonet
+		return
+	}
+
+	// Check peer already connected
+	_, ok := teo.channels.get(addr)
+	if ok {
 		return
 	}
 
@@ -64,7 +69,8 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	data, _ := con.MarshalBinary()
 
 	// Send command to teonet
-	log.Debug.Println(nMODULEconp, "send CmdConnectTo=1 to teonet, Addr:", con.ToAddr, "ID:", con.ID)
+	log.Debug.Println(nMODULEconp, "send CmdConnectTo=1 to teonet, Addr:",
+		con.ToAddr, "ID:", con.ID)
 	teo.Command(CmdConnectTo, data).Send(auth)
 
 	chanW := make(chanWait)
