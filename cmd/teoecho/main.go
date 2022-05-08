@@ -13,7 +13,7 @@ import (
 const (
 	appName    = "Teonet echo client/server sample application"
 	appShort   = "teoecho"
-	appVersion = "0.5.1"
+	appVersion = teonet.Version
 )
 
 var appStartTime = time.Now()

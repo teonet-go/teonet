@@ -13,7 +13,7 @@ import (
 const (
 	appName    = "Teonet api server sample application"
 	appShort   = "teoapi"
-	appVersion = "0.5.1"
+	appVersion = teonet.Version
 	appLong    = ""
 )
 
