@@ -7,7 +7,9 @@ package teonet
 
 import (
 	"errors"
+	"flag"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/kirill-scherba/tru"
@@ -15,7 +17,7 @@ import (
 	"github.com/kirill-scherba/tru/teolog"
 )
 
-const Version = "0.5.14"
+const Version = "0.5.15"
 
 // Teonet data structure and methods receiver
 type Teonet struct {
@@ -65,6 +67,30 @@ func LogoString(title, ver string) string {
 		title + " ver " + ver + ", based on Teonet v5 ver " + Version +
 		"\n",
 	)
+}
+
+// Check requered application parameters
+func CheckRequeredParams(req ...string) {
+	// Return if input requered array is empty
+	if len(req) == 0 {
+		return
+	}
+	// Convert input parameters to map
+	requered := make(map[string]bool)
+	for _, r := range req {
+		requered[r] = true
+	}
+	// Check if flag value is empty and this value in requered map
+	flag.VisitAll(func(f *flag.Flag) {
+		if f.Value.String() == "" {
+			if b, ok := requered[f.Name]; ok && b {
+				fmt.Println("Parameters error: the '" + f.Name +
+					"' parameter required\n")
+				flag.Usage()
+				os.Exit(0)
+			}
+		}
+	})
 }
 
 // reader is Main teonet reader
