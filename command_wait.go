@@ -10,7 +10,7 @@ import (
 	"encoding/binary"
 	"time"
 
-	"github.com/kirill-scherba/tru"
+	"github.com/teonet-go/tru"
 )
 
 type CheckDataFunc func(data []byte) (ok bool)

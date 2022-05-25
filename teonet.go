@@ -12,12 +12,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/kirill-scherba/tru"
-	"github.com/kirill-scherba/tru/hotkey"
-	"github.com/kirill-scherba/tru/teolog"
+	"github.com/teonet-go/tru"
+	"github.com/teonet-go/tru/hotkey"
+	"github.com/teonet-go/tru/teolog"
 )
 
-const Version = "0.5.17"
+const Version = "0.5.18"
 
 // Teonet data structure and methods receiver
 type Teonet struct {

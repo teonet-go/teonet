@@ -12,9 +12,9 @@ github.com/kirill-scherba/bslice v0.0.1 h1:2niA7JJooRQUPssfhQ4foDFZibc3bew2SiLca
 github.com/kirill-scherba/bslice v0.0.1/go.mod h1:oMZe3puDpM84VyI0S0qc2XrepyxKJIwEovbNRJPyuTw=
 github.com/kirill-scherba/stable v0.0.8 h1:m0GM5FCx1SJkai1o6kfQI0lKUWeupQGTicqb8EIPorg=
 github.com/kirill-scherba/stable v0.0.8/go.mod h1:Le2T16xIQmb9c9xzDVSqf7bWvpzo1pbDQLeD0s7qxZU=
-github.com/kirill-scherba/teomon v0.5.12 h1:RSdKKmK50nvNkxKNqWkO09GT24ORxZhph7ABsUEbOoc=
-github.com/kirill-scherba/teomon v0.5.12/go.mod h1:LCOTsKkQiX8fcktFJp5Af0RM60Hfx9UamUNuLAmTCHc=
-github.com/kirill-scherba/tru v0.0.4 h1:vegBE8gAy24nkh6zdvJaYUDfSuf7Qu55cHLEAw65g/Q=
-github.com/kirill-scherba/tru v0.0.4/go.mod h1:o9u6EG094nGMhnb3of7FoBb842m2iO7TzwXoV2c7RMM=
-golang.org/x/sys v0.0.0-20220517195934-5e4e11fc645e h1:w36l2Uw3dRan1K3TyXriXvY+6T56GNmlKGcqiQUJDfM=
-golang.org/x/sys v0.0.0-20220517195934-5e4e11fc645e/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+github.com/teonet-go/teomon v0.5.13 h1:3O3aaKjt5TB9jfIJHNsn1jO31qzF2QPO8CxfAnfnYaU=
+github.com/teonet-go/teomon v0.5.13/go.mod h1:GzmuSJWL+tMiN4HvT1fZoqp/mfN8bX7p5R9bxv8JAhM=
+github.com/teonet-go/tru v0.0.7 h1:jOSi2kLEbYeTLneyCx1H5P8nuTH1sIlovRmn2NvkZTc=
+github.com/teonet-go/tru v0.0.7/go.mod h1:0K2Nha9PqmdP0RaaLLB94gaRBOGgrj464rx8vmPDpH4=
+golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a h1:dGzPydgVsqGcTRVwiLJ1jVbufYwmzD3LfVPLKsKg+0k=
+golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=

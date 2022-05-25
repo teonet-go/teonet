@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kirill-scherba/tru"
+	"github.com/teonet-go/tru"
 )
 
 // Struct and methods receiver
@@ -68,7 +68,7 @@ func (p *connectRequests) add(con *ConnectToData, waits ...*chanWait) {
 	p.m[con.ID] = &connectRequestsData{con, wait, time.Now()}
 }
 
-// del connect request by id and return ok true and connectRequestsData if 
+// del connect request by id and return ok true and connectRequestsData if
 // request exists
 func (p *connectRequests) del(id string) (res *connectRequestsData, ok bool) {
 	p.Lock()

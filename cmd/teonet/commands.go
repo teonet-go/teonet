@@ -10,9 +10,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/kirill-scherba/teomon"
 	"github.com/kirill-scherba/teonet"
 	"github.com/kirill-scherba/teonet/cmd/teonet/menu"
+	"github.com/teonet-go/teomon"
 )
 
 // Command name

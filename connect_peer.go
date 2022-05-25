@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/kirill-scherba/bslice"
-	"github.com/kirill-scherba/tru"
+	"github.com/teonet-go/tru"
 )
 
 var nMODULEconp = "connect to peer"
@@ -26,19 +26,22 @@ const peerReconnectAfter = 1 * time.Second
 var ErrDoesNotConnectedToTeonet = errors.New("does not connected to teonet")
 var ErrPeerDoesNotExists = errors.New("peer does not exists")
 
-// ConnectTo connect to any teonet Peer(client or server) by address (client
-// sent request to teonet auth server):
-//
-//   - Client call ConnectTo wich send request to teonet auth server and wait
-//   function connectToAnswerProcess called
-//
-//   - Server call ConnectToProcess send infor to Peer and send answer to
-//   client (connectToAnswerProcess func called on client side when answer
-//   received)
-//
-//   - Client connect to Peer and send clients teonet address to it, Peer check
-//   it in connectToConnected func
+// ConnectTo connect to any teonet Peer(client or server) by address
 func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
+
+	// During ConnectTo client sent request to Teonet auth server:
+	//
+	//   - Client call ConnectTo wich send request to teonet auth server and wait
+	//   function connectToAnswerProcess called
+	//
+	//   - Server call ConnectToProcess send infor to Peer and send answer to
+	//   client (connectToAnswerProcess func called on client side when answer
+	//   received)
+	//
+	//   - Client connect to Peer and send clients teonet address to it, Peer check
+	//   it in connectToConnected func
+	//
+
 	log.Connect.Println(nMODULEconp, addr)
 
 	// Check teonet connected

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kirill-scherba/tru"
+	"github.com/teonet-go/tru"
 )
 
 const (

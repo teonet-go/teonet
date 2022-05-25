@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kirill-scherba/tru"
+	"github.com/teonet-go/tru"
 )
 
 // Allow IPv6 connection between peers

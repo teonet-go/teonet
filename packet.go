@@ -6,7 +6,7 @@
 
 package teonet
 
-import "github.com/kirill-scherba/tru"
+import "github.com/teonet-go/tru"
 
 // Packet is teonet Packet structure and methods receiver
 type Packet struct {

@@ -72,8 +72,8 @@ ENV github_personal_token=$github_personal_token
 # Select private repo
 RUN go env -w GOPRIVATE=\
 github.com/kirill-scherba/teonet,\
-github.com/kirill-scherba/teomon,\
-github.com/kirill-scherba/tru
+github.com/teonet-go/teomon,\
+github.com/teonet-go/tru
 
 # Change github url
 RUN git config \

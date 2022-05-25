@@ -21,7 +21,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/kirill-scherba/tru"
+	"github.com/teonet-go/tru"
 )
 
 var nMODULEconf = "Config"

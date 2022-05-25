@@ -9,7 +9,7 @@ package teonet
 import (
 	"sync"
 
-	"github.com/kirill-scherba/tru"
+	"github.com/teonet-go/tru"
 )
 
 // channels struct and receiver

@@ -2,33 +2,32 @@ name: Go
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.17
-        
-    - name: Set private packages
-      run: go env -w GOPRIVATE=github.com/kirill-scherba/teonet,github.com/kirill-scherba/teomon,github.com/kirill-scherba/tru
-        
-    - name: Change Github URL
-      env:
-        USER: ${{ secrets.USER }}
-        PERSONAL_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
-      run: git config --global url."https://$USER:$PERSONAL_TOKEN@github.com".insteadOf "https://github.com"
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
 
-    - name: Build
-      run: go build -v ./...
+      - name: Set private packages
+        run: go env -w GOPRIVATE=github.com/kirill-scherba/teonet,github.com/teonet-go/teomon,github.com/teonet-go/tru
 
-    - name: Test
-      run: go test -v ./...
+      - name: Change Github URL
+        env:
+          USER: ${{ secrets.USER }}
+          PERSONAL_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+        run: git config --global url."https://$USER:$PERSONAL_TOKEN@github.com".insteadOf "https://github.com"
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: go test -v ./...

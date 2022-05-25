@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/kirill-scherba/bslice"
-	"github.com/kirill-scherba/tru"
+	"github.com/teonet-go/tru"
 )
 
 // nMODULEcon is current module name
@@ -137,11 +137,15 @@ func (c *ConnectIpPort) getAddrFromHTTP(url string, excludeIPs ...string) (err e
 	return
 }
 
-// Connect to teonet (client send request to teonet auth server):
-//   - Client call Connect (and wait answer inside Connect function)
-//   - Server call ConnectProcess
-//   - Client got answer (inside Connect function) and create teonet channel
+// Connect to Teonet
 func (teo *Teonet) Connect(attr ...interface{}) (err error) {
+
+	// During Connet to Teonet client send request to Teonet auth server:
+	//
+	//   - Client call Connect (and wait answer inside Connect function)
+	//   - Server call ConnectProcess
+	//   - Client got answer (inside Connect function) and create teonet channel
+	//
 
 	teo.Log().Connect.Println(nMODULEcon, "to remote teonet node", attr)
 

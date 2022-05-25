@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kirill-scherba/teomon"
 	"github.com/kirill-scherba/teonet"
+	"github.com/teonet-go/teomon"
 )
 
 const (
