@@ -3,7 +3,7 @@ package main
 import (
 	"sync"
 
-	"github.com/kirill-scherba/teonet"
+	"github.com/teonet-go/teonet"
 )
 
 func newAPI() (a *API) {

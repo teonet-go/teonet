@@ -11,8 +11,8 @@
 # Publish to github:
 #
 #  docker login docker.pkg.github.com -u USERNAME -p TOKEN
-#  docker tag teonet docker.pkg.github.com/kirill-scherba/teonet/teonet:x.x.x
-#  docker push docker.pkg.github.com/kirill-scherba/teonet/teonet:x.x.x
+#  docker tag teonet docker.pkg.github.com/teonet-go/teonet/teonet:x.x.x
+#  docker push docker.pkg.github.com/teonet-go/teonet/teonet:x.x.x
 #
 # Publish to local repository:
 #
@@ -58,7 +58,7 @@
 # 
 FROM golang:1.18.0 AS builder
 
-WORKDIR /go/src/github.com/kirill-scherba/teonet
+WORKDIR /go/src/github.com/teonet-go/teonet
 # RUN apt update 
 
 COPY ./ ./
@@ -71,9 +71,9 @@ ENV github_personal_token=$github_personal_token
 
 # Select private repo
 RUN go env -w GOPRIVATE=\
-github.com/kirill-scherba/teonet,\
-github.com/teonet-go/teomon,\
-github.com/teonet-go/tru
+    github.com/teonet-go/teonet,\
+    github.com/teonet-go/teomon,\
+    github.com/teonet-go/tru
 
 # Change github url
 RUN git config \

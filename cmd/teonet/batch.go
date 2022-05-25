@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/kirill-scherba/teonet"
-	"github.com/kirill-scherba/teonet/cmd/teonet/menu"
+	"github.com/teonet-go/teonet"
+	"github.com/teonet-go/teonet/cmd/teonet/menu"
 )
 
 const (

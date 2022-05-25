@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/chzyer/readline"
-	"github.com/kirill-scherba/teonet"
+	"github.com/teonet-go/teonet"
 )
 
 func New(appShort string) (cmd *Menu, err error) {

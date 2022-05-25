@@ -18,7 +18,7 @@ jobs:
           go-version: 1.17
 
       - name: Set private packages
-        run: go env -w GOPRIVATE=github.com/kirill-scherba/teonet,github.com/teonet-go/teomon,github.com/teonet-go/tru
+        run: go env -w GOPRIVATE=github.com/teonet-go/teonet,github.com/teonet-go/teomon,github.com/teonet-go/tru
 
       - name: Change Github URL
         env:
