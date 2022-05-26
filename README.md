@@ -1,6 +1,6 @@
 # Teonet v5
 
-Teonet v5 is pure Golang implementation of teonetdp and Teonet libraries and Teonet applications
+Teonet v5 is pure Golang implementation of TRUdp and Teonet libraries and Teonet applications
 
 [![GoDoc](https://godoc.org/github.com/teonet-go/teonet?status.svg)](https://godoc.org/github.com/teonet-go/teonet/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/teonet-go/teonet)](https://goreportcard.com/report/github.com/teonet-go/teonet)
