@@ -16,7 +16,7 @@ import (
 type CheckDataFunc func(data []byte) (ok bool)
 type WaitData []byte
 
-// WaitFrom wait answer from addres. Attr is additional attributes by type:
+// WaitFrom wait answer from address. Attr is additional attributes by type:
 //   byte or int: wait command number in answer
 //   uint32: wait packet id in answer
 //   func([]byte)bool: check packet data with callback, data without command and id

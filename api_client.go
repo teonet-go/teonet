@@ -44,7 +44,7 @@ func (teo *Teonet) NewAPIClient(address string, cmdAPIs ...byte) (apicli *APICli
 // If timeout parameter is omitted than default timeout value sets to 2 second.
 // Next parameter is checkDataFunc func([]byte) bool. This function calls to
 // check packet data and returns true if packet data valid. This parameter may
-// be ommited too.
+// be omitted too.
 func (api *APIClient) WaitFrom(command interface{}, packetID ...interface{}) (data []byte, err error) {
 
 	// Get command number

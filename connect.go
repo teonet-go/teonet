@@ -149,7 +149,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 	teo.Log().Connect.Println(nMODULEcon, "to remote teonet node", attr)
 
-	// Set default address if attr ommited
+	// Set default address if attr omitted
 	if len(attr) == 0 {
 		attr = append(attr, teo.connectURL.authURL)
 	}

@@ -31,7 +31,7 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 
 	// During ConnectTo client sent request to Teonet auth server:
 	//
-	//   - Client call ConnectTo wich send request to teonet auth server and wait
+	//   - Client call ConnectTo which send request to teonet auth server and wait
 	//   function connectToAnswerProcess called
 	//
 	//   - Server call ConnectToProcess send infor to Peer and send answer to
@@ -229,7 +229,7 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 }
 
 // processCmdConnectTo process ConnectTo answer from auth server, connect to
-// Peer and send clients teonet addres to it (client processed)
+// Peer and send clients teonet address to it (client processed)
 func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 
 	const cantConnectToPeer = "can't connect to peer, error: "

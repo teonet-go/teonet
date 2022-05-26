@@ -65,7 +65,7 @@ func (c Channel) Send(data []byte, attr ...interface{}) (id int, err error) {
 }
 
 // checkSendAttr check Send function attributes:
-// return delevery calback 'func(p *tru.Packet, err error)' and make
+// return delevery callback 'func(p *tru.Packet, err error)' and make
 // subscribe to answer with callback 'func(c *Channel, p *Packet, e *Event) bool'
 func (c Channel) checkSendAttr(attr ...interface{}) (delivery func(p *tru.Packet, err error)) {
 	var teo *Teonet

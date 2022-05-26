@@ -118,7 +118,7 @@ func main() {
 	}
 
 	// Teonet address
-	fmt.Printf("Teonet addres: %s\n\n", teo.Address())
+	fmt.Printf("Teonet address: %s\n\n", teo.Address())
 
 	// Connect to monitor
 	if len(p.monitor) > 0 {

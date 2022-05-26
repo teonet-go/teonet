@@ -17,7 +17,7 @@ import (
 	"github.com/teonet-go/tru/teolog"
 )
 
-const Version = "0.5.20"
+const Version = "0.5.21"
 
 // Teonet data structure and methods receiver
 type Teonet struct {
@@ -97,7 +97,7 @@ func CheckRequeredParams(req ...string) {
 func reader(teo *Teonet, c *Channel, p *Packet, e *Event) {
 
 	// Delete channel on err after all other reader process this error
-	// TODO: Realy need this defer?
+	// TODO: Really need this defer?
 	defer func() {
 		if e.Err != nil {
 			teo.channels.del(c, false)

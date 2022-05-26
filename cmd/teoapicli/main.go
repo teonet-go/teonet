@@ -63,10 +63,10 @@ func main() {
 	defer teo.Close()
 
 	// Teonet address
-	fmt.Printf("Teonet addres: %s\n\n", teo.Address())
+	fmt.Printf("Teonet address: %s\n\n", teo.Address())
 
 	// Connect to API server (selected in connect-to application flag) and receive
-	// packets in own reader. Use WXJfYLDEtg6Rkm1OHm9I9ud9rR6qPlMH6NE addres to
+	// packets in own reader. Use WXJfYLDEtg6Rkm1OHm9I9ud9rR6qPlMH6NE address to
 	// connect to installed teoapi example.
 	var stopChannelReader safeBool
 	for {

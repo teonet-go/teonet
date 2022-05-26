@@ -71,7 +71,7 @@ func (teo Teonet) getIPs() (ips []string, err error) {
 	return
 }
 
-// safeIPv6 check ipv6 address and add [ ... ] to it, set ok to true if adress
+// safeIPv6 check ipv6 address and add [ ... ] to it, set ok to true if address
 // is IPv6
 func (teo Teonet) safeIPv6(ipin string) (ipout string, ok bool) {
 	if strings.IndexByte(ipin, ':') >= 0 {
