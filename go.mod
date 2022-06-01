@@ -10,7 +10,7 @@ require (
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/kirill-scherba/bslice v0.0.1
 	github.com/teonet-go/teomon v0.5.13
-	github.com/teonet-go/tru v0.0.7
+	github.com/teonet-go/tru v0.0.8
 )
 
 require (
