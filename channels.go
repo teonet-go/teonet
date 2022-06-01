@@ -48,6 +48,7 @@ func (c *channels) add(channel *Channel) {
 		// }
 		// c.del(ch, delTrudp)
 		c.del(ch, false)
+		reader(c.teo, ch, nil, &Event{EventDisconnected, nil})
 	}
 	c.Lock()
 	defer c.Unlock()
