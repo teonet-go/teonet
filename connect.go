@@ -132,7 +132,7 @@ func (c *ConnectIpPort) getAddrFromHTTP(url string, excludeIPs ...string) (err e
 	}
 	c.IP = n.address[i].IP
 	c.Port = int(n.address[i].Port)
-	log.Debug.Printf("\n%s\nnum nodes -> %d, i -> %d, connect to: %s:%d\n",
+	log.Debugv.Printf("\n%s\nnum nodes -> %d, i -> %d, connect to: %s:%d\n",
 		n.String(), l, i, c.IP, c.Port)
 	return
 }
