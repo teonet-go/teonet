@@ -22,9 +22,11 @@ const (
 
 // Channel stract and method receiver
 type Channel struct {
-	a       string       // Teonet address
-	c       *tru.Channel // TRU channel
-	closing bool         // Channel closed by CloseTo function
+	a string       // Teonet address
+	c *tru.Channel // TRU channel
+	// Channel closed by CloseTo function, or reconnection set off by 
+	// ReconnectOff function
+	closing bool
 }
 
 // new create new teonet channel

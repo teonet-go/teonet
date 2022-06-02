@@ -94,9 +94,13 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	}
 
 	// Connected, make auto reconnect
-	teo.Subscribe(addr, func(teo *Teonet, c *Channel, p *Packet, e *Event) (ret bool) {
+	var scr *subscribeData
+	scr, _ = teo.Subscribe(addr, func(teo *Teonet, c *Channel, p *Packet, e *Event) (ret bool) {
 		// Peer disconnected event
 		if e.Event == EventDisconnected {
+			// Unsubscribe
+			teo.Unsubscribe(scr)
+
 			select {
 			// Return if teonet closing
 			case <-teo.closing:
@@ -140,6 +144,21 @@ func (teo Teonet) CloseTo(addr string) (err error) {
 	}
 	ch.closing = true
 	ch.c.Close()
+	return
+}
+
+// ReconnectOff will stop reconnection when peer will be disconnected. By
+// default all Teonet connections will forewer try automatic reconnect when
+// peer disoconnected. To stop this reconnection call ReconnectOff any time
+// after ConnetTo.
+func (teo Teonet) ReconnectOff(addr string) (err error) {
+	log.Debug.Println("stop reconnection to peer", addr)
+	ch, ok := teo.channels.get(addr)
+	if !ok {
+		err = ErrPeerDoesNotExists
+		return
+	}
+	ch.closing = true
 	return
 }
 
