@@ -9,7 +9,7 @@ go 1.18
 require (
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/kirill-scherba/bslice v0.0.1
-	github.com/teonet-go/teomon v0.5.13
+	github.com/teonet-go/teomon v0.5.14
 	github.com/teonet-go/tru v0.0.8
 )
 
@@ -19,5 +19,5 @@ require (
 	github.com/denisbrodbeck/machineid v1.0.1 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/kirill-scherba/stable v0.0.8 // indirect
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
+	golang.org/x/sys v0.0.0-20220615213510-4f61da869c0c // indirect
 )
