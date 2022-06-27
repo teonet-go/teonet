@@ -117,21 +117,17 @@ func (s *subscribers) len() int {
 
 // send packet to all subscribers
 func (s *subscribers) send(teo *Teonet, c *Channel, p *Packet, e *Event) bool {
-	s.RLock()
 
 	var next *list.Element
 	for el := s.lst.Front(); el != nil; el = next {
 		next = el.Next()
 		scr := el.Value.(*subscribeData)
 		if scr.channel == c {
-			s.RUnlock()
 			if scr.reader(teo, c, p, e) {
 				return true
 			}
-			s.RLock()
 		}
 	}
 
-	s.RUnlock()
 	return false
 }

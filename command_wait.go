@@ -27,19 +27,14 @@ func (teo *Teonet) WaitFrom(from string, attr ...interface{}) (data []byte, err 
 
 	attr = append(attr, true)
 	wr := teo.MakeWaitReader(attr...)
-	if err != nil {
-		return
-	}
 
 	scr, err := teo.Subscribe(from, wr.Reader())
 	if err != nil {
 		return
 	}
+	defer teo.Unsubscribe(scr)
 
 	data, err = teo.WaitReaderAnswer(wr.Wait(), wr.Timeout())
-
-	teo.Unsubscribe(scr)
-
 	return
 }
 
@@ -152,12 +147,16 @@ func (teo *Teonet) MakeWaitReader(attr ...interface{}) (wr *WaitReader) {
 			}
 		}
 
-		// Valid packet
-		processed = true
-
 		// Send answer to wait channel
 		if param.wait {
-			wr.wait <- p.Data()[idx:]
+			select {
+			case wr.wait <- p.Data()[idx:]:
+				// Valid packet
+				processed = true
+			default:
+				msg := "!!! can't send message to wait channel, skip it"
+				teo.Log().Debug.Println(msg)
+			}
 		}
 
 		return
@@ -171,7 +170,9 @@ func (teo *Teonet) MakeWaitReader(attr ...interface{}) (wr *WaitReader) {
 }
 
 // Wait data from wait channel
-func (wr WaitReader) Wait() chan WaitData { return wr.wait }
+func (wr WaitReader) Wait() chan WaitData {
+	return wr.wait
+}
 
 // Reader call wait reader
 func (wr WaitReader) Reader() func(c *Channel, p *Packet, e *Event) (processed bool) {
@@ -179,7 +180,9 @@ func (wr WaitReader) Reader() func(c *Channel, p *Packet, e *Event) (processed b
 }
 
 // Timeout get timeout
-func (wr WaitReader) Timeout() time.Duration { return wr.timeout }
+func (wr WaitReader) Timeout() time.Duration {
+	return wr.timeout
+}
 
 // MakeWaitAttr make wait attribute
 func (teo *Teonet) MakeWaitAttr() *WaitAttr {
