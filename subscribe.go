@@ -38,6 +38,16 @@ func (teo Teonet) Subscribe(address string, reader interface{}) (scr *subscribeD
 	return
 }
 
+// Unsubscribe from channel data
+func (teo Teonet) Unsubscribe(s *subscribeData) {
+	teo.subscribers.del(s)
+}
+
+// SubscribersNum return number of subscribers
+func (teo Teonet) SubscribersNum() int {
+	return teo.subscribers.len()
+}
+
 // subscribe to channel data
 func (teo Teonet) subscribe(c *Channel, readerI interface{}) *subscribeData {
 	var reader Treceivecb
@@ -54,11 +64,6 @@ func (teo Teonet) subscribe(c *Channel, readerI interface{}) *subscribeData {
 		panic(fmt.Sprintf("wrong attribute type %T", v))
 	}
 	return teo.subscribers.add(c, reader)
-}
-
-// Unsubscribe from channel data
-func (teo Teonet) Unsubscribe(s *subscribeData) {
-	teo.subscribers.del(s)
 }
 
 // newSubscribers create new subscribers (subscribersData)
@@ -101,6 +106,13 @@ func (s *subscribers) del(subs interface{}) {
 			}
 		}
 	}
+}
+
+// len return number of subscribers
+func (s *subscribers) len() int {
+	s.RLock()
+	defer s.RUnlock()
+	return len(s.idx)
 }
 
 // send packet to all subscribers
