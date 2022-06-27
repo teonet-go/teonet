@@ -17,7 +17,7 @@ import (
 	"github.com/teonet-go/tru/teolog"
 )
 
-const Version = "0.5.24"
+const Version = "0.5.26"
 
 // Teonet data structure and methods receiver
 type Teonet struct {
