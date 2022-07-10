@@ -269,7 +269,7 @@ func (c CmdAPI) Exec(line string) (err error) {
 					fmt.Println("got answer:", string(data))
 					err = c.edit(api, data, editparam, &editmode)
 					if err != nil {
-						fmt.Println("editor, error:", err)
+						// fmt.Println("editor, error:", err)
 					}
 				case strings.Contains(ret, "[]*Metric"):
 					var peers = teomon.NewPeers()
