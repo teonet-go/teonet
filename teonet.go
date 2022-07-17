@@ -17,7 +17,7 @@ import (
 	"github.com/teonet-go/tru/teolog"
 )
 
-const Version = "0.5.29"
+const Version = "0.5.30"
 
 // Teonet data structure and methods receiver
 type Teonet struct {
@@ -132,7 +132,7 @@ func reader(teo *Teonet, c *Channel, p *Packet, e *Event) {
 //   func(t *Teonet, c *Channel, p *Packet, e *Event) - message receiver
 func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 
-	// Parse attributes
+	// Atribute struct
 	var param struct {
 		port       int
 		stat       tru.Stat
@@ -145,6 +145,12 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 		api        ApiInterface
 		configDir  OsConfigDir
 	}
+	// Set default
+	// Teonet applications in some hosts can't receive max UDP packets, so
+	// we set default max data length to 1024 bytes. This packet size will
+	// awailable for any hosts.
+	param.maxDataLen = 1024
+	// Parse attributes
 	for i := range attr {
 		switch d := attr[i].(type) {
 		// Local port
