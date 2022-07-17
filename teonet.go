@@ -17,7 +17,7 @@ import (
 	"github.com/teonet-go/tru/teolog"
 )
 
-const Version = "0.5.28"
+const Version = "0.5.29"
 
 // Teonet data structure and methods receiver
 type Teonet struct {
@@ -39,6 +39,7 @@ type TreceivecbShort func(c *Channel, p *Packet, e *Event) bool
 type LogFilter = teolog.Filter
 type Stat = tru.Stat
 type Hotkey = tru.Hotkey
+type MaxDataLen = tru.MaxDataLenType
 
 // Error peer does not connected
 var ErrPeerNotConnected = errors.New("peer does not connected")
@@ -121,8 +122,9 @@ func reader(teo *Teonet, c *Channel, p *Packet, e *Event) {
 // New create new teonet connection. The attr parameters:
 //   int             port number to teonet listen
 //   string          internal log Level to show teonet debug messages
-//   tru.ShowStat    set true to show tru statistic table
-//   tru.StartHotkey start hotkey meny
+//   Stat            set true to show tru statistic table
+//   Hotkey          start hotkey meny
+//   MaxDataLen      set max data length
 //   *teolog.Teolog  teonet logger
 //   ApiInterface    api interface
 //   OsConfigDir     os directory to save config
@@ -132,15 +134,16 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 
 	// Parse attributes
 	var param struct {
-		port      int
-		stat      tru.Stat
-		hotkey    tru.Hotkey
-		logLevel  string
-		logFilter LogFilter
-		log       *teolog.Teolog
-		reader    Treceivecb
-		api       ApiInterface
-		configDir OsConfigDir
+		port       int
+		stat       tru.Stat
+		hotkey     tru.Hotkey
+		maxDataLen tru.MaxDataLenType
+		logLevel   string
+		logFilter  LogFilter
+		log        *teolog.Teolog
+		reader     Treceivecb
+		api        ApiInterface
+		configDir  OsConfigDir
 	}
 	for i := range attr {
 		switch d := attr[i].(type) {
@@ -159,6 +162,9 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 		// Start hotkey menu
 		case tru.Hotkey:
 			param.hotkey = d
+		// Max data length
+		case tru.MaxDataLenType:
+			param.maxDataLen = d
 		// Logger
 		case *teolog.Teolog:
 			param.log = d
@@ -214,7 +220,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	teo.clientReaders.add(param.reader)
 
 	// Init tru and start listen port to get messages
-	teo.tru, err = tru.New(param.port, param.stat, param.hotkey,
+	teo.tru, err = tru.New(param.port, param.stat, param.hotkey, param.maxDataLen,
 		teo.log, param.logLevel, param.logFilter,
 		teo.config.trudpPrivateKey,
 
