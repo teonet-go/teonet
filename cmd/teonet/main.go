@@ -56,4 +56,8 @@ func main() {
 		"use help command to get commands list\n\n",
 	)
 	cli.menu.Run()
+
+	// Stop show statistic
+	cli.teo.ShowTrudp(false)
+	fmt.Print("\r")
 }

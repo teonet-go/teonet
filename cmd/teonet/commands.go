@@ -20,6 +20,7 @@ const (
 	cmdConnectTo = "connectto"
 	cmdSendTo    = "sendto"
 	cmdAlias     = "alias"
+	cmdStat      = "stat"
 	cmdAPI       = "api"
 	cmdHelp      = "help"
 )
@@ -32,6 +33,7 @@ func (cli *Teocli) addCommands() {
 		cli.newCmdAlias(),
 		cli.newCmdConnectTo(),
 		cli.newCmdSendTo(),
+		cli.newCmdStat(),
 		cli.newCmdAPI(),
 	)
 }
@@ -485,5 +487,33 @@ func (c CmdSendTo) Exec(line string) (err error) {
 	return
 }
 func (c CmdSendTo) Compliter() (cmpl []menu.Compliter) {
+	return c.menu.MakeCompliterFromString([]string{})
+}
+
+// Create CmdStat commands
+func (cli *Teocli) newCmdStat() menu.Item {
+	return CmdStat{TeocliCommand: TeocliCommand{cli}, set: new(bool)}
+}
+
+// CmdStat show local stat command ----------------------------------------------
+type CmdStat struct {
+	TeocliCommand
+	set *bool
+}
+
+func (c CmdStat) Name() string  { return cmdStat }
+func (c CmdStat) Usage() string { return "" }
+func (c CmdStat) Help() string  { return "show local statistic on / off" }
+func (c CmdStat) Exec(line string) (err error) {
+	*c.set = !*c.set
+	c.teo.ShowTrudp(*c.set)
+	var onoff = "off"
+	if *c.set {
+		onoff = "on"
+	}
+	fmt.Println("\rstat", onoff)
+	return
+}
+func (c CmdStat) Compliter() (cmpl []menu.Compliter) {
 	return c.menu.MakeCompliterFromString([]string{})
 }
