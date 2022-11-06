@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/teonet-go/teomon"
@@ -53,9 +54,42 @@ func main() {
 	flag.StringVar(&p.monitor, "monitor", "", "monitor address")
 	flag.Parse()
 
-	// TODO: Check arguments
+	// Check arguments, we are loking at least one argument
+	fmt.Println("Application arguments:")
 	args := flag.Args()
-	fmt.Println("args:", len(args), args)
+	if len(args) < 1 {
+		fmt.Println("error: arguments mising, need at least one argument")
+		os.Exit(1)
+	}
+	cmd := args[0]
+	arg := strings.Join(args[1:], " ")
+	fmt.Println("  command:", cmd)
+	fmt.Println("  argument:", arg)
+	fmt.Println()
+
+	// Check command
+	fmt.Println("Application command:")
+	cmdType := "command"
+	cmds := strings.Split(cmd, ":")
+	if len(cmds) < 2 {
+		fmt.Println("error: wrong command, need address:cmd_number or address:api:cmd")
+		os.Exit(2)
+	}
+	addr := cmds[0]
+	if cmds[1] == "api" {
+		cmdType = "api"
+		if len(cmds) < 3 {
+			fmt.Println("error: wrong command, need address:api:cmd")
+			os.Exit(2)
+		}
+		cmd = cmds[2]
+	} else {
+		cmd = cmds[1]
+	}
+	fmt.Println("  type:", cmdType)
+	fmt.Println("  address:", addr)
+	fmt.Println("  command:", cmd)
+	fmt.Println()
 
 	// Start teonet client
 	teo, err := teonet.New(p.appShort, p.port, reader, teonet.Stat(p.stat),
@@ -98,7 +132,7 @@ func main() {
 
 	// TODO: Return result
 
-	select {}
+	// select {}
 }
 
 // reader is main application reader it receive and process messages
