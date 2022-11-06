@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -54,6 +55,30 @@ func main() {
 	flag.StringVar(&p.monitor, "monitor", "", "monitor address")
 	flag.Parse()
 
+	// Start teonet client
+	teo, err := teonet.New(p.appShort, p.port, reader, teonet.Stat(p.stat),
+		teonet.Hotkey(p.hotkey), p.logLevel, teonet.Logfilter(p.logFilter),
+	)
+	if err != nil {
+		panic("can't init Teonet, error: " + err.Error())
+	}
+
+	// Connect to teonet
+	for teo.Connect() != nil {
+		// teo.Log().Debug.Println("can't connect to Teonet, error:", err)
+		time.Sleep(1 * time.Second)
+	}
+	defer teo.Close()
+
+	// Teonet address
+	fmt.Printf("Teonet address: %s\n\n", teo.Address())
+
+	// Show this application private key
+	if p.showPrivate {
+		fmt.Printf("Teonet private key hex: %x\n", teo.GetPrivateKey())
+		os.Exit(0)
+	}
+
 	// Check arguments, we are loking at least one argument
 	fmt.Println("Application arguments:")
 	args := flag.Args()
@@ -80,7 +105,7 @@ func main() {
 		cmdType = "api"
 		if len(cmds) < 3 {
 			fmt.Println("error: wrong command, need address:api:cmd")
-			os.Exit(2)
+			os.Exit(3)
 		}
 		cmd = cmds[2]
 	} else {
@@ -90,30 +115,6 @@ func main() {
 	fmt.Println("  address:", addr)
 	fmt.Println("  command:", cmd)
 	fmt.Println()
-
-	// Start teonet client
-	teo, err := teonet.New(p.appShort, p.port, reader, teonet.Stat(p.stat),
-		teonet.Hotkey(p.hotkey), p.logLevel, teonet.Logfilter(p.logFilter),
-	)
-	if err != nil {
-		panic("can't init Teonet, error: " + err.Error())
-	}
-
-	// Show this application private key
-	if p.showPrivate {
-		fmt.Printf("Teonet private key hex: %x\n", teo.GetPrivateKey())
-		os.Exit(0)
-	}
-
-	// Connect to teonet
-	for teo.Connect() != nil {
-		// teo.Log().Debug.Println("can't connect to Teonet, error:", err)
-		time.Sleep(1 * time.Second)
-	}
-	defer teo.Close()
-
-	// Teonet address
-	fmt.Printf("Teonet address: %s\n\n", teo.Address())
 
 	// Connect to monitor
 	if len(p.monitor) > 0 {
@@ -126,13 +127,44 @@ func main() {
 		})
 	}
 
-	// TODO: Connect to selected peer
+	// Connect to selected peer
+	for {
+		err = teo.ConnectTo(addr)
+		if err == nil {
+			break
+		}
+		fmt.Println("can't connect to teonet peer", addr)
+		time.Sleep(5 * time.Second)
+	}
+	defer teo.CloseTo(addr)
+	fmt.Println("Connected to:", addr)
 
-	// TODO: Execute command
+	// Execute command
+	c, err := strconv.Atoi(cmd)
+	if err != nil {
+		fmt.Println("error: wrong command number", cmd)
+		os.Exit(4)
+	}
+	fmt.Println("Send to:", cmd, arg)
+	fmt.Println()
+	_, err = teo.Command(c, arg).SendTo(addr)
+	if err != nil {
+		fmt.Printf("error: can't send command %d to teonet peer %s %s\n", c, addr, err)
+		os.Exit(5)
+	}
 
-	// TODO: Return result
+	// Wait result
+	// This command return data without command, if cmd returned should add
+	// cmd to attr WaitFrom parameter
+	data, err := teo.WaitFrom(addr)
+	if err != nil {
+		fmt.Printf("error: can't get command %d answer from teonet peer %s %s\n", c, addr, err)
+		os.Exit(6)
+	}
 
-	// select {}
+	fmt.Println("Got result:")
+	fmt.Println(data)
+	fmt.Println(string(data))
 }
 
 // reader is main application reader it receive and process messages
