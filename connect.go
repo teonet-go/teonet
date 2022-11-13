@@ -137,7 +137,12 @@ func (c *ConnectIpPort) getAddrFromHTTP(url string, excludeIPs ...string) (err e
 	return
 }
 
-// Connect to Teonet
+// Connect to Teonet. 
+// Attributes parameter by type:
+//   type eExcludeIPs - struct with IPs slice to exclude from
+//   type ConnectIpPort - struct with IP and Port
+//   type string - RHost URL
+//   type int - directConnectDelay in millisecond to execute direct connect to peers
 func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 	// During Connet to Teonet client send request to Teonet auth server:
@@ -154,15 +159,17 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 		attr = append(attr, teo.connectURL.authURL)
 	}
 
-	// Parse attr, it may be:
+	// Parse attr by type, it may be:
 	//
 	//  - String with URL,
 	//  - ConnectIpPort struct with IP and Port
 	//  - ExcludeIPs struct with IPs slice to exclude from
+	//  - Int integer directConnectDelay to execute direct connect to peers
 	//
 	// If attr string present than connect to URL by http get list of
 	// available nodes remove ExludeIPs and select one of it
 	var con = ConnectIpPort{"95.217.18.68", 8000}
+	var directConnectDelay int
 	var excl ExcludeIPs
 	var url string
 	for i := range attr {
@@ -180,6 +187,8 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 			default:
 				url = teo.connectURL.authURL
 			}
+		case int:
+			directConnectDelay = v
 		}
 	}
 
@@ -257,7 +266,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 		// Client got answer to cmdConnectTo(connect to peer)
 		case CmdConnectTo:
-			teo.processCmdConnectTo(cmd.Data)
+			teo.processCmdConnectTo(cmd.Data, directConnectDelay)
 
 		// Peer got CmdConnectToPeer command
 		case CmdConnectToPeer:

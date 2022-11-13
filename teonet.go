@@ -17,7 +17,7 @@ import (
 	"github.com/teonet-go/tru/teolog"
 )
 
-const Version = "0.5.37"
+const Version = "0.5.38"
 
 // Teonet data structure and methods receiver
 type Teonet struct {
@@ -228,8 +228,7 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 
 	// Init tru and start listen port to get messages
 	teo.tru, err = tru.New(param.port, param.stat, param.hotkey, param.maxDataLen,
-		teo.log, param.logLevel, param.logFilter,
-		teo.config.trudpPrivateKey,
+		teo.log, param.logLevel, param.logFilter, teo.config.trudpPrivateKey,
 
 		// Receive data callback
 		func(c *tru.Channel, p *tru.Packet, err error) bool {

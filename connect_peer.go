@@ -249,7 +249,7 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 
 // processCmdConnectTo process ConnectTo answer from auth server, connect to
 // Peer and send clients teonet address to it (client processed)
-func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
+func (teo Teonet) processCmdConnectTo(data []byte, directConnectDelay int) (err error) {
 
 	const cantConnectToPeer = "can't connect to peer, error: "
 
@@ -335,19 +335,21 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 			Port:      con.Port,
 		}, func() bool { _, ok := teo.connRequests.get(con.ID); return !ok })
 
-		// Try direct connect to main IP on punch timeout. In network with 
+		// Try direct connect to main IP on punch timeout. In network with
 		// complex firewall we can't punch, so try direct connect to server
-		time.AfterFunc(150*time.Millisecond, func() {
-			ok, err = connect(con.IP, int(con.Port))
-			if !ok {
-				return
-			}
-			if err != nil {
-				log.Debug.Println("direct connect error:", err)
-				return
-			}
-			log.Debug.Println("direct connect without(after) punch done")
-		})
+		if directConnectDelay > 0 {
+			time.AfterFunc(time.Duration(directConnectDelay)*time.Millisecond, func() {
+				ok, err = connect(con.IP, int(con.Port))
+				if !ok {
+					return
+				}
+				if err != nil {
+					log.Debug.Println("direct connect error:", err)
+					return
+				}
+				log.Debug.Println("direct connect without(after) punch done")
+			})
+		}
 
 		// Wait answer from subscribe or timeout
 		var addr *net.UDPAddr
@@ -362,7 +364,7 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 			err = ErrTimeout
 		}
 		teo.puncher.unsubscribe(con.ID)
-		close(waitCh)
+		close(waitCh) // TODO: it can be removed
 
 		if err != nil {
 			log.Debug.Println("can't punch during connect, err", err)
