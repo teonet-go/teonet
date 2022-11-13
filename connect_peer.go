@@ -341,8 +341,14 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 		case addr = <-waitCh:
 			_, err = connect(addr.IP.String(), addr.Port)
 		case <-time.After(tru.ClientConnectTimeout):
-			teo.puncher.unsubscribe(con.ID)
-			err = ErrTimeout
+			// Try direct connect to main IP on punch timeout
+			_, err = connect(con.IP, int(con.Port))
+			if err != nil {
+				teo.puncher.unsubscribe(con.ID)
+				err = ErrTimeout
+				break
+			}
+			log.Debug.Println("direct connect without(after) punch done")
 		}
 		close(waitCh)
 
