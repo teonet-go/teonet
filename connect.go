@@ -154,11 +154,6 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 	teo.Log().Connect.Println(nMODULEcon, "to remote teonet node", attr)
 
-	// Set default address if attr omitted
-	if len(attr) == 0 {
-		attr = append(attr, teo.connectURL.authURL)
-	}
-
 	// Parse attr by type, it may be:
 	//
 	//  - String with URL,
@@ -190,6 +185,11 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 		case int:
 			directConnectDelay = v
 		}
+	}
+
+	// Set default address if attr omitted
+	if len(url) == 0 {
+		url = teo.connectURL.authURL
 	}
 
 	// Connect to rauth https server and get auth ip:port to connect
