@@ -17,7 +17,7 @@ import (
 	"github.com/teonet-go/tru/teolog"
 )
 
-const Version = "0.5.32"
+const Version = "0.5.33"
 
 // Teonet data structure and methods receiver
 type Teonet struct {
@@ -120,16 +120,17 @@ func reader(teo *Teonet, c *Channel, p *Packet, e *Event) {
 }
 
 // New create new teonet connection. The attr parameters:
-//   int             port number to teonet listen
-//   string          internal log Level to show teonet debug messages
-//   Stat            set true to show tru statistic table
-//   Hotkey          start hotkey meny
-//   MaxDataLen      set max data length
-//   *teolog.Teolog  teonet logger
-//   ApiInterface    api interface
-//   OsConfigDir     os directory to save config
-//   func(c *Channel, p *Packet, e *Event) - message receiver
-//   func(t *Teonet, c *Channel, p *Packet, e *Event) - message receiver
+//
+//	int             port number to teonet listen
+//	string          internal log Level to show teonet debug messages
+//	Stat            set true to show tru statistic table
+//	Hotkey          start hotkey meny
+//	MaxDataLen      set max data length
+//	*teolog.Teolog  teonet logger
+//	ApiInterface    api interface
+//	OsConfigDir     os directory to save config
+//	func(c *Channel, p *Packet, e *Event) - message receiver
+//	func(t *Teonet, c *Channel, p *Packet, e *Event) - message receiver
 func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 
 	// Atribute struct

@@ -46,7 +46,6 @@ func (c *connectURL) makeURLs() {
 		c.authURL = authProdURL
 		c.rauthURL = rauthProdURL
 	}
-	return
 }
 
 // devMode return true in development mode
