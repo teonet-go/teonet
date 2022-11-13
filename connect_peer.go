@@ -340,19 +340,25 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 		// Wait answer from subscribe or timeout
 		var addr *net.UDPAddr
 		select {
+
+		// Answer received
 		case addr = <-waitCh:
 			_, err = connect(addr.IP.String(), addr.Port)
-		case <-time.After(tru.ClientConnectTimeout):
-			// Try direct connect to main IP on punch timeout
-			_, err = connect(con.IP, int(con.Port), true)
+
+		// Try direct connect to main IP on punch timeout
+		case <-time.After(30 * time.Millisecond):
+			_, err = connect(con.IP, int(con.Port))
 			if err != nil {
 				log.Debug.Println("direct connect error:", err)
-				teo.puncher.unsubscribe(con.ID)
-				err = ErrTimeout
 				break
 			}
 			log.Debug.Println("direct connect without(after) punch done")
+
+		// Timeout
+		case <-time.After(tru.ClientConnectTimeout):
+			err = ErrTimeout
 		}
+		teo.puncher.unsubscribe(con.ID)
 		close(waitCh)
 
 		if err != nil {
