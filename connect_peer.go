@@ -229,6 +229,30 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 	// Send command to teonet
 	teo.Command(CmdConnectToPeer, data).Send(auth)
 
+	// Subscribe to puncher answer - set wait channel
+	waitCh := make(chan *net.UDPAddr)
+	teo.puncher.subscribe(con.ID, &PuncherData{&waitCh})
+
+	// Wait answer from puncher or timeout
+	go func() {
+		select {
+
+		// Answer received
+		case addr := <-waitCh:
+			// When punch received (by server) resend it data back to sender
+			teo.puncher.send(string(data), IPs{
+				IP:   addr.IP.String(),
+				Port: uint32(addr.Port),
+			})
+			teo.log.Debug.Println("answer to puncher message to", addr.String())
+
+		// Timeout
+		case <-time.After(tru.ClientConnectTimeout):
+			teo.puncher.unsubscribe(con.ID)
+
+		}
+	}()
+
 	// Punch firewall
 	go func() {
 		// Punch firewall (from server to client - server mode)
@@ -283,7 +307,7 @@ func (teo Teonet) processCmdConnectTo(data []byte, directConnectDelay int) (err 
 		return
 	}
 
-	// Subscribe to puncer answer - set wait channel and punch firewall
+	// Subscribe to puncher answer - set wait channel and punch firewall
 	waitCh := make(chan *net.UDPAddr)
 	teo.puncher.subscribe(con.ID, &PuncherData{&waitCh})
 	go func() {
@@ -348,23 +372,22 @@ func (teo Teonet) processCmdConnectTo(data []byte, directConnectDelay int) (err 
 					return
 				}
 				log.Debug.Println("direct connect without(after) punch done")
+				teo.puncher.unsubscribe(con.ID)
 			})
 		}
 
-		// Wait answer from subscribe or timeout
-		var addr *net.UDPAddr
+		// Wait answer from puncher or timeout
 		select {
 
 		// Answer received
-		case addr = <-waitCh:
+		case addr := <-waitCh:
 			_, err = connect(addr.IP.String(), addr.Port)
 
 		// Timeout
 		case <-time.After(tru.ClientConnectTimeout):
+			teo.puncher.unsubscribe(con.ID)
 			err = ErrTimeout
 		}
-		teo.puncher.unsubscribe(con.ID)
-		close(waitCh) // TODO: it can be removed
 
 		if err != nil {
 			log.Debug.Println("can't punch during connect, err", err)

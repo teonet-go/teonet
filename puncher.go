@@ -117,19 +117,10 @@ func (p *puncher) unsubscribe(key string) (punch *PuncherData, ok bool) {
 	return
 }
 
-// get key from map *** NOY USED NOW ***
-// func (p *puncher) get(key string) (punch *PuncherData, ok bool) {
-// 	p.RLock()
-// 	defer p.RUnlock()
-// 	punch, ok = p.m[key]
-// 	return
-// }
-
 // callback process received puch packet
 func (p *puncher) callback(data []byte, addr *net.UDPAddr) (ok bool) {
-	key := string(data)
-	punch, ok := p.unsubscribe(key)
-	if ok {
+	var punch *PuncherData
+	if punch, ok = p.unsubscribe(string(data)); ok {
 		*punch.wait <- addr
 	}
 	return
@@ -153,7 +144,8 @@ func (p *puncher) send(key string, ips IPs) (err error) {
 }
 
 // Punch client ip:ports (send udp packets to received IPs)
-//   delays parameter is start punch delay
+//
+//	delays parameter is start punch delay
 func (p *puncher) punch(key string, ips IPs, stop func() bool, delays ...time.Duration) {
 	go func() {
 		if len(delays) > 0 {
