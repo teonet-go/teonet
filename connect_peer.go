@@ -291,12 +291,14 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 		var err error
 
 		// connect to peer by tru and send it connect data
-		connect := func(ip string, port int) (ok bool, err error) {
+		connect := func(ip string, port int, force ...bool) (ok bool, err error) {
 
-			_, ok = teo.connRequests.get(con.ID)
-			if !ok {
-				log.Debug.Println(nMODULEconp, "skip (already connected)")
-				return
+			if len(force) == 0 || !force[0] {
+				_, ok = teo.connRequests.get(con.ID)
+				if !ok {
+					log.Debug.Println(nMODULEconp, "skip (already connected)")
+					return
+				}
 			}
 
 			// Connect to peer
