@@ -291,14 +291,12 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 		var err error
 
 		// connect to peer by tru and send it connect data
-		connect := func(ip string, port int, force ...bool) (ok bool, err error) {
+		connect := func(ip string, port int) (ok bool, err error) {
 
-			if len(force) == 0 || !force[0] {
-				_, ok = teo.connRequests.get(con.ID)
-				if !ok {
-					log.Debug.Println(nMODULEconp, "skip (already connected)")
-					return
-				}
+			_, ok = teo.connRequests.get(con.ID)
+			if !ok {
+				log.Debug.Println(nMODULEconp, "skip (already connected)")
+				return
 			}
 
 			// Connect to peer
@@ -337,6 +335,20 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 			Port:      con.Port,
 		}, func() bool { _, ok := teo.connRequests.get(con.ID); return !ok })
 
+		// Try direct connect to main IP on punch timeout. In network with 
+		// complex firewall we can't punch, so try direct connect to server
+		time.AfterFunc(150*time.Millisecond, func() {
+			ok, err = connect(con.IP, int(con.Port))
+			if !ok {
+				return
+			}
+			if err != nil {
+				log.Debug.Println("direct connect error:", err)
+				return
+			}
+			log.Debug.Println("direct connect without(after) punch done")
+		})
+
 		// Wait answer from subscribe or timeout
 		var addr *net.UDPAddr
 		select {
@@ -344,15 +356,6 @@ func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 		// Answer received
 		case addr = <-waitCh:
 			_, err = connect(addr.IP.String(), addr.Port)
-
-		// Try direct connect to main IP on punch timeout
-		case <-time.After(30 * time.Millisecond):
-			_, err = connect(con.IP, int(con.Port))
-			if err != nil {
-				log.Debug.Println("direct connect error:", err)
-				break
-			}
-			log.Debug.Println("direct connect without(after) punch done")
 
 		// Timeout
 		case <-time.After(tru.ClientConnectTimeout):
