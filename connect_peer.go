@@ -256,15 +256,16 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 	// Punch firewall
 	go func() {
 		// Punch firewall (from server to client - server mode)
-		// TODO: calculat punch start delay here: 1) triptime from client to auth +
-		// 2) triptime of this packet (from auth to this peer)
+		// TODO: calculat start punch delay here:
+		//   1) triptime from client to auth +
+		//   2) triptime of this packet (from auth to this peer)
 		teo.puncher.punch(con.ID, IPs{
 			LocalIPs:  con.LocalIPs,
 			LocalPort: con.LocalPort,
 			IP:        con.IP,
 			Port:      con.Port,
 		}, func() bool { _, ok := teo.peerRequests.get(con.ID); return !ok },
-			10*time.Millisecond, // Start punch delay
+			30*time.Millisecond, // Start punch delay
 		)
 	}()
 
@@ -351,13 +352,19 @@ func (teo Teonet) processCmdConnectTo(data []byte, directConnectDelay int) (err 
 			return
 		}
 
-		// Punch firewall (from client to server)
+		// Punch firewall (from client to server - client mode)
+		// TODO: calculat start punch delay here:
+		//   its time while server start punch and send messages to local address
+		// If we does not receive local punch messages we send punch to server,
+		// and server answer with the same puch message.
 		teo.puncher.punch(con.ID, IPs{
 			LocalIPs:  []string{}, // empty list, don't send punch to local address
 			LocalPort: con.LocalPort,
 			IP:        con.IP,
 			Port:      con.Port,
-		}, func() bool { _, ok := teo.connRequests.get(con.ID); return !ok })
+		}, func() bool { _, ok := teo.connRequests.get(con.ID); return !ok },
+			60*time.Millisecond, // Start punch delay
+		)
 
 		// Try direct connect to main IP on punch timeout. In network with
 		// complex firewall we can't punch, so try direct connect to server
