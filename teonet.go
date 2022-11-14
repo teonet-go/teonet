@@ -9,6 +9,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"math/rand"
 	"os"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 	"github.com/teonet-go/tru/teolog"
 )
 
-const Version = "0.5.40"
+const Version = "0.5.41"
 
 // Teonet data structure and methods receiver
 type Teonet struct {
@@ -215,6 +216,9 @@ func New(appName string, attr ...interface{}) (teo *Teonet, err error) {
 	teo.newConnRequests()
 	teo.newClientReaders()
 	teo.log = log
+
+    // Reset random
+	rand.Seed(time.Now().Unix())
 
 	// Create config holder and read config
 	err = teo.newConfig(appName, string(param.configDir))
