@@ -186,7 +186,7 @@ func (teo *Teonet) WhenConnectedDisconnected(f func(e byte)) {
 
 // processCmdConnectToPeer process CmdConnectToPeer request from teonet
 // auth (peer prepare to connect from client and send answer with its IPs to
-// auth server)
+// auth server) (server processwd)
 func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 
 	// Check teonet connected
@@ -197,7 +197,7 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 	}
 
 	// Unmarshal data
-	var con ConnectToData
+	var con = new(ConnectToData)
 	err = con.UnmarshalBinary(data)
 	if err != nil {
 		log.Error.Println(nMODULEconp, "connectToPeer unmarshal error:", err)
@@ -209,7 +209,7 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 		"ID:", con.ID,
 		"From IP:", con.IP+":"+strconv.Itoa(int(con.Port)))
 
-	teo.peerRequests.add(&con)
+	teo.peerRequests.add(con)
 
 	// Local IDs and port
 	ips, _ := teo.getIPs()
@@ -229,11 +229,19 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 	// Send command to teonet
 	teo.Command(CmdConnectToPeer, data).Send(auth)
 
-	// Subscribe to puncher answer - set wait channel
+	// Punch firewall
+	teo.serverPunchReceive(con)
+	teo.serverPunchSend(con)
+
+	return
+}
+
+// Subscribe to puncher answer - set wait channel and punch firewall (server)
+func (teo Teonet) serverPunchReceive(con *ConnectToData) {
+
+	// Subscribe to punch messages and wait answer from puncher or timeout
 	waitCh := make(chan *net.UDPAddr)
 	teo.puncher.subscribe(con.ID, &PuncherData{&waitCh})
-
-	// Wait answer from puncher or timeout
 	go func() {
 		select {
 
@@ -252,8 +260,10 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 
 		}
 	}()
+}
 
-	// Punch firewall
+// serverPunchSend send clients punch
+func (teo Teonet) serverPunchSend(con *ConnectToData) {
 	go func() {
 		// Punch firewall (from server to client - server mode)
 		// TODO: calculat start punch delay here:
@@ -268,18 +278,14 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 			30*time.Millisecond, // Start punch delay
 		)
 	}()
-
-	return
 }
 
 // processCmdConnectTo process ConnectTo answer from auth server, connect to
 // Peer and send clients teonet address to it (client processed)
 func (teo Teonet) processCmdConnectTo(data []byte, directConnectDelay int) (err error) {
 
-	const cantConnectToPeer = "can't connect to peer, error: "
-
 	// Unmarshal data
-	var con ConnectToData
+	var con = new(ConnectToData)
 	err = con.UnmarshalBinary(data)
 	if err != nil {
 		log.Error.Println(nMODULEconp, "got responce from teonet unmarshal error:", err.Error())
@@ -308,80 +314,78 @@ func (teo Teonet) processCmdConnectTo(data []byte, directConnectDelay int) (err 
 		return
 	}
 
-	// Subscribe to puncher answer - set wait channel and punch firewall
+	// Punch firewall
+	teo.clientPunchReceive(con)
+	teo.clientPunchSend(con)
+
+	return
+}
+
+// clientPunchReceive subscribe to puncher answer and wait servers punch messages
+func (teo Teonet) clientPunchReceive(con *ConnectToData) {
+
+	const cantConnectToPeer = "can't connect to peer, error: "
+
+	// connect to peer by tru and send it connect data
+	connect := func(ip string, port int) (ok bool, err error) {
+
+		_, ok = teo.connRequests.get(con.ID)
+		if !ok {
+			log.Debug.Println(nMODULEconp, "skip (already connected)")
+			return
+		}
+
+		// Connect to peer
+		ip, _ = teo.safeIPv6(ip)
+		c, err := teo.tru.Connect(fmt.Sprintf("%s:%d", ip, port))
+		if err != nil {
+			log.Error.Println(nMODULEconp, cantConnectToPeer, err)
+			return
+		}
+
+		// Marshal peer connect request
+		var conPeer ConnectToData
+		conPeer.ID = con.ID
+		data, err := conPeer.MarshalBinary()
+		if err != nil {
+			log.Error.Println(nMODULEconp, cantConnectToPeer, err)
+			return
+		}
+		data = append([]byte(newConnectionPrefix), data...)
+
+		// Send client peer connect request to peer
+		log.Debugv.Println(nMODULEconp, "send request to peer, id:", con.ID[:8])
+		_, err = c.WriteTo(data)
+		if err != nil {
+			log.Error.Println(nMODULEconp, cantConnectToPeer, err)
+		}
+
+		return
+	}
+
+	// Subscribe to punch messages and wait answer from puncher or timeout
 	waitCh := make(chan *net.UDPAddr)
 	teo.puncher.subscribe(con.ID, &PuncherData{&waitCh})
 	go func() {
 
 		var err error
 
-		// connect to peer by tru and send it connect data
-		connect := func(ip string, port int) (ok bool, err error) {
-
-			_, ok = teo.connRequests.get(con.ID)
-			if !ok {
-				log.Debug.Println(nMODULEconp, "skip (already connected)")
-				return
-			}
-
-			// Connect to peer
-			ip, _ = teo.safeIPv6(ip)
-			c, err := teo.tru.Connect(fmt.Sprintf("%s:%d", ip, port))
-			if err != nil {
-				log.Error.Println(nMODULEconp, cantConnectToPeer, err)
-				return
-			}
-
-			// Marshal peer connect request
-			var conPeer ConnectToData
-			conPeer.ID = con.ID
-			data, err = conPeer.MarshalBinary()
-			if err != nil {
-				log.Error.Println(nMODULEconp, cantConnectToPeer, err)
-				return
-			}
-			data = append([]byte(newConnectionPrefix), data...)
-
-			// Send client peer connect request to peer
-			log.Debugv.Println(nMODULEconp, "send request to peer, id:", con.ID[:8])
-			_, err = c.WriteTo(data)
-			if err != nil {
-				log.Error.Println(nMODULEconp, cantConnectToPeer, err)
-			}
-
-			return
-		}
-
-		// Punch firewall (from client to server - client mode)
-		// TODO: calculat start punch delay here:
-		//   its time while server start punch and send messages to local address
-		// If we does not receive local punch messages we send punch to server,
-		// and server answer with the same puch message.
-		teo.puncher.punch(con.ID, IPs{
-			LocalIPs:  []string{}, // empty list, don't send punch to local address
-			LocalPort: con.LocalPort,
-			IP:        con.IP,
-			Port:      con.Port,
-		}, func() bool { _, ok := teo.connRequests.get(con.ID); return !ok },
-			60*time.Millisecond, // Start punch delay
-		)
-
 		// Try direct connect to main IP on punch timeout. In network with
 		// complex firewall we can't punch, so try direct connect to server
-		if directConnectDelay > 0 {
-			time.AfterFunc(time.Duration(directConnectDelay)*time.Millisecond, func() {
-				ok, err = connect(con.IP, int(con.Port))
-				if !ok {
-					return
-				}
-				if err != nil {
-					log.Debug.Println("direct connect error:", err)
-					return
-				}
-				log.Debugv.Println("direct connect without punch done")
-				teo.puncher.unsubscribe(con.ID)
-			})
-		}
+		// if directConnectDelay > 0 {
+		// 	time.AfterFunc(time.Duration(directConnectDelay)*time.Millisecond, func() {
+		// 		ok, err = connect(con.IP, int(con.Port))
+		// 		if !ok {
+		// 			return
+		// 		}
+		// 		if err != nil {
+		// 			log.Debug.Println("direct connect error:", err)
+		// 			return
+		// 		}
+		// 		log.Debugv.Println("direct connect without punch done")
+		// 		teo.puncher.unsubscribe(con.ID)
+		// 	})
+		// }
 
 		// Wait answer from puncher or timeout
 		select {
@@ -400,8 +404,25 @@ func (teo Teonet) processCmdConnectTo(data []byte, directConnectDelay int) (err 
 			log.Debugv.Println("can't punch during connect, err", err)
 		}
 	}()
+}
 
-	return
+// clientPunchSend send clients punch
+func (teo Teonet) clientPunchSend(con *ConnectToData) {
+	go func() {
+		// Punch firewall (from client to server - client mode)
+		// TODO: calculat start punch delay here:
+		//   its time while server start punch and send messages to local address
+		// If we does not receive local punch messages we send punch to server,
+		// and server answer with the same puch message.
+		teo.puncher.punch(con.ID, IPs{
+			LocalIPs:  []string{}, // empty list, don't send punch to local address
+			LocalPort: con.LocalPort,
+			IP:        con.IP,
+			Port:      con.Port,
+		}, func() bool { _, ok := teo.connRequests.get(con.ID); return !ok },
+			30*time.Millisecond, // Start punch delay
+		)
+	}()
 }
 
 // connectToPeer check received message from client, set connected client
