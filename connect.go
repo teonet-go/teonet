@@ -165,7 +165,6 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	// If attr string present than connect to URL by http get list of
 	// available nodes remove ExludeIPs and select one of it
 	var con = ConnectIpPort{"95.217.18.68", 8000}
-	var directConnectDelay int
 	var excl ExcludeIPs
 	var url string
 	for i := range attr {
@@ -183,8 +182,6 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 			default:
 				url = teo.connectURL.authURL
 			}
-		case int:
-			directConnectDelay = v
 		}
 	}
 
@@ -267,7 +264,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 		// Client got answer to cmdConnectTo(connect to peer)
 		case CmdConnectTo:
-			teo.processCmdConnectTo(cmd.Data, directConnectDelay)
+			teo.processCmdConnectTo(cmd.Data)
 
 		// Peer got CmdConnectToPeer command
 		case CmdConnectToPeer:

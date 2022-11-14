@@ -283,7 +283,7 @@ func (teo Teonet) serverPunchSend(con *ConnectToData) {
 
 // processCmdConnectTo process ConnectTo answer from auth server, connect to
 // Peer and send clients teonet address to it (client processed)
-func (teo Teonet) processCmdConnectTo(data []byte, directConnectDelay int) (err error) {
+func (teo Teonet) processCmdConnectTo(data []byte) (err error) {
 
 	// Unmarshal data
 	var con = new(ConnectToData)
