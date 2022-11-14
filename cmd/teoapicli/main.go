@@ -190,8 +190,6 @@ func main() {
 	teo.Log().Debug.Println("All done, quit...")
 
 	time.Sleep(2000 * time.Millisecond)
-
-	// select {} // sleep forever
 }
 
 type safeBool struct {
