@@ -137,12 +137,13 @@ func (c *ConnectIpPort) getAddrFromHTTP(url string, excludeIPs ...string) (err e
 	return
 }
 
-// Connect to Teonet. 
+// Connect to Teonet.
 // Attributes parameter by type:
-//   type eExcludeIPs - struct with IPs slice to exclude from
-//   type ConnectIpPort - struct with IP and Port
-//   type string - RHost URL
-//   type int - directConnectDelay in millisecond to execute direct connect to peers
+//
+//	type eExcludeIPs - struct with IPs slice to exclude from
+//	type ConnectIpPort - struct with IP and Port
+//	type string - RHost URL
+//	type int - directConnectDelay in millisecond to execute direct connect to peers
 func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 
 	// During Connet to Teonet client send request to Teonet auth server:
@@ -348,7 +349,7 @@ func (teo *Teonet) Connect(attr ...interface{}) (err error) {
 	teo.SetConnected(auth, string(conOut.ServerAddress))
 
 	// Connected to teonet, show log message and send Event to main reader
-	log.Connect.Printf("Teonet address: %s\n", conOut.Address)
+	log.Connect.Printf("teonet address: %s\n", conOut.Address)
 	reader(teo, auth, nil, &Event{EventTeonetConnected, nil})
 
 	return

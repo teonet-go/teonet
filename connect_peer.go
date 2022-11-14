@@ -19,7 +19,7 @@ import (
 	"github.com/teonet-go/tru"
 )
 
-var nMODULEconp = "connect to peer"
+var nMODULEconp = "connectto"
 
 const peerReconnectAfter = 1 * time.Second
 
@@ -72,8 +72,8 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 	data, _ := con.MarshalBinary()
 
 	// Send command to teonet
-	log.Debug.Println(nMODULEconp, "send CmdConnectTo=1 to teonet, Addr:",
-		con.ToAddr, "ID:", con.ID)
+	log.Debugv.Println(nMODULEconp, "send request to teonet, addr:",
+		con.ToAddr[:8], "id:", con.ID[:8])
 	teo.Command(CmdConnectTo, data).Send(auth)
 
 	chanW := make(chanWait)
@@ -240,11 +240,11 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 		// Answer received
 		case addr := <-waitCh:
 			// When punch received (by server) resend it data back to sender
-			teo.puncher.send(string(data), IPs{
+			teo.log.Debug.Println("send answer to puncher message to", addr.String())
+			teo.puncher.send(con.ID, IPs{
 				IP:   addr.IP.String(),
 				Port: uint32(addr.Port),
 			})
-			teo.log.Debug.Println("answer to puncher message to", addr.String())
 
 		// Timeout
 		case <-time.After(tru.ClientConnectTimeout):
@@ -281,13 +281,13 @@ func (teo Teonet) processCmdConnectTo(data []byte, directConnectDelay int) (err 
 	var con ConnectToData
 	err = con.UnmarshalBinary(data)
 	if err != nil {
-		log.Error.Println(nMODULEconp, "CmdConnectTo answer unmarshal error:", err.Error())
+		log.Error.Println(nMODULEconp, "got responce from teonet unmarshal error:", err.Error())
 		return
 	}
-	log.Debug.Println(nMODULEconp, "got CmdConnectTo=1 answer from teonet,",
-		"Addr:", con.FromAddr,
-		"ID:", con.ID,
-		"IP", con.IP+":"+strconv.Itoa(int(con.Port)),
+	log.Debugv.Println(nMODULEconp, "got responce from teonet,",
+		"addr:", con.FromAddr[:8],
+		"id:", con.ID[:8],
+		"ip", con.IP+":"+strconv.Itoa(int(con.Port)),
 	)
 
 	// Check connRequests
@@ -342,7 +342,7 @@ func (teo Teonet) processCmdConnectTo(data []byte, directConnectDelay int) (err 
 			data = append([]byte(newConnectionPrefix), data...)
 
 			// Send client peer connect request to peer
-			log.Debug.Println(nMODULEconp, "send answer to peer, ID:", con.ID)
+			log.Debugv.Println(nMODULEconp, "send request to peer, id:", con.ID[:8])
 			_, err = c.WriteTo(data)
 			if err != nil {
 				log.Error.Println(nMODULEconp, cantConnectToPeer, err)
@@ -371,7 +371,7 @@ func (teo Teonet) processCmdConnectTo(data []byte, directConnectDelay int) (err 
 					log.Debug.Println("direct connect error:", err)
 					return
 				}
-				log.Debug.Println("direct connect without(after) punch done")
+				log.Debugv.Println("direct connect without punch done")
 				teo.puncher.unsubscribe(con.ID)
 			})
 		}
@@ -390,7 +390,7 @@ func (teo Teonet) processCmdConnectTo(data []byte, directConnectDelay int) (err 
 		}
 
 		if err != nil {
-			log.Debug.Println("can't punch during connect, err", err)
+			log.Debugv.Println("can't punch during connect, err", err)
 		}
 	}()
 
@@ -444,10 +444,12 @@ func (teo Teonet) connectToClient(c *Channel, p *Packet) (ok bool) {
 			var con ConnectToData
 			err := con.UnmarshalBinary(p.Data()[len(newConnectionPrefix):])
 			if err != nil {
-				log.Error.Println(nMODULEconp, "connectToConnectedClient unmarshal error:", err)
+				log.Error.Println(nMODULEconp,
+					"got responce from peer unmarshal error:", err)
 				return
 			}
-			log.Debug.Println(nMODULEconp, "got answer from new peer, ID:", con.ID)
+			log.Debugv.Println(nMODULEconp, "got responce from peer, id:",
+				con.ID[:8])
 
 			if req, ok := teo.connRequests.get(con.ID); ok {
 				// Set channel connected
