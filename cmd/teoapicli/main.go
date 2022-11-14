@@ -96,7 +96,7 @@ func main() {
 	defer teo.CloseTo(p.connectTo)
 
 	// Connect message
-	teo.Log().Debug.Printf("Connected to API sample server: %s\n\n", p.connectTo)
+	teo.Log().Debug.Printf("connected to API sample server: %s\n\n", p.connectTo)
 
 	// Test #1: Send Teonet Commands -------------------------------------------
 	teo.Log().Debug.Printf("\n\n===> Test #1: Send commands to API server with Teonet Command Send and Get answer in Connect Reader\n\n")

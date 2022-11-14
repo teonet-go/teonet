@@ -127,7 +127,7 @@ func (p *puncher) callback(data []byte, addr *net.UDPAddr) (ok bool) {
 }
 
 // send puncher key to list of IP:Port
-func (p *puncher) send(key string, ips IPs) (err error) {
+func (p *puncher) send(key string, ips IPs, stop ...func() bool) (err error) {
 
 	sendKey := func(ip string, port uint32) (err error) {
 		addr := ip + ":" + strconv.Itoa(int(port))
@@ -136,6 +136,9 @@ func (p *puncher) send(key string, ips IPs) (err error) {
 		return
 	}
 	for i := range ips.LocalIPs {
+		if len(stop) > 0 && stop[0]() {
+			return
+		}
 		sendKey(ips.LocalIPs[i], ips.LocalPort)
 	}
 	sendKey(ips.IP, ips.Port)
@@ -151,11 +154,8 @@ func (p *puncher) punch(key string, ips IPs, stop func() bool, delays ...time.Du
 		if len(delays) > 0 {
 			time.Sleep(delays[0])
 		}
-		for i := 0; i < 5; /* 15 */ i++ {
-			if stop() {
-				break
-			}
-			p.send(key, ips)
+		for i := 0; i < 5 && !stop(); i++ {
+			p.send(key, ips, stop)
 			time.Sleep(time.Duration(((i + 1) * 30)) * time.Millisecond)
 		}
 	}()

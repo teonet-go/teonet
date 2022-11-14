@@ -204,14 +204,16 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 	var con = new(ConnectToData)
 	err = con.UnmarshalBinary(data)
 	if err != nil {
-		log.Error.Println(nMODULEconp, "connectToPeer unmarshal error:", err)
+		log.Error.Println(nMODULEconp,
+			"got request from teonet unmarshal error:", err)
 		return
 	}
 	log.Debugv.Println(nMODULEconp,
-		"got connect request from teonet",
+		"got request from teonet",
 		"addr:", con.FromAddr[:6],
 		"id:", con.ID[:6],
-		"from ip:", con.IP+":"+strconv.Itoa(int(con.Port)))
+		// "from ip:", con.IP+":"+strconv.Itoa(int(con.Port)),
+	)
 
 	teo.peerRequests.add(con)
 
@@ -252,7 +254,7 @@ func (teo Teonet) serverPunchReceive(con *ConnectToData) {
 		// Answer received
 		case addr := <-waitCh:
 			// When punch received (by server) resend it data back to sender
-			teo.log.Debug.Println("send answer to puncher message to", addr.String())
+			teo.log.Debugv.Println("send answer to puncher message to", addr.String())
 			teo.puncher.send(con.ID, IPs{
 				IP:   addr.IP.String(),
 				Port: uint32(addr.Port),
@@ -270,17 +272,12 @@ func (teo Teonet) serverPunchReceive(con *ConnectToData) {
 func (teo Teonet) serverPunchSend(con *ConnectToData) {
 	go func() {
 		// Punch firewall (from server to client - server mode)
-		// TODO: calculat start punch delay here:
-		//   1) triptime from client to auth +
-		//   2) triptime of this packet (from auth to this peer)
 		teo.puncher.punch(con.ID, IPs{
 			LocalIPs:  con.LocalIPs,
 			LocalPort: con.LocalPort,
 			IP:        con.IP,
 			Port:      con.Port,
-		}, func() bool { _, ok := teo.peerRequests.get(con.ID); return !ok },
-		// 30*time.Millisecond, // Start punch delay
-		)
+		}, func() bool { _, ok := teo.peerRequests.get(con.ID); return !ok })
 	}()
 }
 
@@ -304,8 +301,8 @@ func (teo Teonet) processCmdConnectTo(data []byte, directConnectDelay int) (err 
 	// Check connRequests
 	req, ok := teo.connRequests.get(con.ID)
 	if !ok {
-		err = errors.New("got CmdConnectTo answer time out")
-		log.Error.Println(nMODULEconp, err.Error())
+		err = errors.New("got responce from teonet, already processed or time out")
+		log.Debugv.Println(nMODULEconp, err.Error())
 		return
 	}
 
@@ -374,23 +371,6 @@ func (teo Teonet) clientPunchReceive(con *ConnectToData) {
 
 		var err error
 
-		// Try direct connect to main IP on punch timeout. In network with
-		// complex firewall we can't punch, so try direct connect to server
-		// if directConnectDelay > 0 {
-		// 	time.AfterFunc(time.Duration(directConnectDelay)*time.Millisecond, func() {
-		// 		ok, err = connect(con.IP, int(con.Port))
-		// 		if !ok {
-		// 			return
-		// 		}
-		// 		if err != nil {
-		// 			log.Debug.Println("direct connect error:", err)
-		// 			return
-		// 		}
-		// 		log.Debugv.Println("direct connect without punch done")
-		// 		teo.puncher.unsubscribe(con.ID)
-		// 	})
-		// }
-
 		// Wait answer from puncher or timeout
 		select {
 
@@ -414,18 +394,12 @@ func (teo Teonet) clientPunchReceive(con *ConnectToData) {
 func (teo Teonet) clientPunchSend(con *ConnectToData) {
 	go func() {
 		// Punch firewall (from client to server - client mode)
-		// TODO: calculat start punch delay here:
-		//   its time while server start punch and send messages to local address
-		// If we does not receive local punch messages we send punch to server,
-		// and server answer with the same puch message.
 		teo.puncher.punch(con.ID, IPs{
 			LocalIPs:  []string{}, // empty list, don't send punch to local address
 			LocalPort: con.LocalPort,
 			IP:        con.IP,
 			Port:      con.Port,
-		}, func() bool { _, ok := teo.connRequests.get(con.ID); return !ok },
-			30*time.Millisecond, // Start punch delay
-		)
+		}, func() bool { _, ok := teo.connRequests.get(con.ID); return !ok })
 	}()
 }
 
@@ -453,7 +427,7 @@ func (teo Teonet) connectToPeer(c *Channel, p *Packet) (ok bool) {
 				log.Debugv.Println(nMODULEconp, "send answer to client, id:", con.ID[:6])
 				c.Send(p.Data())
 			} else {
-				log.Error.Println(nMODULEconp, "!!! wrong request ID:", con.ID[:6])
+				log.Error.Println(nMODULEconp, "!!! wrong request id:", con.ID[:6])
 				// TODO: we can't delete channel here becaus deadlock will be
 				// Check if we need delete, and what hapend if we does not delete
 				// teo.channels.del(c)
@@ -491,7 +465,7 @@ func (teo Teonet) connectToClient(c *Channel, p *Packet) (ok bool) {
 					*req.chanWait <- nil
 				}
 			} else {
-				log.Error.Println(nMODULEconp, "!!! wrong request ID:", con.ID)
+				log.Error.Println(nMODULEconp, "!!! wrong request id:", con.ID)
 				// TODO: thr same question as in previuse func
 				// teo.channels.del(c)
 			}
