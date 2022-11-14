@@ -76,6 +76,10 @@ func (teo Teonet) ConnectTo(addr string, readers ...interface{}) (err error) {
 		con.ToAddr[:8], "id:", con.ID[:8])
 	teo.Command(CmdConnectTo, data).Send(auth)
 
+	// Wait and receive punch answer
+	teo.clientPunchReceive(&con)
+
+	// Create wait channel and connect request
 	chanW := make(chanWait)
 	defer close(chanW)
 	teo.connRequests.add(&con, &chanW)
@@ -204,10 +208,10 @@ func (teo Teonet) processCmdConnectToPeer(data []byte) (err error) {
 		return
 	}
 	log.Debugv.Println(nMODULEconp,
-		"got CmdConnectToPeer=2 from teonet",
-		"Addr:", con.FromAddr,
-		"ID:", con.ID,
-		"From IP:", con.IP+":"+strconv.Itoa(int(con.Port)))
+		"got connect request from teonet",
+		"addr:", con.FromAddr[:6],
+		"id:", con.ID[:6],
+		"from ip:", con.IP+":"+strconv.Itoa(int(con.Port)))
 
 	teo.peerRequests.add(con)
 
@@ -275,7 +279,7 @@ func (teo Teonet) serverPunchSend(con *ConnectToData) {
 			IP:        con.IP,
 			Port:      con.Port,
 		}, func() bool { _, ok := teo.peerRequests.get(con.ID); return !ok },
-			30*time.Millisecond, // Start punch delay
+		// 30*time.Millisecond, // Start punch delay
 		)
 	}()
 }
@@ -315,7 +319,7 @@ func (teo Teonet) processCmdConnectTo(data []byte, directConnectDelay int) (err 
 	}
 
 	// Punch firewall
-	teo.clientPunchReceive(con)
+	// teo.clientPunchReceive(con)
 	teo.clientPunchSend(con)
 
 	return
@@ -440,16 +444,16 @@ func (teo Teonet) connectToPeer(c *Channel, p *Packet) (ok bool) {
 				log.Error.Println(nMODULEconp, "CmdConnectToPeer unmarshal error:", err)
 				return
 			}
-			log.Debugv.Println(nMODULEconp, "got answer from new client, ID:", con.ID)
+			log.Debugv.Println(nMODULEconp, "got answer from new client, id:", con.ID[:6])
 
 			if res, ok := teo.peerRequests.del(con.ID); ok {
 				// Set channel connected
 				teo.SetConnected(c, res.FromAddr)
 				// Send answer to client
-				log.Debugv.Println(nMODULEconp, "send answer to client, ID:", con.ID)
+				log.Debugv.Println(nMODULEconp, "send answer to client, id:", con.ID[:6])
 				c.Send(p.Data())
 			} else {
-				log.Error.Println(nMODULEconp, "!!! wrong request ID:", con.ID)
+				log.Error.Println(nMODULEconp, "!!! wrong request ID:", con.ID[:6])
 				// TODO: we can't delete channel here becaus deadlock will be
 				// Check if we need delete, and what hapend if we does not delete
 				// teo.channels.del(c)
