@@ -83,7 +83,7 @@ func main() {
 
 	// Show this application private key
 	if p.showPrivate {
-		teo.Log().Debug.Printf("%x\n", teo.GetPrivateKey())
+		teo.Log().Debug.Printf("%s\n", teo.GetPrivateKey())
 		os.Exit(0)
 	}
 

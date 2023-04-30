@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"math/rand"
 	"reflect"
 	"time"
 
@@ -128,7 +127,7 @@ func (c *ConnectIpPort) getAddrFromHTTP(url string, excludeIPs ...string) (err e
 	// Get random node
 	i := 0
 	if l > 1 {
-		i = rand.Intn(l)
+		i = rnd.Intn(l)
 	}
 	c.IP = n.address[i].IP
 	c.Port = int(n.address[i].Port)

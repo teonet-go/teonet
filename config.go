@@ -35,13 +35,18 @@ const (
 // config teonet config struct and methods receiver
 type config struct {
 	TrudpPrivateKeyData []byte          `json:"trudp_private_key"`
-	PrivateKeyData      []byte          `json:"private_key"`
+	PrivateKeyData      KeyData         `json:"private_key"`
 	ServerPublicKeyData []byte          `json:"server_key"`
 	Address             string          `json:"address"`
 	trudpPrivateKey     *rsa.PrivateKey `json:"-"`
 	appName             string          `json:"-"`
 	osConfigDir         string          `json:"-"`
 	m                   *sync.RWMutex   `json:"-"`
+}
+type KeyData []byte
+
+func (k KeyData) String() string {
+	return base64.StdEncoding.EncodeToString(k)
 }
 
 // OsConfigDir used in teonet.New parameter to define os config directory
@@ -222,7 +227,7 @@ func (c *config) createKeys() (err error) {
 
 	// Create teonet (address) private key
 	c.PrivateKeyData = c.generatePrivateKey()
-	fmt.Printf("new private key hex: %x\n", c.PrivateKeyData)
+	fmt.Printf("new private key hex: %s\n", c.PrivateKeyData)
 
 	return
 }
@@ -246,7 +251,7 @@ func (c config) getPublicKey() (key []byte) {
 }
 
 // GetPrivateKey get teonet private key
-func (teo Teonet) GetPrivateKey() (key []byte) {
+func (teo Teonet) GetPrivateKey() (key KeyData) {
 	return teo.config.PrivateKeyData
 }
 

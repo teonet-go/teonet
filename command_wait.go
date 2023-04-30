@@ -17,12 +17,13 @@ type CheckDataFunc func(data []byte) (ok bool)
 type WaitData []byte
 
 // WaitFrom wait answer from address. Attr is additional attributes by type:
-//   byte or int: wait command number in answer
-//   uint32: wait packet id in answer
-//   func([]byte)bool: check packet data with callback, data without command and id
-//   time.Duration: wait timeout (default 5 sec)
 //
-//   answer packet data structure: [cmd][id][data] it depend of service api
+//	byte or int: wait command number in answer
+//	uint32: wait packet id in answer
+//	func([]byte)bool: check packet data with callback, data without command and id
+//	time.Duration: wait timeout (default 5 sec)
+//
+//	answer packet data structure: [cmd][id][data] it depend of service api
 func (teo *Teonet) WaitFrom(from string, attr ...interface{}) (data []byte, err error) {
 
 	attr = append(attr, true)
@@ -56,13 +57,14 @@ type WaitReader struct {
 }
 
 // MakeWaitReader create reader, wait channel and timeout from attr:
-//   byte or int: wait command number in answer
-//   uint32: wait packet id in answer
-//   func([]byte)bool: check packet data with callback, data without command and id
-//   time.Duration: wait timeout (default 5 sec)
-//   bool: created wait channel and send data to channel if true
 //
-//   answer packet data structure: [cmd][id][data] it depend of service api
+//	byte or int: wait command number in answer
+//	uint32: wait packet id in answer
+//	func([]byte)bool: check packet data with callback, data without command and id
+//	time.Duration: wait timeout (default 5 sec)
+//	bool: created wait channel and send data to channel if true
+//
+//	answer packet data structure: [cmd][id][data] it depend of service api
 func (teo *Teonet) MakeWaitReader(attr ...interface{}) (wr *WaitReader) {
 
 	wr = new(WaitReader)

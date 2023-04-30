@@ -21,12 +21,13 @@ type Command struct {
 }
 
 // Command create command struct. Attr may contain 1 or 2 parameters:
-//   1 parameter
-//       command & data slice - []byte
 //
-//   2 parameters
-//       command  - AuthCmd | byte | int
-//       data     - []byte | string | nil
+//	1 parameter
+//	    command & data slice - []byte
+//
+//	2 parameters
+//	    command  - AuthCmd | byte | int
+//	    data     - []byte | string | nil
 func (teo *Teonet) Command(attr ...interface{}) (cmd *Command) {
 
 	cmd = &Command{teo: teo}

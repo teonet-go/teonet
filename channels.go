@@ -144,9 +144,7 @@ func (teo Teonet) Nodes(attr ...NodeAddr) (n *nodes) {
 		return teo.channels.list()
 	}
 	n = new(nodes)
-	for i := range attr {
-		n.address = append(n.address, attr[i])
-	}
+	n.address = append(n.address, attr...)
 	return
 }
 

@@ -60,9 +60,9 @@ type API struct {
 
 // APIconnectMode connection type of received command:
 //
-//   Server: execute command if there is server connection;
-//   Client: execute command if there is client connection;
-//   Both: execute command if there is any server or client connection
+//	Server: execute command if there is server connection;
+//	Client: execute command if there is client connection;
+//	Both: execute command if there is any server or client connection
 //
 // Server connection mode: any Peer connected to this application with function
 // ConnectTo (and Peer send commands to this application). Client connection mode:
