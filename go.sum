@@ -14,7 +14,7 @@ github.com/kirill-scherba/stable v0.0.8 h1:m0GM5FCx1SJkai1o6kfQI0lKUWeupQGTicqb8
 github.com/kirill-scherba/stable v0.0.8/go.mod h1:Le2T16xIQmb9c9xzDVSqf7bWvpzo1pbDQLeD0s7qxZU=
 github.com/teonet-go/teomon v0.5.14 h1:iYWj2x4oQD7rOp1vu/OMR0dcELEPWhJDcWDx32GvE+A=
 github.com/teonet-go/teomon v0.5.14/go.mod h1:GzmuSJWL+tMiN4HvT1fZoqp/mfN8bX7p5R9bxv8JAhM=
-github.com/teonet-go/tru v0.0.12 h1:EVzije7UCtXRNlqu4hAqtpQlUG+61eEf8fiV37tar68=
-github.com/teonet-go/tru v0.0.12/go.mod h1:99eMSU2K7n6I06KTOzCu4dWkV/VBPRkV7u61akoLdBE=
-golang.org/x/sys v0.7.0 h1:3jlCCIQZPdOYu1h8BkNvLz8Kgwtae2cagcG/VamtZRU=
-golang.org/x/sys v0.7.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+github.com/teonet-go/tru v0.0.18 h1:4BR9zpqY0jMmTXsXzyCc4DokMucnqLcsMD+C9uilDro=
+github.com/teonet-go/tru v0.0.18/go.mod h1:xCKC3B0JbfE2C8OliN/CJ7R1gGQbnTIKKWLBaC4oBLY=
+golang.org/x/sys v0.11.0 h1:eG7RXZHdqOJ1i+0lgLgCpSXAp6M3LYlAo6osgSi0xOM=
+golang.org/x/sys v0.11.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=

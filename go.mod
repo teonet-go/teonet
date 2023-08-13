@@ -1,12 +1,12 @@
 module github.com/teonet-go/teonet
 
-go 1.20
+go 1.21
 
 require (
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/kirill-scherba/bslice v0.0.2
 	github.com/teonet-go/teomon v0.5.14
-	github.com/teonet-go/tru v0.0.12
+	github.com/teonet-go/tru v0.0.18
 )
 
 require (
@@ -15,5 +15,5 @@ require (
 	github.com/denisbrodbeck/machineid v1.0.1 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/kirill-scherba/stable v0.0.8 // indirect
-	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/sys v0.11.0 // indirect
 )
