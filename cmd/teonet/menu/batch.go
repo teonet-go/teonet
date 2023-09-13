@@ -1,4 +1,4 @@
-package main
+package menu
 
 import (
 	"bufio"
@@ -8,20 +8,17 @@ import (
 	"strings"
 
 	"github.com/teonet-go/teonet"
-	"github.com/teonet-go/teonet/cmd/teonet/menu"
 )
 
-const (
-	aliasBatchFile   = "alias.conf"
-	connectBatchFile = "connectto.conf"
-)
+type Batch struct{ menu *Menu }
 
-type Batch struct{ menu *menu.Menu }
+// NewBatch creates new Batch object
+func NewBatch(menu *Menu) *Batch { return &Batch{menu} }
 
-// run aliases from config file
-func (b *Batch) run(name string) (err error) {
+// Run executes commands from batch config file
+func (b *Batch) Run(appShort, name string) (err error) {
 	// Get file name
-	fname, err := b.file(name)
+	fname, err := b.file(appShort, name)
 	if err != nil {
 		return
 	}
@@ -42,6 +39,9 @@ func (b *Batch) run(name string) (err error) {
 		line = space.ReplaceAllString(line, " ")
 
 		fmt.Println(line) // Println will add back the final '\n'
+		if len(line) == 0 {
+			continue
+		}
 		if err = b.menu.ExecuteCommand(line); err != nil {
 			fmt.Println("error:", err)
 		}
@@ -53,9 +53,9 @@ func (b *Batch) run(name string) (err error) {
 }
 
 // Save batch to config file
-func (b Batch) Save(name string, prefix string, batch []string) (err error) {
+func (b Batch) Save(appShort, name string, prefix string, batch []string) (err error) {
 	// Get file name
-	fname, err := b.file(name)
+	fname, err := b.file(appShort, name)
 	if err != nil {
 		return
 	}
@@ -78,7 +78,7 @@ func (b Batch) Save(name string, prefix string, batch []string) (err error) {
 }
 
 // file return full file name with config dir folder
-func (b Batch) file(name string) (f string, err error) {
+func (b Batch) file(appShort, name string) (f string, err error) {
 	f, err = os.UserConfigDir()
 	if err != nil {
 		return

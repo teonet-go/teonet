@@ -46,8 +46,8 @@ func main() {
 	}
 
 	// Run batch files
-	cli.batch.run(aliasBatchFile)
-	cli.batch.run(connectBatchFile)
+	cli.batch.Run(appShort, aliasBatchFile)
+	cli.batch.Run(appShort, connectBatchFile)
 
 	// Run Teonet CLI commands menu
 	fmt.Print(

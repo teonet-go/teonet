@@ -15,7 +15,7 @@ import (
 	"github.com/teonet-go/teonet/cmd/teonet/menu"
 )
 
-// Command name
+// Commands name
 const (
 	cmdConnectTo = "connectto"
 	cmdSendTo    = "sendto"
@@ -23,6 +23,12 @@ const (
 	cmdStat      = "stat"
 	cmdAPI       = "api"
 	cmdHelp      = "help"
+)
+
+// Name of batch files
+const (
+	aliasBatchFile   = "alias.conf"
+	connectBatchFile = "connectto.conf"
 )
 
 var ErrWrongNumArguments = errors.New("wrong number of arguments")
@@ -79,7 +85,7 @@ func (c CmdAlias) Exec(line string) (err error) {
 	// Check -save flag
 	case save:
 		aliases := c.alias.list()
-		c.batch.Save(aliasBatchFile, cmdAlias, aliases)
+		c.batch.Save(appShort, aliasBatchFile, cmdAlias, aliases)
 		return
 
 	// Check length of arguments
@@ -150,7 +156,7 @@ func (c CmdConnectTo) Exec(line string) (err error) {
 				connecttos = append(connecttos, alias)
 			}
 		}
-		c.batch.Save(connectBatchFile, cmdConnectTo, connecttos)
+		c.batch.Save(appShort, connectBatchFile, cmdConnectTo, connecttos)
 		return
 
 	// Check length of arguments

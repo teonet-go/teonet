@@ -23,7 +23,7 @@ func NewTeocli(teo *teonet.Teonet, appShort string) (cli *Teocli, err error) {
 		return
 	}
 	cli.menu.Add(cli.commands...)
-	cli.batch = &Batch{cli.menu}
+	cli.batch = menu.NewBatch(cli.menu)
 	cli.alias = newAlias()
 	cli.api = newAPI()
 
@@ -32,7 +32,7 @@ func NewTeocli(teo *teonet.Teonet, appShort string) (cli *Teocli, err error) {
 
 type Teocli struct {
 	commands []menu.Item
-	batch    *Batch
+	batch    *menu.Batch
 	alias    *Alias
 	menu     *menu.Menu
 	api      *API

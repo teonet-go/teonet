@@ -18,7 +18,7 @@ import (
 	"github.com/teonet-go/tru/teolog"
 )
 
-const Version = "0.6.3"
+const Version = "0.6.4"
 
 // Reset random and use rnd instead
 var rnd = rand.New(rand.NewSource(time.Now().Unix()))
