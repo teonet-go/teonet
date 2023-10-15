@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -191,12 +192,22 @@ type CmdAPI struct {
 }
 
 func (c CmdAPI) Name() string  { return cmdAPI }
-func (c CmdAPI) Usage() string { return "<address> [command] [arguments...]" }
+func (c CmdAPI) Usage() string { return "[flags] [address] [command] [arguments...]" }
 func (c CmdAPI) Help() string  { return "get peers api" }
 func (c CmdAPI) Exec(line string) (err error) {
 	flags := c.NewFlagSet(c.Name(), c.Usage(), c.Help())
-	var list bool
+	var (
+		list     bool // list flag
+		appshort bool // app short name flag
+		appname  bool // app name flag
+		applong  bool // app long name flag
+		wallet   bool // wallet flag
+	)
 	flags.BoolVar(&list, "list", list, "list all connected api")
+	flags.BoolVar(&appshort, "short", appshort, "get application short name")
+	flags.BoolVar(&appname, "name", appname, "get application name")
+	flags.BoolVar(&applong, "long", applong, "get application description")
+	flags.BoolVar(&wallet, "wallet", wallet, "this application wallet parameters")
 	err = flags.Parse(c.menu.SplitSpace(line))
 	if err != nil {
 		return
@@ -227,9 +238,9 @@ func (c CmdAPI) Exec(line string) (err error) {
 
 	// Create API interface and get API
 	var address = c.alias.Address(args[0])
-	api, ok := c.api.get(address)
+	apiClient, ok := c.api.get(address)
 	if !ok {
-		api, err = c.teo.NewAPIClient(address)
+		apiClient, err = c.teo.NewAPIClient(address)
 		if err != nil {
 			fmt.Printf("can't get api %s, error: %s\n", address, err)
 			if err == teonet.ErrPeerNotConnected {
@@ -237,10 +248,45 @@ func (c CmdAPI) Exec(line string) (err error) {
 			}
 			return nil
 		}
-		c.api.add(address, api)
+		c.api.add(address, apiClient)
 	}
+	// Extend APIClient with wallet commands
+	var api = struct {
+		*teonet.APIClient
+		walletCommand
+	}{APIClient: apiClient}
+
+	// Show flags info or api commands
 	if len(args) == 1 {
-		fmt.Print(api.String() + "\n")
+		switch {
+
+		// Print -appshort flag
+		case appshort:
+			fmt.Printf("%s\n", api.AppShort())
+
+		// Print -appname flag
+		case appname:
+			fmt.Printf("%s\n", api.AppName())
+
+		// Print -applong flag
+		case applong:
+			fmt.Printf("%s\n", api.AppLong())
+
+		// Process -wallet flag
+		case wallet:
+			fmt.Printf("%s\n", api.AppWalletUsage())
+
+		// Print api commands
+		default:
+			fmt.Print(api.String() + "\n")
+		}
+
+		return
+	}
+
+	// Process -wallet flag
+	if wallet {
+		fmt.Printf("%s\n", api.AppWalletProcess(args[:]))
 		return
 	}
 
@@ -258,7 +304,7 @@ func (c CmdAPI) Exec(line string) (err error) {
 	if answerMode, ok := api.AnswerMode(command); ok && answerMode == teonet.NoAnswer {
 		_, err = api.SendTo(command, data)
 		if err != nil {
-			fmt.Printf("can't send api command %s, error: %s\n", command, err)
+			c.printCantSend(command, err)
 			err = nil
 		}
 		return
@@ -275,7 +321,7 @@ func (c CmdAPI) Exec(line string) (err error) {
 				switch {
 				case strings.Contains(ret, "string"):
 					fmt.Println("got answer:", string(data))
-					err = c.edit(api, data, editparam, &editmode)
+					err = c.edit(api.APIClient, data, editparam, &editmode)
 					if err != nil {
 						// fmt.Println("editor, error:", err)
 					}
@@ -294,7 +340,7 @@ func (c CmdAPI) Exec(line string) (err error) {
 		wait <- struct{}{}
 	})
 	if err != nil {
-		fmt.Printf("can't send api command %s, error: %s\n", command, err)
+		c.printCantSend(command, err)
 		return nil
 	}
 Wait:
@@ -311,11 +357,14 @@ Wait:
 	return
 }
 func (c CmdAPI) Compliter() (cmpl []menu.Compliter) {
-	return c.menu.MakeCompliterFromString([]string{"-list"})
+	return c.menu.MakeCompliterFromString([]string{
+		"-list", "-short", "-name", "-long", "-wallet",
+	})
 }
 
 // edit received data in os editor and save it back if edit mode enable
-func (c CmdAPI) edit(api *teonet.APIClient, req []byte, saveparam string, editmode *int32) (err error) {
+func (c CmdAPI) edit(api *teonet.APIClient, req []byte, saveparam string,
+	editmode *int32) (err error) {
 
 	// Unmarshal input data
 	var v struct {
@@ -324,33 +373,35 @@ func (c CmdAPI) edit(api *teonet.APIClient, req []byte, saveparam string, editmo
 		SaveCmd string      `json:"savecmd"`
 		Err     string      `json:"err"`
 	}
-	err = json.Unmarshal(req, &v)
-	if err != nil {
+	if err = json.Unmarshal(req, &v); err != nil || !v.Edit {
 		return
 	}
-	if v.Edit {
-		// Set edit mode. We use atomic to safe race when editmode check in
-		// another goroutine
-		atomic.StoreInt32(editmode, 1)
+
+	// Set edit mode. We use atomic to safe race when editmode check in
+	// another goroutine
+	atomic.StoreInt32(editmode, 1)
+
+	var data []byte
+	var patern string
+	var wasJsonData = false
+	var jsonInterface interface{}
+	resStr := fmt.Sprintf("%v", v.Res)
+
+	// Make prety json to edit in editor or get plain data
+	if err = json.Unmarshal([]byte(resStr), &jsonInterface); err == nil {
+		if data, err = json.MarshalIndent(jsonInterface, "", " "); err != nil {
+			return
+		}
+		patern = "*.json"
+		wasJsonData = true
 	} else {
-		return
-	}
-	var vv interface{}
-	resstr := fmt.Sprintf("%v", v.Res)
-	err = json.Unmarshal([]byte(resstr), &vv)
-	if err != nil {
-		return
+		data = []byte(resStr)
+		patern = "*.txt"
 	}
 
-	// Make prety json to edit in editor
-	data, err := json.MarshalIndent(vv, "", " ")
-	if err != nil {
-		return
-	}
-
-	// Create temp file
+	// Create temp file to edit in editor
 	dir := os.TempDir()
-	file, err := os.CreateTemp(dir, "*.json")
+	file, err := os.CreateTemp(dir, patern)
 	if err != nil {
 		return
 	}
@@ -372,49 +423,49 @@ func (c CmdAPI) edit(api *teonet.APIClient, req []byte, saveparam string, editmo
 	cmd := exec.Command(editor, filename)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
-	err = cmd.Run()
-	if err != nil {
+	if err = cmd.Run(); err != nil {
 		return
 	}
 
 	// Read temp file changed in editor
-	var b []byte
-	const bufSize = 1024
-	buf := make([]byte, bufSize)
-	file, err = os.Open(filename)
-	if err != nil {
+	if file, err = os.Open(filename); err != nil {
 		return
 	}
-	for {
-		n, err := file.Read(buf)
-		if err != nil || n == 0 {
-			break
-		}
-		b = append(b, buf[:n]...)
-		if n < bufSize {
-			break
-		}
+	defer file.Close()
+	if data, err = io.ReadAll(file); err != nil {
+		return
 	}
-	file.Close()
 
 	// Compact json
-	err = json.Unmarshal(b, &vv)
-	if err != nil {
+	err = json.Unmarshal(data, &jsonInterface)
+	if err == nil {
+		if data, err = json.Marshal(jsonInterface); err != nil {
+			return
+		}
+		fmt.Println("edited json:", string(data))
+	} else if wasJsonData {
+		fmt.Printf("can't save json, error: %s\n", err)
 		return
 	}
-	data, err = json.Marshal(vv)
-	fmt.Println("edited json:", string(data))
+
+	// Skip save if resStr not changed
+	if resStr == string(data) {
+		return
+	}
 
 	// Send command to save edited file
-	fmt.Printf("save command: %s %s,%s\n", v.SaveCmd, saveparam, string(data))
 	data = []byte(fmt.Sprintf("%s,%s", saveparam, string(data)))
-	_, err = api.SendTo(v.SaveCmd, data)
-	if err != nil {
-		fmt.Printf("can't send api command %s, error: %s\n", v.SaveCmd, err)
+	fmt.Printf("save command: %s %s\n", v.SaveCmd, string(data))
+	if _, err = api.SendTo(v.SaveCmd, data); err != nil {
+		c.printCantSend(v.SaveCmd, err)
 		err = nil
 	}
 
 	return
+}
+
+func (cli *Teocli) printCantSend(cmd string, err error) {
+	fmt.Printf("can't send api command %s, error: %s\n", cmd, err)
 }
 
 // Create CmdSendTo commands
@@ -465,7 +516,9 @@ func (c CmdSendTo) Exec(line string) (err error) {
 
 	// Send data to peer and wait answer
 	wait := make(chan interface{})
-	id, err := c.teo.SendTo(address, data, func(c *teonet.Channel, p *teonet.Packet, e *teonet.Event) bool {
+	id, err := c.teo.SendTo(address, data, func(c *teonet.Channel,
+		p *teonet.Packet, e *teonet.Event) bool {
+
 		// if err != nil {
 		if e.Event != teonet.EventData {
 			// fmt.Printf("got error: %s, from: %s\n", err, address)
@@ -501,7 +554,7 @@ func (cli *Teocli) newCmdStat() menu.Item {
 	return CmdStat{TeocliCommand: TeocliCommand{cli}, set: new(bool)}
 }
 
-// CmdStat show local stat command ----------------------------------------------
+// CmdStat show local stat command ---------------------------------------------
 type CmdStat struct {
 	TeocliCommand
 	set *bool
