@@ -1,3 +1,9 @@
+// Copyright 2021-2023 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Teonet CLI application Commands processing module.
+
 package main
 
 import (
