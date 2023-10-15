@@ -1,9 +1,13 @@
+github.com/denisbrodbeck/machineid v1.0.1 h1:geKr9qtkB876mXguW2X6TU4ZynleN6ezuMSRhl4D7AQ=
+github.com/denisbrodbeck/machineid v1.0.1/go.mod h1:dJUwb7PTidGDeYyUBmXZ2GphQBbjJCrnectwCyxcUSI=
 github.com/google/uuid v1.3.1 h1:KjJaJ9iWZ3jOFZIf1Lqf4laDRCasjl0BCmnEGxkdLb4=
 github.com/google/uuid v1.3.1/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/kirill-scherba/bslice v0.0.2 h1:ZuP0jBWKB+a6l7J6yB5bmWdm3SB6m/nfE5hKpLksH+A=
 github.com/kirill-scherba/bslice v0.0.2/go.mod h1:oMZe3puDpM84VyI0S0qc2XrepyxKJIwEovbNRJPyuTw=
 github.com/kirill-scherba/stable v0.0.8 h1:m0GM5FCx1SJkai1o6kfQI0lKUWeupQGTicqb8EIPorg=
 github.com/kirill-scherba/stable v0.0.8/go.mod h1:Le2T16xIQmb9c9xzDVSqf7bWvpzo1pbDQLeD0s7qxZU=
+github.com/teonet-go/teomon v0.5.14 h1:iYWj2x4oQD7rOp1vu/OMR0dcELEPWhJDcWDx32GvE+A=
+github.com/teonet-go/teomon v0.5.14/go.mod h1:GzmuSJWL+tMiN4HvT1fZoqp/mfN8bX7p5R9bxv8JAhM=
 github.com/teonet-go/tru v0.0.18 h1:4BR9zpqY0jMmTXsXzyCc4DokMucnqLcsMD+C9uilDro=
 github.com/teonet-go/tru v0.0.18/go.mod h1:xCKC3B0JbfE2C8OliN/CJ7R1gGQbnTIKKWLBaC4oBLY=
 golang.org/x/sys v0.13.0 h1:Af8nKPmuFypiUBjVoU9V20FiaFXOcuZI21p0ycVYYGE=
