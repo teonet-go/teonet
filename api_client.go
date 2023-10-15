@@ -25,6 +25,14 @@ const (
 	CmdClientAPI = 254
 )
 
+var (
+	ErrWoronCommand = errors.New("wrong command")
+)
+
+const (
+	FmtMsgCommandNotCount = "command '%s' not found"
+)
+
 // NewAPIClient create new APIClient
 func (teo *Teonet) NewAPIClient(address string, cmdAPIs ...byte) (apicli *APIClient, err error) {
 	apicli = new(APIClient)
@@ -63,7 +71,7 @@ func (api *APIClient) WaitFrom(command interface{}, packetID ...interface{}) (da
 	} else {
 		a, ok := api.AnswerMode(cmd)
 		if !ok {
-			err = errors.New("wrong command")
+			err = ErrWoronCommand
 			return
 		}
 		answerMode = a
@@ -157,7 +165,7 @@ func (api *APIClient) getCmd(command interface{}) (cmd byte, err error) {
 		var ok bool
 		cmd, ok = api.Cmd(v)
 		if !ok {
-			err = fmt.Errorf("command '%s' not found", v)
+			err = fmt.Errorf(FmtMsgCommandNotCount, v)
 			return
 		}
 	default:
@@ -238,5 +246,14 @@ func (api APIClient) Help(short bool) (str string) {
 	return
 }
 
-// Address return APIClient address
+// Address returns application address
 func (api APIClient) Address() string { return api.address }
+
+// AppShort returns application short name
+func (api APIClient) AppShort() string { return api.short }
+
+// AppName returns application name
+func (api APIClient) AppName() string { return api.name }
+
+// AppLong returns application long name (description)
+func (api APIClient) AppLong() string { return api.long }

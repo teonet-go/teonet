@@ -120,7 +120,7 @@ func (m Menu) ExecuteCommand(line string) (err error) {
 
 	c := m.findCommand(line)
 	if c == nil {
-		err = fmt.Errorf("comand '%s' not found", line)
+		err = fmt.Errorf(teonet.FmtMsgCommandNotCount, line)
 		return
 	}
 	line = strings.TrimSpace(line[len(c.Name()):])
