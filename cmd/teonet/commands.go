@@ -259,7 +259,7 @@ func (c CmdAPI) Exec(line string) (err error) {
 	// Extend APIClient with wallet commands
 	var api = struct {
 		*teonet.APIClient
-		walletCommand
+		walletCommands
 	}{APIClient: apiClient}
 
 	// Show flags info or api commands
