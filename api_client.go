@@ -38,11 +38,12 @@ type APIClient struct {
 	teo     *Teonet
 }
 type APIDataAr struct {
-	name    string    // API (application) name
-	short   string    // API short name
-	long    string    // API decription (or long name)
-	version string    // API version
-	Apis    []APIData // API commands data
+	name      string      // API (application) name
+	short     string      // API short name
+	long      string      // API decription (or long name)
+	version   string      // API version
+	Apis      []APIData   // API commands data
+	UserField interface{} // Some user field
 	bslice.ByteSlice
 }
 
