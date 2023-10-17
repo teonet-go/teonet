@@ -257,10 +257,10 @@ func (c CmdAPI) Exec(line string) (err error) {
 		c.api.add(address, apiClient)
 	}
 	// Extend APIClient with wallet commands
-	var api = struct {
-		*teonet.APIClient
-		walletCommands
-	}{APIClient: apiClient}
+	if _, ok := apiClient.UserField.(*walletCommands); !ok {
+		apiClient.UserField = &walletCommands{}
+	}
+	api := apiClient
 
 	// Show flags info or api commands
 	if len(args) == 1 {
@@ -280,7 +280,7 @@ func (c CmdAPI) Exec(line string) (err error) {
 
 		// Process -wallet flag
 		case wallet:
-			fmt.Printf("%s\n", api.AppWalletUsage())
+			fmt.Printf("%s\n", api.UserField.(*walletCommands).AppWalletUsage())
 
 		// Print api commands
 		default:
@@ -292,7 +292,7 @@ func (c CmdAPI) Exec(line string) (err error) {
 
 	// Process -wallet flag
 	if wallet {
-		fmt.Printf("%s\n", api.AppWalletProcess(args[:]))
+		fmt.Printf("%s\n", api.UserField.(*walletCommands).AppWalletProcess(api.AppShort(), args[:]))
 		return
 	}
 
@@ -327,7 +327,7 @@ func (c CmdAPI) Exec(line string) (err error) {
 				switch {
 				case strings.Contains(ret, "string"):
 					fmt.Println("got answer:", string(data))
-					err = c.edit(api.APIClient, data, editparam, &editmode)
+					err = c.edit(api, data, editparam, &editmode)
 					if err != nil {
 						// fmt.Println("editor, error:", err)
 					}
