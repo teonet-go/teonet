@@ -6,54 +6,26 @@
 
 package main
 
+import (
+	"fmt"
+
+	"github.com/teonet-go/teocrypt/mnemonic"
+)
+
+// walletCommands contains data and methods to process -wallet commands
 type walletCommands struct {
+	walletConfig mnemonic.MnemonicConfig
 }
 
-const (
-	usageCommand = `
-usage: api -wallet <address> <command> [arguments...]
-
-Application wallet commands:
-  new
-        creates new wallet mnemonic (create new wallet)
-  insert <mnemonic>
-        inserts your previously saved wallet mnemonic (import wallet)
-  show
-        shows current wallet mnemonic (export wallet)
-  master
-        shows saved master key (export wallet by master key)
-  password <password>
-        sets password to save and read mnemonic and master key at this host
-  save
-        save wallet parameters on this host
-  delete
-        delete wallet parameters from this host`
-
-	descriptionNew = `New wallet mnemonic created.
-
-The new wallet is running now. If you used another wallet before this command
-and it mnemonic was not saved - you lost it. If your previously wallet was
-saved on this host but you have not copy it - execute load command:
-
-  api -wallet teos3 load
-
-To show created wallet mnemonic - execute show command:
-
-  api -wallet teos3 show
-
-To save created wallet mnemonic on this host - execute save command:
-
-  api -wallet teos3 seve
-
-`
-)
+// colos returns input text with terminal colors symbols added.
+func color(text string) string { return "\033[32m" + text + "\033[0m" }
 
 // AppWalletUsage return application walet usage string
 func (c walletCommands) AppWalletUsage() string { return c.usage() }
 
 // AppWalletProcess process application walet options
-func (c walletCommands) AppWalletProcess(args []string) string {
-	return c.process(args)
+func (c *walletCommands) AppWalletProcess(appShort string, args []string) string {
+	return c.process(appShort, args)
 }
 
 // usage returns application wallet commands usage string
@@ -62,29 +34,27 @@ func (c walletCommands) usage() string {
 }
 
 // process application wallet commands
-func (c walletCommands) process(args []string) string {
+func (c *walletCommands) process(appShort string, args []string) string {
 	switch args[1] {
 
 	case "new":
-		return descriptionNew
+		c.newWallet(appShort)
+		return fmt.Sprintf(descriptionNew, appShort)
 
 	case "insert":
 		return "wallet inserted"
 
 	case "load":
-		return "popa gnom stol"
+		return c.loadWallet(appShort)
 
 	case "show":
-		return "popa gnom stol"
-
-	case "master":
-		return "eb2345ht"
+		return c.showWallet(appShort)
 
 	case "password":
 		return "done"
 
 	case "save":
-		return "done"
+		return c.saveWallet(appShort)
 
 	case "delete":
 		return "done"
@@ -93,4 +63,55 @@ func (c walletCommands) process(args []string) string {
 		return usageCommand
 	}
 
+}
+
+// newWallet creates new wallet.
+func (c *walletCommands) newWallet(appShort string) (err error) {
+
+	// Generate new m
+	m, err := mnemonic.NewMnemonic()
+	if err != nil {
+		return
+	}
+	fmt.Println("mnemonic:", m)
+	c.walletConfig.Mnemonic = []byte(m)
+
+	// Generate private and public keys from mnemonic
+	privateKey, _, err := mnemonic.GenerateKeys(string(m))
+	if err != nil {
+		return
+	}
+	fmt.Println("privateKey:", privateKey)
+	c.walletConfig.PrivateKey = []byte(privateKey)
+
+	return
+}
+
+// showWallet shows current wallet mnemonic and key
+func (c *walletCommands) showWallet(appShort string) string {
+	if len(c.walletConfig.Mnemonic) == 0 && len(c.walletConfig.PrivateKey) == 0 {
+		return fmt.Sprintf(descriptionShowError, appShort)
+	}
+	return fmt.Sprintf(descriptionShow, appShort, c.walletConfig.Mnemonic,
+		c.walletConfig.PrivateKey)
+}
+
+// saveWallet save current wallet mnemonic and key
+func (c walletCommands) saveWallet(appShort string) string {
+
+	if err := c.walletConfig.Save(appShort); err != nil {
+		return "error during saving: " + err.Error()
+	}
+
+	return "Saved."
+}
+
+// loadWallet loads previously saved wallet mnemonic and key
+func (c *walletCommands) loadWallet(appShort string) string {
+
+	if err := c.walletConfig.Load(appShort); err != nil {
+		return "error during loading: " + err.Error()
+	}
+
+	return fmt.Sprintf(descriptionLoad, appShort)
 }
