@@ -50,15 +50,15 @@ private key:
 `
 
 	// Show error message ------------------------------------------------------
-	descriptionShowError = `Wallet for %s was not created.
-
-To create new wallent use next command:
-
-` + color("api -wallet teos3 new") + `
+	descriptionShowError = `Wallet for %s was not loaded.
 
 To load saved wallent use next command:
 
 ` + color("api -wallet teos3 load") + `
+
+To create new wallent use next command:
+
+` + color("api -wallet teos3 new") + `
 `
 
 	// Load message ------------------------------------------------------------

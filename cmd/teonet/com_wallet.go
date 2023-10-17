@@ -24,8 +24,8 @@ func color(text string) string { return "\033[32m" + text + "\033[0m" }
 func (c walletCommands) AppWalletUsage() string { return c.usage() }
 
 // AppWalletProcess process application walet options
-func (c *walletCommands) AppWalletProcess(appShort string, args []string) string {
-	return c.process(appShort, args)
+func (c *walletCommands) AppWalletProcess(apiAppShort string, args []string) string {
+	return c.process(apiAppShort, args)
 }
 
 // usage returns application wallet commands usage string
@@ -34,30 +34,33 @@ func (c walletCommands) usage() string {
 }
 
 // process application wallet commands
-func (c *walletCommands) process(appShort string, args []string) string {
+func (c *walletCommands) process(apiAppShort string, args []string) string {
+
+	configName := "wallet-" + apiAppShort
+
 	switch args[1] {
 
 	case "new":
-		c.newWallet(appShort)
-		return fmt.Sprintf(descriptionNew, appShort)
+		c.newWallet()
+		return fmt.Sprintf(descriptionNew, apiAppShort)
 
 	case "insert":
-		return "wallet inserted"
+		return "under construction"
 
 	case "load":
-		return c.loadWallet(appShort)
+		return c.loadWallet(apiAppShort, configName)
 
 	case "show":
-		return c.showWallet(appShort)
+		return c.showWallet(apiAppShort)
 
 	case "password":
-		return "done"
+		return "under construction"
 
 	case "save":
-		return c.saveWallet(appShort)
+		return c.saveWallet(apiAppShort, configName)
 
 	case "delete":
-		return "done"
+		return "under construction"
 
 	default:
 		return usageCommand
@@ -66,7 +69,7 @@ func (c *walletCommands) process(appShort string, args []string) string {
 }
 
 // newWallet creates new wallet.
-func (c *walletCommands) newWallet(appShort string) (err error) {
+func (c *walletCommands) newWallet() (err error) {
 
 	// Generate new m
 	m, err := mnemonic.NewMnemonic()
@@ -97,9 +100,9 @@ func (c *walletCommands) showWallet(appShort string) string {
 }
 
 // saveWallet save current wallet mnemonic and key
-func (c walletCommands) saveWallet(appShort string) string {
+func (c walletCommands) saveWallet(apiAppShort, configName string) string {
 
-	if err := c.walletConfig.Save(appShort); err != nil {
+	if err := c.walletConfig.Save(appShort, configName); err != nil {
 		return "error during saving: " + err.Error()
 	}
 
@@ -107,11 +110,11 @@ func (c walletCommands) saveWallet(appShort string) string {
 }
 
 // loadWallet loads previously saved wallet mnemonic and key
-func (c *walletCommands) loadWallet(appShort string) string {
+func (c *walletCommands) loadWallet(apiAppShort, configName string) string {
 
-	if err := c.walletConfig.Load(appShort); err != nil {
+	if err := c.walletConfig.Load(appShort, configName); err != nil {
 		return "error during loading: " + err.Error()
 	}
 
-	return fmt.Sprintf(descriptionLoad, appShort)
+	return fmt.Sprintf(descriptionLoad, apiAppShort)
 }
