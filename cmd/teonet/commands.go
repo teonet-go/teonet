@@ -326,7 +326,7 @@ func (c CmdAPI) Exec(line string) (err error) {
 			if ret, ok := api.Return(command); ok {
 				switch {
 				case strings.Contains(ret, "string"):
-					fmt.Println("got answer:", string(data))
+					fmt.Println(string(data))
 					err = c.edit(api, data, editparam, &editmode)
 					if err != nil {
 						// fmt.Println("editor, error:", err)
@@ -339,7 +339,7 @@ func (c CmdAPI) Exec(line string) (err error) {
 					}
 					fmt.Println(peers)
 				default:
-					fmt.Println("got answer:", data)
+					fmt.Println(data)
 				}
 			}
 		}
