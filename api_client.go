@@ -101,11 +101,6 @@ func (api *APIClient) SendTo(command interface{}, data []byte,
 		return
 	}
 	id, err = api.teo.Command(cmd, data).SendTo(api.address)
-	// TODO: i can't understand what does this code do :-)
-	// May be we need just call:
-	// api.teo.Command(cmd, data).SendTo(api.address, waits...)
-	// or in this case wee can lost cmd and id?
-	// Shure this code exactly than got answer with cmd and id in its data!!!
 	if len(waits) > 0 {
 		go func() { waits[0](api.WaitFrom(cmd, uint32(id))) }()
 	}
