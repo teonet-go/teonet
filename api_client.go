@@ -96,7 +96,7 @@ func (teo *Teonet) NewAPIClient(address string, cmdAPIs ...byte) (apicli *APICli
 func (api *APIClient) SendTo(command interface{}, data []byte,
 	waits ...func(data []byte, err error)) (id int, err error) {
 
-	cmd, err := api.getCmd(command)
+	cmd, err := api.GetCmd(command)
 	if err != nil {
 		return
 	}
@@ -116,7 +116,7 @@ func (api *APIClient) SendTo(command interface{}, data []byte,
 func (api *APIClient) WaitFrom(command interface{}, packetID ...interface{}) (data []byte, err error) {
 
 	// Get command number
-	cmd, err := api.getCmd(command)
+	cmd, err := api.GetCmd(command)
 	if err != nil {
 		return
 	}
@@ -249,7 +249,7 @@ func (api APIClient) AppLong() string { return api.long }
 
 // apiData get return pointer to APIData by cmd number or name.
 func (api *APIClient) apiData(command interface{}) (ret *APIData, ok bool) {
-	cmd, err := api.getCmd(command)
+	cmd, err := api.GetCmd(command)
 	if err != nil {
 		return
 	}
@@ -263,8 +263,8 @@ func (api *APIClient) apiData(command interface{}) (ret *APIData, ok bool) {
 	return
 }
 
-// getCmd check command type and return command number.
-func (api *APIClient) getCmd(command interface{}) (cmd byte, err error) {
+// GetCmd check command type and return command number.
+func (api *APIClient) GetCmd(command interface{}) (cmd byte, err error) {
 	switch v := command.(type) {
 	case byte:
 		cmd = v
