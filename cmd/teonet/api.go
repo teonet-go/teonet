@@ -1,3 +1,9 @@
+// Copyright 2021-2023 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Teonet CLI API Map processing module.
+
 package main
 
 import (
@@ -6,50 +12,49 @@ import (
 	"github.com/teonet-go/teonet"
 )
 
+// API holds map of connected Teonet API clients, mutext to safe this map and
+// methods to manage this map.
+type API struct {
+	m apiMap
+	sync.RWMutex
+}
+type apiMap map[string]*teonet.APIClient
+
+// newAPI creates a new API object
 func newAPI() (a *API) {
 	a = new(API)
 	a.m = make(apiMap)
 	return
 }
 
-type API struct {
-	m apiMap
-	sync.RWMutex
-}
-
-type apiMap map[string]*teonet.APIClient
-
-// func (a *API) Address(name string) string {
-// 	if address, ok := a.get(name); ok {
-// 		return address
-// 	}
-// 	return name
-// }
-
-func (a *API) add(name string, api *teonet.APIClient) {
+// add adds record to API map
+func (a *API) add(address string, api *teonet.APIClient) {
 	a.Lock()
 	defer a.Unlock()
-	a.m[name] = api
+	a.m[address] = api
 }
 
-func (a *API) del(name string) {
+// del deletes record from API map
+func (a *API) del(address string) {
 	a.Lock()
 	defer a.Unlock()
-	delete(a.m, name)
+	delete(a.m, address)
 }
 
-func (a *API) get(name string) (api *teonet.APIClient, ok bool) {
+// get gets record from API map by name
+func (a *API) get(address string) (api *teonet.APIClient, ok bool) {
 	a.RLock()
 	defer a.RUnlock()
-	api, ok = a.m[name]
+	api, ok = a.m[address]
 	return
 }
 
+// list returns slice of 'address - name' in API map
 func (a *API) list(alias *Alias) (list []string) {
 	a.RLock()
 	defer a.RUnlock()
-	for name := range a.m {
-		list = append(list, name+" - "+alias.Name(name))
+	for address := range a.m {
+		list = append(list, address+" - "+alias.Name(address))
 	}
 	return
 }

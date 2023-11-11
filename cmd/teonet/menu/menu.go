@@ -1,3 +1,8 @@
+// Copyright 2021-2023 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Teonet CLI application menu.
 package menu
 
 import (
@@ -12,54 +17,24 @@ import (
 	"github.com/teonet-go/teonet"
 )
 
-func New(appShort string) (cmd *Menu, err error) {
-	cmd = &Menu{appShort: appShort}
-	return
-}
-
+// Menu is Teonet CLI application menu
 type Menu struct {
-	r        *readline.Instance
-	items    []Item
-	appShort string
+	r        *readline.Instance // Readline instance
+	items    []Item             // Menu items
+	appShort string             // Application short name
 }
-
 type Item interface {
 	Name() string           // Get command name
 	Help() string           // Get command quick help string
 	Exec(line string) error // Execute command
 	Compliter() []Compliter // Command compliter
 }
+type Compliter readline.PrefixCompleterInterface // Readline compliter type
 
-// Compliter readline compliter type
-type Compliter readline.PrefixCompleterInterface
-
-func (m *Menu) newReadline() (l *readline.Instance, err error) {
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		dir = os.TempDir()
-	}
-	l, err = readline.NewEx(&readline.Config{
-		Prompt:              "\033[31mteo»\033[0m ",
-		HistoryFile:         dir + "/" + teonet.ConfigDir + "/" + m.appShort + "/readline.tmp",
-		AutoComplete:        m.makeCompliter(),
-		InterruptPrompt:     "^C",
-		EOFPrompt:           "exit",
-		HistorySearchFold:   true,
-		FuncFilterInputRune: m.filterInput,
-	})
-	if err != nil {
-		panic(err)
-	}
+// New creates new Teonet CLI application menu
+func New(appShort string) (cmd *Menu, err error) {
+	cmd = &Menu{appShort: appShort}
 	return
-}
-
-func (m *Menu) filterInput(r rune) (rune, bool) {
-	switch r {
-	// block CtrlZ feature
-	case readline.CharCtrlZ:
-		return r, false
-	}
-	return r, true
 }
 
 // Add command (menu item)
@@ -116,15 +91,67 @@ func (m *Menu) Run() (err error) {
 	return
 }
 
+// ExecuteCommand executes command using input command line
 func (m Menu) ExecuteCommand(line string) (err error) {
 
 	c := m.findCommand(line)
 	if c == nil {
-		err = fmt.Errorf("comand '%s' not found", line)
+		err = fmt.Errorf(teonet.FmtMsgCommandNotCount, line)
 		return
 	}
 	line = strings.TrimSpace(line[len(c.Name()):])
 	return c.Exec(line)
+}
+
+// SplitSpace split line by space helper function
+func (m Menu) SplitSpace(line string) (res []string) { return m.Split(line, " ") }
+
+// SplitComma split line by comma helper function
+func (m Menu) SplitComma(line string) (res []string) { return m.Split(line, ",") }
+
+// Split line by delemiter helper function
+func (m Menu) Split(line, delimiter string) (res []string) {
+	if line != "" {
+		res = strings.Split(line, delimiter)
+	}
+	return
+}
+
+// MakeCompliterFromString returns compliter created from input string slice
+func (m *Menu) MakeCompliterFromString(strings []string) (cmpl []Compliter) {
+	for _, s := range strings {
+		cmpl = append(cmpl, readline.PcItem(s))
+	}
+	return cmpl
+}
+
+func (m *Menu) newReadline() (l *readline.Instance, err error) {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		dir = os.TempDir()
+	}
+	l, err = readline.NewEx(&readline.Config{
+		Prompt:              "\033[31mteo»\033[0m ",
+		HistoryFile:         dir + "/" + teonet.ConfigDir + "/" + m.appShort + "/readline.tmp",
+		AutoComplete:        m.makeCompliter(),
+		InterruptPrompt:     "^C",
+		EOFPrompt:           "exit",
+		HistorySearchFold:   true,
+		FuncFilterInputRune: m.filterInput,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return
+}
+
+func (m *Menu) filterInput(r rune) (rune, bool) {
+	switch r {
+	// block CtrlZ feature
+	case readline.CharCtrlZ:
+		return r, false
+	}
+	return r, true
 }
 
 func (m Menu) findCommand(line string) (cmd Item) {
@@ -146,24 +173,26 @@ func (m Menu) findCommand(line string) (cmd Item) {
 	return nil
 }
 
-// SplitSpace split line by space helper function
-func (m Menu) SplitSpace(line string) (res []string) { return m.Split(line, " ") }
-
-// SplitComma split line by comma helper function
-func (m Menu) SplitComma(line string) (res []string) { return m.Split(line, ",") }
-
-// Split line by delemiter helper function
-func (m Menu) Split(line, delimiter string) (res []string) {
-	if line != "" {
-		res = strings.Split(line, delimiter)
+func (m *Menu) makeCompliter() *readline.PrefixCompleter {
+	var comp []readline.PrefixCompleterInterface
+	for _, c := range m.items {
+		compConvert := func() (comp []readline.PrefixCompleterInterface) {
+			if c.Compliter() == nil {
+				return
+			}
+			for _, cc := range c.Compliter() {
+				comp = append(comp, cc)
+			}
+			return
+		}
+		compliter := readline.PcItem(c.Name(), compConvert()...)
+		comp = append(comp, compliter)
 	}
-	return
+	return readline.NewPrefixCompleter(comp...)
 }
 
 // addSystemCommands add internel menu commands like help, etc.
-func (m *Menu) addSystemCommands() {
-	m.Add(CmdHelp{m})
-}
+func (m *Menu) addSystemCommands() { m.Add(CmdHelp{m}) }
 
 // CmdHelp help command name
 const cmdHelp = "help"
@@ -205,48 +234,6 @@ func (c CmdHelp) Compliter() (cmpl []Compliter) {
 		cmpl = append(cmpl, readline.PcItem(n))
 	}
 	return
-}
-
-func (m *Menu) makeCompliter() *readline.PrefixCompleter {
-	// var completer = readline.NewPrefixCompleter(
-	// 	readline.PcItem("mode",
-	// 		readline.PcItem("vi"),
-	// 		readline.PcItem("emacs"),
-	// 	),
-	// 	readline.PcItem("login"),
-	// 	readline.PcItem("say",
-	// 		readline.PcItemDynamic(listFiles("./"),
-	// 			readline.PcItem("with",
-	// 				readline.PcItem("following"),
-	// 				readline.PcItem("items"),
-	// 			),
-	// 		),
-	// 		readline.PcItem("hello"),
-	// 		readline.PcItem("bye"),
-	// 	),
-	// )
-	var comp []readline.PrefixCompleterInterface
-	for _, c := range m.items {
-		compConvert := func() (comp []readline.PrefixCompleterInterface) {
-			if c.Compliter() == nil {
-				return
-			}
-			for _, cc := range c.Compliter() {
-				comp = append(comp, cc)
-			}
-			return
-		}
-		compliter := readline.PcItem(c.Name(), compConvert()...)
-		comp = append(comp, compliter)
-	}
-	return readline.NewPrefixCompleter(comp...)
-}
-
-func (m *Menu) MakeCompliterFromString(strings []string) (cmpl []Compliter) {
-	for _, s := range strings {
-		cmpl = append(cmpl, readline.PcItem(s))
-	}
-	return cmpl
 }
 
 // simpleCommand used in MakeItem

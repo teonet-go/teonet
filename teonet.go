@@ -1,4 +1,4 @@
-// Copyright 2021-22 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Copyright 2021-2023 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -18,7 +18,7 @@ import (
 	"github.com/teonet-go/tru/teolog"
 )
 
-const Version = "0.6.4"
+const Version = "0.6.5"
 
 // Reset random and use rnd instead
 var rnd = rand.New(rand.NewSource(time.Now().Unix()))

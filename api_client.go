@@ -1,4 +1,4 @@
-// Copyright 2021-22 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Copyright 2021-2023 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -7,16 +7,13 @@
 package teonet
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
-)
 
-type APIClient struct {
-	APIDataAr
-	address string
-	cmdAPI  byte
-	teo     *Teonet
-}
+	"github.com/kirill-scherba/bslice"
+)
 
 const (
 	// Get server api command
@@ -25,7 +22,63 @@ const (
 	CmdClientAPI = 254
 )
 
-// NewAPIClient create new APIClient
+const (
+	FmtMsgCommandNotCount = "command '%s' not found"
+)
+
+var (
+	ErrWoronCommand = errors.New("wrong command")
+)
+
+// APIClient contains clients api data and receive methods
+type APIClient struct {
+	APIDataAr
+	address string
+	cmdAPI  byte
+	teo     *Teonet
+}
+type APIDataAr struct {
+	name      string      // API (application) name
+	short     string      // API short name
+	long      string      // API decription (or long name)
+	version   string      // API version
+	Apis      []APIData   // API commands data
+	UserField interface{} // Some user field
+	bslice.ByteSlice
+}
+
+// UnmarshalBinary binary unmarshal APIDataAr
+func (a *APIDataAr) UnmarshalBinary(data []byte) (err error) {
+	var buf = bytes.NewBuffer(data)
+
+	if a.name, err = a.ReadString(buf); err != nil {
+		return
+	}
+	if a.short, err = a.ReadString(buf); err != nil {
+		return
+	}
+	if a.long, err = a.ReadString(buf); err != nil {
+		return
+	}
+	if a.version, err = a.ReadString(buf); err != nil {
+		return
+	}
+	var numCmds uint16
+	if err = binary.Read(buf, binary.LittleEndian, &numCmds); err != nil {
+		return
+	}
+	for i := 0; i < int(numCmds); i++ {
+		var api APIData
+		if err = api.UnmarshalBinary(buf); err != nil {
+			return
+		}
+		a.Apis = append(a.Apis, api)
+	}
+
+	return
+}
+
+// NewAPIClient create new APIClient object
 func (teo *Teonet) NewAPIClient(address string, cmdAPIs ...byte) (apicli *APIClient, err error) {
 	apicli = new(APIClient)
 	apicli.teo = teo
@@ -39,6 +92,21 @@ func (teo *Teonet) NewAPIClient(address string, cmdAPIs ...byte) (apicli *APICli
 	return
 }
 
+// SendTo sends api command.
+func (api *APIClient) SendTo(command interface{}, data []byte,
+	waits ...func(data []byte, err error)) (id int, err error) {
+
+	cmd, err := api.GetCmd(command)
+	if err != nil {
+		return
+	}
+	id, err = api.teo.Command(cmd, data).SendTo(api.address)
+	if len(waits) > 0 {
+		go func() { waits[0](api.WaitFrom(cmd, uint32(id))) }()
+	}
+	return
+}
+
 // WaitFrom wait receiving data from peer. The third function parameter is
 // timeout. It may be omitted or contain timeout time of time. Duration type.
 // If timeout parameter is omitted than default timeout value sets to 2 second.
@@ -48,7 +116,7 @@ func (teo *Teonet) NewAPIClient(address string, cmdAPIs ...byte) (apicli *APICli
 func (api *APIClient) WaitFrom(command interface{}, packetID ...interface{}) (data []byte, err error) {
 
 	// Get command number
-	cmd, err := api.getCmd(command)
+	cmd, err := api.GetCmd(command)
 	if err != nil {
 		return
 	}
@@ -63,7 +131,7 @@ func (api *APIClient) WaitFrom(command interface{}, packetID ...interface{}) (da
 	} else {
 		a, ok := api.AnswerMode(cmd)
 		if !ok {
-			err = errors.New("wrong command")
+			err = ErrWoronCommand
 			return
 		}
 		answerMode = a
@@ -83,24 +151,7 @@ func (api *APIClient) WaitFrom(command interface{}, packetID ...interface{}) (da
 	return
 }
 
-func (api *APIClient) SendTo(command interface{}, data []byte, waits ...func(data []byte, err error)) (id int, err error) {
-	cmd, err := api.getCmd(command)
-	if err != nil {
-		return
-	}
-	id, err = api.teo.Command(cmd, data).SendTo(api.address)
-	// TODO: i can't understand what does this code do :-)
-	// May be we need just call:
-	// api.teo.Command(cmd, data).SendTo(api.address, waits...)
-	// or in this case wee can lost cmd and id?
-	// Shure this code exactly than got answer with cmd and id in its data!!!
-	if len(waits) > 0 {
-		go func() { waits[0](api.WaitFrom(cmd, uint32(id))) }()
-	}
-	return
-}
-
-// Cmd get command number by name
+// Cmd get command number by name.
 func (api *APIClient) Cmd(name string) (cmd byte, ok bool) {
 	for i := range api.Apis {
 		if api.Apis[i].name == name {
@@ -112,7 +163,7 @@ func (api *APIClient) Cmd(name string) (cmd byte, ok bool) {
 	return
 }
 
-// Return get return parameter by cmd number or name
+// Return get return parameter by cmd number or name.
 func (api *APIClient) Return(command interface{}) (ret string, ok bool) {
 	a, ok := api.apiData(command)
 	if ok {
@@ -121,7 +172,7 @@ func (api *APIClient) Return(command interface{}) (ret string, ok bool) {
 	return
 }
 
-// AnswerMode get answer mode parameter by cmd number or name
+// AnswerMode get answer mode parameter by cmd number or name.
 func (api *APIClient) AnswerMode(command interface{}) (ret APIanswerMode, ok bool) {
 	a, ok := api.apiData(command)
 	if ok {
@@ -130,67 +181,13 @@ func (api *APIClient) AnswerMode(command interface{}) (ret APIanswerMode, ok boo
 	return
 }
 
-// apiData get return pointer to APIData by cmd number or name
-func (api *APIClient) apiData(command interface{}) (ret *APIData, ok bool) {
-	cmd, err := api.getCmd(command)
-	if err != nil {
-		return
-	}
-	for i := range api.Apis {
-		if api.Apis[i].cmd == cmd {
-			ret = &api.Apis[i]
-			ok = true
-			return
-		}
-	}
-	return
-}
-
-// getCmd check command type and return command number
-func (api *APIClient) getCmd(command interface{}) (cmd byte, err error) {
-	switch v := command.(type) {
-	case byte:
-		cmd = v
-	case int:
-		cmd = byte(v)
-	case string:
-		var ok bool
-		cmd, ok = api.Cmd(v)
-		if !ok {
-			err = fmt.Errorf("command '%s' not found", v)
-			return
-		}
-	default:
-		panic("wrong type of 'command' argument")
-	}
-	return
-}
-
-// getApi send cmdAPI command and get answer with APIDataAr: all API definition
-func (api *APIClient) getApi() (err error) {
-	api.SendTo(api.cmdAPI, nil)
-	data, err := api.WaitFrom(api.cmdAPI)
-	if err != nil {
-		log.Error.Println("can't get api data, err", err)
-		return
-	}
-
-	err = api.APIDataAr.UnmarshalBinary(data)
-	if err != nil {
-		log.Error.Println("can't unmarshal api data, err", err)
-		return
-	}
-
-	return
-}
-
-// String stringlify APIClient
+// String stringlify APIClient, return same string as Help function.
 func (api APIClient) String() (str string) {
 	str += api.Help(false)
 	return
 }
 
-// APIClient return APICient help in string
+// APIClient return APICient help in string.
 func (api APIClient) Help(short bool) (str string) {
 
 	// Name version and description
@@ -238,5 +235,68 @@ func (api APIClient) Help(short bool) (str string) {
 	return
 }
 
-// Address return APIClient address
+// Address returns application address.
 func (api APIClient) Address() string { return api.address }
+
+// AppShort returns application short name.
+func (api APIClient) AppShort() string { return api.short }
+
+// AppName returns application name.
+func (api APIClient) AppName() string { return api.name }
+
+// AppLong returns application long name (description).
+func (api APIClient) AppLong() string { return api.long }
+
+// apiData get return pointer to APIData by cmd number or name.
+func (api *APIClient) apiData(command interface{}) (ret *APIData, ok bool) {
+	cmd, err := api.GetCmd(command)
+	if err != nil {
+		return
+	}
+	for i := range api.Apis {
+		if api.Apis[i].cmd == cmd {
+			ret = &api.Apis[i]
+			ok = true
+			return
+		}
+	}
+	return
+}
+
+// GetCmd check command type and return command number.
+func (api *APIClient) GetCmd(command interface{}) (cmd byte, err error) {
+	switch v := command.(type) {
+	case byte:
+		cmd = v
+	case int:
+		cmd = byte(v)
+	case string:
+		var ok bool
+		cmd, ok = api.Cmd(v)
+		if !ok {
+			err = fmt.Errorf(FmtMsgCommandNotCount, v)
+			return
+		}
+	default:
+		panic("wrong type of 'command' argument")
+	}
+	return
+}
+
+// getApi send cmdAPI command and get answer with APIDataAr: all API definition.
+func (api *APIClient) getApi() (err error) {
+	api.SendTo(api.cmdAPI, nil)
+	data, err := api.WaitFrom(api.cmdAPI)
+	if err != nil {
+		log.Error.Println("can't get api data, err", err)
+		return
+	}
+
+	err = api.APIDataAr.UnmarshalBinary(data)
+	if err != nil {
+		log.Error.Println("can't unmarshal api data, err", err)
+		return
+	}
+
+	return
+}
