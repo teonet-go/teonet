@@ -11,6 +11,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"net"
 
 	"github.com/kirill-scherba/bslice"
 )
@@ -247,22 +248,6 @@ func (api APIClient) AppName() string { return api.name }
 // AppLong returns application long name (description).
 func (api APIClient) AppLong() string { return api.long }
 
-// apiData get return pointer to APIData by cmd number or name.
-func (api *APIClient) apiData(command interface{}) (ret *APIData, ok bool) {
-	cmd, err := api.GetCmd(command)
-	if err != nil {
-		return
-	}
-	for i := range api.Apis {
-		if api.Apis[i].cmd == cmd {
-			ret = &api.Apis[i]
-			ok = true
-			return
-		}
-	}
-	return
-}
-
 // GetCmd check command type and return command number.
 func (api *APIClient) GetCmd(command interface{}) (cmd byte, err error) {
 	switch v := command.(type) {
@@ -279,6 +264,31 @@ func (api *APIClient) GetCmd(command interface{}) (cmd byte, err error) {
 		}
 	default:
 		panic("wrong type of 'command' argument")
+	}
+	return
+}
+
+// DataserverIp gets dataserver ip address
+func (api *APIClient) DataserverIp() (ip string) {
+	ch, ok := api.teo.channels.get(api.address)
+	if ok {
+		ip = ch.Channel().Addr().(*net.UDPAddr).IP.String()
+	}
+	return
+}
+
+// apiData get return pointer to APIData by cmd number or name.
+func (api *APIClient) apiData(command interface{}) (ret *APIData, ok bool) {
+	cmd, err := api.GetCmd(command)
+	if err != nil {
+		return
+	}
+	for i := range api.Apis {
+		if api.Apis[i].cmd == cmd {
+			ret = &api.Apis[i]
+			ok = true
+			return
+		}
 	}
 	return
 }
